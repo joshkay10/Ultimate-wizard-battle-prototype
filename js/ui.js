@@ -139,6 +139,7 @@ function renderActionRow() {
       '<button class="action-btn move' + (usable && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
       '<button class="action-btn melee' + (usable && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
       '<button class="action-btn cast' + (usable && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
+      '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
   );
 }
@@ -205,7 +206,6 @@ function render() {
     '<div class="topbar">' +
       '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
       '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>' +
-      '<div class="topbar-end"><button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button></div>' +
     '</div>' +
     renderBoard() +
     renderPanel() +
