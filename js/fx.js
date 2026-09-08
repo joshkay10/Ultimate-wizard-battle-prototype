@@ -185,7 +185,6 @@ async function playCastSpell(ev) {
   await animate(480, function (t) {
     boardFx.charge.t = t;
     boardFx.popScale[ev.attackerId] = 1 + t * 0.3;
-    boardFx.screenFlash = Math.max(boardFx.screenFlash, t * 0.16);
     if (Math.random() < 0.9) {
       const a = Math.random() * Math.PI * 2;
       const d = 36 * (1 - t * 0.65);
