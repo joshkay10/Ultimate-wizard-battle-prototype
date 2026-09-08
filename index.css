@@ -47,8 +47,8 @@ html, body {
   width: 100%;
   min-height: 100vh;
 }
-#app.is-animating .tile,
-#app.is-animating .wizard-card[data-clickable="1"] {
+#app.is-animating .board-canvas,
+#app.is-animating .wizard-card-hit:not(:disabled) {
   cursor: wait;
 }
 #app.is-enemy-turn .board-wrap {
@@ -157,173 +157,21 @@ html, body {
   justify-content: center;
   background: var(--bg);
 }
-.board {
+.board-canvas {
   width: 100%;
   max-width: 640px;
   aspect-ratio: 1 / 1;
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  grid-template-rows: repeat(9, 1fr);
-  gap: 2px;
-  background: var(--line-strong);
-  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  overflow: hidden;
-  position: relative;
+  display: block;
+  touch-action: manipulation;
+  cursor: pointer;
+  background: var(--line-strong);
 }
-.tile {
-  background: var(--tile);
-  position: relative;
+
+#panel-root {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: default;
-  transition: background 0.12s ease;
-}
-.tile.alt { background: var(--tile-alt); }
-.tile.summon-zone { background: #f6f4e9; }
-.tile.summon-zone.alt { background: #eeebdb; }
-.tile.terrain-fire { background: var(--fire-bg); }
-.tile.terrain-ice { background: var(--ice-bg); }
-.tile.terrain-wind { background: var(--wind-bg); }
-.tile.terrain-fire.alt { background: color-mix(in srgb, var(--fire-bg) 80%, var(--tile-alt) 20%); }
-.tile.terrain-ice.alt { background: color-mix(in srgb, var(--ice-bg) 80%, var(--tile-alt) 20%); }
-.tile.terrain-wind.alt { background: color-mix(in srgb, var(--wind-bg) 80%, var(--tile-alt) 20%); }
-.tile.move-target { background: var(--tile-move); cursor: pointer; }
-.tile.melee-target { background: var(--tile-melee); cursor: pointer; }
-.tile.cast-target { background: var(--tile-cast); cursor: pointer; }
-.tile.summon-target { background: var(--tile-move); cursor: pointer; }
-.tile.move-target::after,
-.tile.melee-target::after,
-.tile.cast-target::after,
-.tile.summon-target::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 4px;
-  border: 1.5px dashed;
-  pointer-events: none;
-}
-.tile.move-target::after { border-color: var(--tile-move-border); }
-.tile.melee-target::after { border-color: var(--tile-melee-border); }
-.tile.cast-target::after { border-color: var(--tile-cast-border); }
-.tile.summon-target::after { border-color: var(--tile-move-border); }
-.tile.occupied-selected {
-  background: var(--tile-selected);
-}
-
-.wizard-token {
-  width: 78%;
-  height: 78%;
-  border-radius: 50%;
-  background: #b9bcb5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.08);
-  transition: transform 0.15s ease;
-}
-.wizard-token.selected-ring {
-  box-shadow: 0 0 0 2px var(--tile-selected-border), 0 1px 0 rgba(0,0,0,0.08);
-}
-.wizard-token svg { width: 48%; height: 48%; margin-bottom: 6px; }
-.wizard-token.enemy-token { background: #1c1e1b; }
-.token-hp {
-  position: absolute;
-  bottom: 3px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 8px;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--text);
-  pointer-events: none;
-}
-.wizard-token.enemy-token .token-hp { color: #fff; }
-
-.wizard-token.lifted {
-  transform: translateY(-14px) scale(1.08);
-  box-shadow: 0 10px 14px rgba(0,0,0,0.18);
-  z-index: 5;
-}
-
-.nexus-token {
-  width: 62%;
-  height: 62%;
-  border: 2.5px solid var(--nexus);
-  background: transparent;
-  transform: rotate(45deg);
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.nexus-hp-label {
-  transform: rotate(-45deg);
-  text-align: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--nexus);
-  line-height: 1;
-  pointer-events: none;
-}
-.tile.nexus-tile { cursor: default; }
-
-/* ---------- Attack animation: trailing flash + projectile ---------- */
-.tile.projectile-trail {
-  background: color-mix(in srgb, var(--trail-color, var(--text)) 35%, var(--tile) 65%);
-  transition: background 0.9s ease-out;
-}
-.projectile-dot {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 4;
-  pointer-events: none;
-  animation: projectile-pop 0.14s ease-out;
-}
-.projectile-dot svg {
-  width: 46%;
-  height: 46%;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-}
-@keyframes projectile-pop {
-  from { transform: scale(0.4); opacity: 0.4; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.tile.impact-flash {
-  background: #fff !important;
-}
-.wizard-token.impact-flash {
-  background: #fff !important;
-  box-shadow: 0 0 0 3px #fff;
-}
-.nexus-token.impact-flash {
-  background: #fff;
-  border-color: #fff;
-}
-.damage-popup {
-  position: absolute;
-  top: 8%;
-  left: 50%;
-  z-index: 8;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--fire);
-  text-shadow: 0 1px 0 #fff;
-  pointer-events: none;
-  animation: damage-float 0.5s ease-out forwards;
-}
-@keyframes damage-float {
-  from { opacity: 1; transform: translate(-50%, 0); }
-  to { opacity: 0; transform: translate(-50%, -14px); }
+  flex-direction: column;
 }
 
 /* ---------- Bottom half: action panel ---------- */

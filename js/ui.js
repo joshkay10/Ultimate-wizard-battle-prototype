@@ -2,63 +2,18 @@ function iconSpan(name, color) {
   return '<span style="color:' + color + '; display:flex; align-items:center; justify-content:center;">' + ICONS[name] + '</span>';
 }
 
-function renderBoard() {
-  let highlightTiles = [];
-  let highlightClass = '';
-  const selectedWizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-
-  if (state.placingWizardId && !state.animating) {
-    highlightClass = 'summon-target';
-    for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        if (!isBlocked(r, c)) highlightTiles.push({ row: r, col: c });
-      }
-    }
-  } else if (selectedWizard && !state.animating) {
-    if (state.selectedAction === 'move') {
-      highlightTiles = getMoveTiles(selectedWizard);
-      highlightClass = 'move-target';
-    } else if (state.selectedAction === 'melee') {
-      highlightTiles = getMeleeTiles(selectedWizard);
-      highlightClass = 'melee-target';
-    } else if (state.selectedAction === 'cast') {
-      highlightTiles = getCastTiles(selectedWizard);
-      highlightClass = 'cast-target';
-    }
-  }
-
-  let tiles = '';
-  for (let r = 0; r < BOARD_SIZE; r++) {
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      const isAlt = (r + c) % 2 === 1;
-      const occ = wizardAt(r, c);
-      const nex = nexusAt(r, c);
-      const isHighlighted = highlightTiles.some(t => t.row === r && t.col === c);
-      let classes = 'tile' + (isAlt ? ' alt' : '');
-      if (isSummonTile(r, c)) classes += ' summon-zone';
-      const trail = trailAt(r, c);
-      if (trail) classes += ' terrain-' + trail.element;
-      if (nex) classes += ' nexus-tile';
-      if (isHighlighted) classes += ' ' + highlightClass;
-      if (occ && occ.id === state.selectedWizardId) classes += ' occupied-selected';
-
-      let tokenHtml = '';
-      if (occ) {
-        const isSel = occ.id === state.selectedWizardId;
-        const isEnemy = occ.team === 'enemy';
-        tokenHtml = '<div class="wizard-token' + (isSel ? ' selected-ring' : '') + (isEnemy ? ' enemy-token' : '') + '" data-id="' + occ.id + '" data-wizard-token="1">' +
-          iconSpan(occ.element, ELEMENT_COLOR[occ.element]) +
-          '<span class="token-hp">' + occ.hp + '</span>' +
-        '</div>';
-      } else if (nex) {
-        tokenHtml = '<div class="nexus-token" title="' + (nex === NEXUS.mine ? 'your nexus' : 'enemy nexus') + '">' +
-          '<div class="nexus-hp-label">' + nex.hp + '</div>' +
-        '</div>';
-      }
-      tiles += '<div class="' + classes + '" data-row="' + r + '" data-col="' + c + '">' + tokenHtml + '</div>';
-    }
-  }
-  return '<div class="board-wrap"><div class="board">' + tiles + '</div></div>';
+function ensureShell() {
+  const app = document.getElementById('app');
+  if (document.getElementById('board-canvas')) return;
+  app.innerHTML =
+    '<div class="topbar" id="topbar"></div>' +
+    '<div class="board-wrap"><canvas id="board-canvas" class="board-canvas" width="640" height="640"></canvas></div>' +
+    '<div id="panel-root"></div>' +
+    '<div id="overlay-root"></div>';
+  document.getElementById('board-canvas').addEventListener('pointerup', function (ev) {
+    const cell = boardCanvasCellFromEvent(ev);
+    if (cell) handleTileClick(cell.row, cell.col);
+  });
 }
 
 function renderPanel() {
@@ -169,14 +124,6 @@ function renderGameOverOverlay() {
 }
 
 function attachHandlers() {
-  document.querySelectorAll('.tile').forEach(el => {
-    el.addEventListener('click', () => {
-      const row = parseInt(el.getAttribute('data-row'), 10);
-      const col = parseInt(el.getAttribute('data-col'), 10);
-      handleTileClick(row, col);
-    });
-  });
-
   document.querySelectorAll('[data-roster-id]').forEach(el => {
     el.addEventListener('click', () => {
       if (el.getAttribute('data-clickable') !== '1') return;
@@ -199,18 +146,16 @@ function attachHandlers() {
 }
 
 function render() {
+  ensureShell();
   const app = document.getElementById('app');
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
-  app.innerHTML =
-    '<div class="topbar">' +
-      '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-      '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>' +
-    '</div>' +
-    renderBoard() +
-    renderPanel() +
-    renderGameOverOverlay();
-
+  document.getElementById('topbar').innerHTML =
+    '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>';
+  document.getElementById('panel-root').innerHTML = renderPanel();
+  document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();
+  drawBoard();
   attachHandlers();
 }

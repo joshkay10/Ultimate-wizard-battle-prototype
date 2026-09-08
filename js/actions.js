@@ -51,24 +51,16 @@ function setAction(action) {
 
 async function moveWizardAnimated(wizard, path) {
   state.animating = true;
+  boardFx.liftedId = wizard.id;
   for (const step of path) {
-    render(); // ensure current position rendered
-    const tokenEl = document.querySelector('.wizard-token[data-id="' + wizard.id + '"]');
-    if (tokenEl) {
-      tokenEl.classList.add('lifted');
-      await sleep(100);
-    }
+    render();
+    await sleep(100);
     wizard.row = step.row;
     wizard.col = step.col;
     render();
-    const movedEl = document.querySelector('.wizard-token[data-id="' + wizard.id + '"]');
-    if (movedEl) {
-      movedEl.classList.add('lifted');
-      await sleep(10);
-      movedEl.classList.remove('lifted');
-    }
-    await sleep(90);
+    await sleep(100);
   }
+  boardFx.liftedId = null;
   wizard.hasMoved = true;
   state.animating = false;
   render();
