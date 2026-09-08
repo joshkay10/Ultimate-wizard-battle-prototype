@@ -365,12 +365,9 @@ html, body {
   cursor: default;
 }
 .wizard-card.summoned .wizard-card-icon,
-.wizard-card.summoned .wizard-table-row .value,
+.wizard-card.summoned .wizard-stat span,
 .wizard-card.summoned .wizard-card-name {
   opacity: 0.5;
-}
-.wizard-card.summoned .wizard-table-row {
-  background: #f1f0ea;
 }
 .wizard-card-head {
   display: flex;
@@ -411,34 +408,34 @@ html, body {
 .wizard-cost-badge.ice { color: var(--ice); }
 .wizard-cost-badge.wind { color: var(--wind); }
 
-.wizard-tables {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.wizard-table {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  overflow: hidden;
-  font-size: 9px;
-}
-.wizard-table-row {
+.wizard-stats {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 3px 6px;
-  background: #fff;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
 }
-.wizard-table-row:not(:last-child) {
-  border-bottom: 1px solid var(--line);
+.wizard-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
 }
-.wizard-table-row .label { color: var(--text-faint); }
-.wizard-table-row .value { font-weight: 700; color: var(--text); }
+.wizard-stat svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
 
 .action-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-top: 10px;
+  margin: 0 0 12px;
 }
 .action-btn {
   display: flex;

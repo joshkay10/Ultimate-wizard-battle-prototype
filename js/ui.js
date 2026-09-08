@@ -96,15 +96,10 @@ function renderPanel() {
               '<div class="wizard-card-state">' + stateLabel + '</div>' +
             '</div>' +
           '</div>' +
-          '<div class="wizard-tables">' +
-            '<div class="wizard-table">' +
-              '<div class="wizard-table-row"><span class="label">attack</span><span class="value">' + wiz.meleeAttack + ' &middot; ' + wiz.castAttack + '</span></div>' +
-              '<div class="wizard-table-row"><span class="label">displace</span><span class="value">+' + wiz.meleeDisplacement + ' &middot; +' + wiz.castDisplacement + '</span></div>' +
-            '</div>' +
-            '<div class="wizard-table">' +
-              '<div class="wizard-table-row"><span class="label">health</span><span class="value">' + wiz.hp + '/' + wiz.maxHp + '</span></div>' +
-              '<div class="wizard-table-row"><span class="label">move</span><span class="value">' + wiz.moveRange + '</span></div>' +
-            '</div>' +
+          '<div class="wizard-stats">' +
+            '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
+            '<span class="wizard-stat">' + ICONS.cast + '<span>' + wiz.castAttack + '/' + wiz.castDisplacement + '</span></span>' +
+            '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '/' + wiz.maxHp + '</span></span>' +
           '</div>' +
         '</button>' +
       '</div>'
@@ -119,8 +114,8 @@ function renderPanel() {
     '<div class="panel">' +
       placingHint +
       '<div>' +
-        (wizardCards ? '<p class="panel-section-label">wizards</p><div class="wizard-grid">' + wizardCards + '</div>' : '') +
         renderActionRow() +
+        (wizardCards ? '<p class="panel-section-label">wizards</p><div class="wizard-grid">' + wizardCards + '</div>' : '') +
       '</div>' +
     '</div>'
   );
