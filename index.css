@@ -228,8 +228,21 @@ html, body {
 .wizard-token.selected-ring {
   box-shadow: 0 0 0 2px var(--tile-selected-border), 0 1px 0 rgba(0,0,0,0.08);
 }
-.wizard-token svg { width: 55%; height: 55%; }
+.wizard-token svg { width: 48%; height: 48%; margin-bottom: 6px; }
 .wizard-token.enemy-token { background: #1c1e1b; }
+.token-hp {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  pointer-events: none;
+}
+.wizard-token.enemy-token .token-hp { color: #fff; }
 
 .wizard-token.lifted {
   transform: translateY(-14px) scale(1.08);
@@ -283,6 +296,34 @@ html, body {
 @keyframes projectile-pop {
   from { transform: scale(0.4); opacity: 0.4; }
   to { transform: scale(1); opacity: 1; }
+}
+
+.tile.impact-flash {
+  background: #fff !important;
+}
+.wizard-token.impact-flash {
+  background: #fff !important;
+  box-shadow: 0 0 0 3px #fff;
+}
+.nexus-token.impact-flash {
+  background: #fff;
+  border-color: #fff;
+}
+.damage-popup {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  z-index: 8;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fire);
+  text-shadow: 0 1px 0 #fff;
+  pointer-events: none;
+  animation: damage-float 0.5s ease-out forwards;
+}
+@keyframes damage-float {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -14px); }
 }
 
 /* ---------- Bottom half: action panel ---------- */

@@ -8,31 +8,68 @@ function directionBetween(fromRow, fromCol, toRow, toCol) {
 
 // Apply displacement to a target sitting at (row,col), moving along (dr,dc) by `amount` tiles.
 // Positive amount = push further along (dr,dc) away from the attacker.
-// Negative amount = pull backward along (dr,dc), i.e. toward the attacker.
-// Returns { finalRow, finalCol, collided, tilesShort } and applies collision damage itself.
-function applyDisplacement(target, dr, dc, amount) {
-  if (amount === 0) return { finalRow: target.row, finalCol: target.col, collided: false, tilesShort: 0 };
+function getDisplacementPath(target, dr, dc, amount) {
+  if (amount === 0) return { path: [], tilesShort: 0 };
   const dir = amount > 0 ? 1 : -1;
   const steps = Math.abs(amount);
+  const path = [];
   let curRow = target.row, curCol = target.col;
-  let travelled = 0;
   for (let i = 0; i < steps; i++) {
     const nr = curRow + dr * dir;
     const nc = curCol + dc * dir;
-    if (!inBounds(nr, nc)) break;
-    if (isBlocked(nr, nc)) break; // something else occupies it (wizard or nexus)
+    if (!inBounds(nr, nc) || isBlocked(nr, nc)) {
+      return { path, tilesShort: Math.min(3, steps - i) };
+    }
+    path.push({ row: nr, col: nc });
     curRow = nr;
     curCol = nc;
-    travelled++;
   }
-  const tilesShort = Math.min(3, steps - travelled);
+  return { path, tilesShort: 0 };
+}
+
+function tileEl(row, col) {
+  return document.querySelector('.tile[data-row="' + row + '"][data-col="' + col + '"]');
+}
+
+function showDamagePopup(row, col, amount) {
+  if (!amount) return;
+  const el = tileEl(row, col);
+  if (!el) return;
+  const pop = document.createElement('div');
+  pop.className = 'damage-popup';
+  pop.textContent = '-' + amount;
+  el.appendChild(pop);
+}
+
+async function flashImpact(row, col) {
+  const el = tileEl(row, col);
+  if (!el) {
+    await sleep(160);
+    return;
+  }
+  el.classList.add('impact-flash');
+  const token = el.querySelector('.wizard-token, .nexus-token');
+  if (token) token.classList.add('impact-flash');
+  await sleep(180);
+  el.classList.remove('impact-flash');
+  if (token) token.classList.remove('impact-flash');
+}
+
+async function applyDisplacementAnimated(target, dr, dc, amount) {
+  const { path, tilesShort } = getDisplacementPath(target, dr, dc, amount);
+  for (const step of path) {
+    target.row = step.row;
+    target.col = step.col;
+    render();
+    await sleep(70);
+  }
   if (tilesShort > 0) {
-    // collision damage: 1 per tile it couldn't travel, capped at 3, to the displaced unit
     target.hp -= tilesShort;
+    render();
+    showDamagePopup(target.row, target.col, tilesShort);
+    await flashImpact(target.row, target.col);
   }
-  target.row = curRow;
-  target.col = curCol;
-  return { finalRow: curRow, finalCol: curCol, collided: tilesShort > 0, tilesShort };
+  return { tilesShort, collided: tilesShort > 0 };
 }
 
 function killIfDead(wizard) {
@@ -49,7 +86,7 @@ function killIfDead(wizard) {
 async function animateProjectile(attacker, pathTiles) {
   for (let i = 0; i < pathTiles.length; i++) {
     const tile = pathTiles[i];
-    const el = document.querySelector('.tile[data-row="' + tile.row + '"][data-col="' + tile.col + '"]');
+    const el = tileEl(tile.row, tile.col);
     if (el) {
       const dot = document.createElement('div');
       dot.className = 'projectile-dot';
@@ -64,28 +101,10 @@ async function animateProjectile(attacker, pathTiles) {
       const dot = el.querySelector('.projectile-dot');
       if (dot) dot.remove();
     }
-    // trailing fade handled by CSS transition after class removal
     if (el) {
       setTimeout(() => el.classList.remove('projectile-trail'), 260);
     }
   }
-  await sleep(120); // brief pause on impact before damage applies
-}
-
-function flashTileElement(row, col, element, duration) {
-  return new Promise(resolve => {
-    const el = document.querySelector('.tile[data-row="' + row + '"][data-col="' + col + '"]');
-    if (el) {
-      el.style.setProperty('--trail-color', ELEMENT_COLOR[element]);
-      el.classList.add('projectile-trail');
-      setTimeout(() => {
-        el.classList.remove('projectile-trail');
-        resolve();
-      }, duration);
-    } else {
-      resolve();
-    }
-  });
 }
 
 async function resolveMeleeAttack(attacker, row, col) {
@@ -97,15 +116,24 @@ async function resolveMeleeAttack(attacker, row, col) {
   const targetNexus = nexusAt(row, col);
   const dir = directionBetween(attacker.row, attacker.col, row, col);
 
-  await flashTileElement(row, col, attacker.element, 220);
   layTrail(row, col, attacker.element);
 
   if (targetWizard) {
-    targetWizard.hp -= attacker.meleeAttack;
-    applyDisplacement(targetWizard, dir.dr, dir.dc, attacker.meleeDisplacement);
+    const dmg = attacker.meleeAttack;
+    targetWizard.hp -= dmg;
+    render();
+    showDamagePopup(row, col, dmg);
+    await flashImpact(row, col);
+    await applyDisplacementAnimated(targetWizard, dir.dr, dir.dc, attacker.meleeDisplacement);
     killIfDead(targetWizard);
   } else if (targetNexus) {
-    targetNexus.hp = Math.max(0, targetNexus.hp - attacker.meleeAttack);
+    const dmg = attacker.meleeAttack;
+    targetNexus.hp = Math.max(0, targetNexus.hp - dmg);
+    render();
+    showDamagePopup(row, col, dmg);
+    await flashImpact(row, col);
+  } else {
+    await flashImpact(row, col);
   }
 
   attacker.hasAttacked = true;
@@ -119,7 +147,6 @@ async function resolveCastAttack(attacker, row, col) {
   render();
 
   const dir = directionBetween(attacker.row, attacker.col, row, col);
-  // build the path of tiles the projectile travels over, from attacker (exclusive) to target (inclusive)
   const dist = Math.max(Math.abs(row - attacker.row), Math.abs(col - attacker.col));
   const pathTiles = [];
   for (let i = 1; i <= dist; i++) {
@@ -127,19 +154,27 @@ async function resolveCastAttack(attacker, row, col) {
   }
 
   await animateProjectile(attacker, pathTiles);
-
-  // leave a trail of the caster's element along the whole line it travelled (ice floor / wind channel / flames)
   pathTiles.forEach(t => layTrail(t.row, t.col, attacker.element));
 
   const targetWizard = wizardAt(row, col);
   const targetNexus = nexusAt(row, col);
 
   if (targetWizard) {
-    targetWizard.hp -= attacker.castAttack;
-    applyDisplacement(targetWizard, dir.dr, dir.dc, attacker.castDisplacement);
+    const dmg = attacker.castAttack;
+    targetWizard.hp -= dmg;
+    render();
+    showDamagePopup(row, col, dmg);
+    await flashImpact(row, col);
+    await applyDisplacementAnimated(targetWizard, dir.dr, dir.dc, attacker.castDisplacement);
     killIfDead(targetWizard);
   } else if (targetNexus) {
-    targetNexus.hp = Math.max(0, targetNexus.hp - attacker.castAttack);
+    const dmg = attacker.castAttack;
+    targetNexus.hp = Math.max(0, targetNexus.hp - dmg);
+    render();
+    showDamagePopup(row, col, dmg);
+    await flashImpact(row, col);
+  } else {
+    await flashImpact(row, col);
   }
 
   attacker.hasAttacked = true;

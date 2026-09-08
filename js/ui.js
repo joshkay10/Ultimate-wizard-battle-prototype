@@ -48,6 +48,7 @@ function renderBoard() {
         const isEnemy = occ.team === 'enemy';
         tokenHtml = '<div class="wizard-token' + (isSel ? ' selected-ring' : '') + (isEnemy ? ' enemy-token' : '') + '" data-id="' + occ.id + '" data-wizard-token="1">' +
           iconSpan(occ.element, ELEMENT_COLOR[occ.element]) +
+          '<span class="token-hp">' + occ.hp + '</span>' +
         '</div>';
       } else if (nex) {
         tokenHtml = '<div class="nexus-token" title="' + (nex === NEXUS.mine ? 'your nexus' : 'enemy nexus') + '">' +

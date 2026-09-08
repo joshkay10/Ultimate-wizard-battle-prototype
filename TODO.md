@@ -6,17 +6,17 @@ Work through this in order unless a playtest says otherwise. Keep the engine sep
 
 Damage is applied in code, but it is easy to miss.
 
-- [ ] Show HP on board tokens (not only on player cards)
-- [ ] Show damage numbers / HP flash when a hit lands
-- [ ] Confirm melee, cast, push, and collision damage against wizards and nexuses
-- [ ] Dead wizards vanish and their roster card goes away
+- [x] Show HP on board tokens (not only on player cards)
+- [x] Show damage numbers / HP flash when a hit lands
+- [x] Confirm melee, cast, push, and collision damage against wizards and nexuses
+- [x] Dead wizards vanish and their roster card goes away
 - [ ] Attacks on empty tiles still leave trails, but should not feel like a “miss bug”
 
 ## FX
 
 - [ ] Melee: short lunge / slash, not only a tile tint
-- [ ] Cast: clearer projectile, impact pop, element-colored trail
-- [ ] Hit: token shake, flash, or knockback that matches the push
+- [x] Cast: clearer projectile, impact pop, element-colored trail
+- [x] Hit: white flash, then knockback that matches the push
 - [ ] Movement: slide between tiles instead of teleport + hop
 - [ ] Summon: place pop so a new unit is obvious
 
