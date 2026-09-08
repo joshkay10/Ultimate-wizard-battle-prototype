@@ -36,6 +36,16 @@ function isEnemySummonTile(row, col) {
   return row >= 0 && row < ENEMY_ROW_END;
 }
 
+function getPlayerSummonTiles() {
+  const tiles = [];
+  for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+    }
+  }
+  return tiles;
+}
+
 function getEnemySummonTiles() {
   const tiles = [];
   for (let r = 0; r < ENEMY_ROW_END; r++) {

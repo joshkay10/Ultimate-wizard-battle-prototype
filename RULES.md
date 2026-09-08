@@ -32,7 +32,7 @@ On your turn you may, in any order:
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away.
 - If the push is blocked (wizard, nexus, or edge), the target takes 1 extra damage per tile they could not travel (max 3).
 - HP 0 = dead, token leaves the board.
-- Attacks also leave an elemental trail on tiles they travel / hit. Trails last about one turn. Right now they are visual only.
+- Attacks also leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** — that is how you paint the ground (ice it, burn it, wind it). Trails last about one turn. Right now they are visual only; later they become terrain (fire hurts to cross, wind carries, ice is frictionless).
 
 ## Winning
 

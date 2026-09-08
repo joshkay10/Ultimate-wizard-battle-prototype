@@ -1,8 +1,17 @@
 const boardFx = {
   flash: null,
   projectile: null,
-  popup: null,
-  liftedId: null
+  popups: [],
+  override: {},
+  ghosts: [],
+  slash: null,
+  rings: [],
+  particles: [],
+  shake: 0,
+  screenFlash: 0,
+  popScale: {},
+  fade: {},
+  lungeReturn: null
 };
 
 const BOARD_COLORS = {
@@ -55,6 +64,10 @@ function cellRect(layout, row, col) {
   };
 }
 
+function boxToOv(box) {
+  return { x: box.x, y: box.y, s: box.s };
+}
+
 function boardCanvasCellFromEvent(ev) {
   const layout = boardLayout();
   if (!layout) return null;
@@ -85,17 +98,14 @@ function highlightSet() {
       }
     }
   } else if (selectedWizard && !state.animating) {
-    if (state.selectedAction === 'move') {
-      kind = 'move';
-      return { tiles: getMoveTiles(selectedWizard), kind };
+    if (state.selectedAction === 'move' && !selectedWizard.hasMoved) {
+      return { tiles: getMoveTiles(selectedWizard), kind: 'move' };
     }
-    if (state.selectedAction === 'melee') {
-      kind = 'melee';
-      return { tiles: getMeleeTiles(selectedWizard), kind };
+    if (state.selectedAction === 'melee' && !selectedWizard.hasAttacked) {
+      return { tiles: getMeleeTiles(selectedWizard), kind: 'melee' };
     }
-    if (state.selectedAction === 'cast') {
-      kind = 'cast';
-      return { tiles: getCastTiles(selectedWizard), kind };
+    if (state.selectedAction === 'cast' && !selectedWizard.hasAttacked) {
+      return { tiles: getCastTiles(selectedWizard), kind: 'cast' };
     }
   }
   return { tiles, kind };
@@ -190,18 +200,16 @@ function drawNexus(ctx, box, hp, flash) {
   ctx.fillText(String(hp), cx, cy);
 }
 
-function drawToken(ctx, box, wizard, selected, lifted, flash) {
+function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
-  const cy = box.y + box.s / 2 - (lifted ? box.s * 0.12 : 0);
-  const radius = box.s * 0.36;
+  const cy = box.y + box.s / 2;
+  const radius = box.s * 0.36 * (scale || 1);
   ctx.save();
-  if (lifted) {
-    ctx.shadowColor = 'rgba(0,0,0,0.22)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 4;
-  }
+  ctx.translate(cx, cy);
+  ctx.scale(scale || 1, scale || 1);
+  ctx.translate(-cx, -cy);
   ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.arc(cx, cy, box.s * 0.36, 0, Math.PI * 2);
   ctx.fillStyle = flash ? '#ffffff' : (wizard.team === 'enemy' ? BOARD_COLORS.enemy : BOARD_COLORS.token);
   ctx.fill();
   if (selected && !flash) {
@@ -216,6 +224,61 @@ function drawToken(ctx, box, wizard, selected, lifted, flash) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(wizard.hp), cx, cy + radius * 0.52);
+}
+
+function spawnBurst(cx, cy, color, n, speed) {
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+    const sp = speed * (0.35 + Math.random());
+    boardFx.particles.push({
+      x: cx,
+      y: cy,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      life: 1,
+      color: color,
+      size: 1.8 + Math.random() * 2.4
+    });
+  }
+}
+
+function tickFx(dt) {
+  const k = dt / 16.6;
+  boardFx.shake *= Math.pow(0.86, k);
+  if (boardFx.shake < 0.15) boardFx.shake = 0;
+  boardFx.screenFlash *= Math.pow(0.82, k);
+  if (boardFx.screenFlash < 0.02) boardFx.screenFlash = 0;
+  boardFx.particles.forEach(p => {
+    p.x += p.vx * k;
+    p.y += p.vy * k;
+    p.vx *= 0.94;
+    p.vy *= 0.94;
+    p.life -= 0.045 * k;
+  });
+  boardFx.particles = boardFx.particles.filter(p => p.life > 0);
+  boardFx.rings.forEach(r => { r.t += 0.06 * k; });
+  boardFx.rings = boardFx.rings.filter(r => r.t < 1);
+  boardFx.popups.forEach(p => { p.t += 0.045 * k; });
+  boardFx.popups = boardFx.popups.filter(p => p.t < 1);
+}
+
+let fxLooping = false;
+let fxLast = 0;
+
+function ensureFxLoop() {
+  if (fxLooping) return;
+  fxLooping = true;
+  fxLast = performance.now();
+  function loop(now) {
+    const dt = Math.min(40, now - fxLast);
+    fxLast = now;
+    tickFx(dt);
+    drawBoard();
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length;
+    if (busy) requestAnimationFrame(loop);
+    else fxLooping = false;
+  }
+  requestAnimationFrame(loop);
 }
 
 function drawBoard() {
@@ -234,6 +297,17 @@ function drawBoard() {
   roundRect(ctx, 0, 0, css, css, 10);
   ctx.fillStyle = BOARD_COLORS.grid;
   ctx.fill();
+  ctx.save();
+  roundRect(ctx, 0, 0, css, css, 10);
+  ctx.clip();
+
+  if (boardFx.shake > 0) {
+    const t = performance.now();
+    ctx.translate(
+      Math.sin(t * 0.063) * boardFx.shake,
+      Math.cos(t * 0.081) * boardFx.shake
+    );
+  }
 
   const marks = highlightSet();
   const highlightKey = {};
@@ -242,13 +316,12 @@ function drawBoard() {
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const box = cellRect(layout, r, c);
-      const key = r + ',' + c;
-      const highlighted = !!highlightKey[key];
-      const occ = wizardAt(r, c);
+      const highlighted = !!highlightKey[r + ',' + c];
       const nex = nexusAt(r, c);
       const flashHere = boardFx.flash && boardFx.flash.row === r && boardFx.flash.col === c;
       let fill = tileFill(r, c, highlighted, marks.kind);
-      if (occ && occ.id === state.selectedWizardId) fill = BOARD_COLORS.selected;
+      const occHere = wizardAt(r, c);
+      if (occHere && occHere.id === state.selectedWizardId && !boardFx.override[occHere.id]) fill = BOARD_COLORS.selected;
       if (flashHere) fill = '#ffffff';
 
       roundRect(ctx, box.x, box.y, box.s, box.s, 2);
@@ -267,65 +340,114 @@ function drawBoard() {
         ctx.restore();
       }
 
-      if (occ) {
-        drawToken(ctx, box, occ, occ.id === state.selectedWizardId, boardFx.liftedId === occ.id, flashHere);
-      } else if (nex) {
-        drawNexus(ctx, box, nex.hp, flashHere);
-      }
-
-      if (boardFx.projectile && boardFx.projectile.row === r && boardFx.projectile.col === c) {
-        const color = BOARD_COLORS[boardFx.projectile.element] || BOARD_COLORS.text;
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.28;
-        roundRect(ctx, box.x, box.y, box.s, box.s, 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        drawElementIcon(ctx, boardFx.projectile.element, box.x + box.s / 2, box.y + box.s / 2, box.s * 0.18);
-      }
-
-      if (boardFx.popup && boardFx.popup.row === r && boardFx.popup.col === c) {
-        ctx.fillStyle = BOARD_COLORS.fire;
-        ctx.font = '800 ' + Math.max(12, box.s * 0.28) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(boardFx.popup.text, box.x + box.s / 2, box.y + 4);
-      }
+      if (nex) drawNexus(ctx, box, nex.hp, flashHere);
     }
   }
-}
 
-let popupSeq = 0;
+  Object.values(state.wizards).forEach(wizard => {
+    if (wizard.state !== 'onboard') return;
+    const ov = boardFx.override[wizard.id];
+    const box = ov || cellRect(layout, wizard.row, wizard.col);
+    const scale = boardFx.popScale[wizard.id] || 1;
+    const flashBox = boardFx.flash ? cellRect(layout, boardFx.flash.row, boardFx.flash.col) : null;
+    const flashHere = !!(flashBox && Math.abs(box.x - flashBox.x) < 1 && Math.abs(box.y - flashBox.y) < 1);
+    ctx.save();
+    if (boardFx.fade[wizard.id] != null) ctx.globalAlpha = boardFx.fade[wizard.id];
+    drawTokenAt(ctx, box, wizard, wizard.id === state.selectedWizardId, flashHere, scale);
+    ctx.restore();
+  });
 
-function showDamagePopup(row, col, amount) {
-  if (!amount) return;
-  const id = ++popupSeq;
-  boardFx.popup = { row, col, text: '-' + amount, id };
-  drawBoard();
-  setTimeout(function () {
-    if (boardFx.popup && boardFx.popup.id === id) {
-      boardFx.popup = null;
-      drawBoard();
-    }
-  }, 500);
-}
+  boardFx.ghosts.forEach(g => {
+    ctx.save();
+    ctx.globalAlpha = g.alpha;
+    drawTokenAt(ctx, g.box, g.wizard, false, false, g.scale || 1);
+    ctx.restore();
+  });
 
-async function flashImpact(row, col) {
-  boardFx.flash = { row, col };
-  drawBoard();
-  await sleep(180);
-  boardFx.flash = null;
-  drawBoard();
-}
+  boardFx.rings.forEach(ring => {
+    const b = cellRect(layout, ring.row, ring.col);
+    const cx = b.x + b.s / 2;
+    const cy = b.y + b.s / 2;
+    ctx.save();
+    ctx.strokeStyle = BOARD_COLORS[ring.element] || '#fff';
+    ctx.globalAlpha = (1 - ring.t) * 0.9;
+    ctx.lineWidth = 3.2 * (1 - ring.t * 0.4);
+    ctx.beginPath();
+    ctx.arc(cx, cy, b.s * 0.18 + ring.t * b.s * 0.72, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
 
-async function animateProjectile(attacker, pathTiles) {
-  for (let i = 0; i < pathTiles.length; i++) {
-    const tile = pathTiles[i];
-    boardFx.projectile = { row: tile.row, col: tile.col, element: attacker.element };
-    drawBoard();
-    await sleep(70);
+  if (boardFx.projectile) {
+    const p = boardFx.projectile;
+    ctx.save();
+    ctx.fillStyle = BOARD_COLORS[p.element] || BOARD_COLORS.text;
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    drawElementIcon(ctx, p.element, p.x, p.y, 8);
   }
-  boardFx.projectile = null;
-  drawBoard();
+
+  if (boardFx.slash) {
+    const s = boardFx.slash;
+    const t = s.t;
+    const mx = (s.x0 + s.x1) / 2;
+    const my = (s.y0 + s.y1) / 2;
+    const dx = s.x1 - s.x0;
+    const dy = s.y1 - s.y0;
+    const len = Math.hypot(dx, dy) || 1;
+    const px = -dy / len * 26;
+    const py = dx / len * 26;
+    const grow = 0.25 + t * 1.05;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 8 * (1 - t * 0.55);
+    ctx.globalAlpha = 0.85 * (1 - t);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mx - px * grow, my - py * grow);
+    ctx.lineTo(mx + px * grow, my + py * grow);
+    ctx.stroke();
+    ctx.strokeStyle = BOARD_COLORS[s.element] || '#fff';
+    ctx.lineWidth = 4 * (1 - t * 0.4);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  boardFx.particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  boardFx.popups.forEach(p => {
+    const b = cellRect(layout, p.row, p.col);
+    ctx.save();
+    ctx.globalAlpha = 1 - p.t;
+    ctx.fillStyle = BOARD_COLORS.fire;
+    ctx.font = '800 ' + Math.max(13, b.s * 0.3) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.text, b.x + b.s / 2, b.y + b.s * 0.22 - p.t * 16);
+    ctx.restore();
+  });
+
+  if (boardFx.screenFlash > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (boardFx.screenFlash * 0.55) + ')';
+    ctx.fillRect(0, 0, css, css);
+  }
+
+  ctx.restore();
 }
 
 window.addEventListener('resize', function () {

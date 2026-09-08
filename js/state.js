@@ -27,7 +27,12 @@ const state = {
   mana: 0,
   maxMana: 0,
   enemyMana: 0,
-  enemyMaxMana: 0
+  enemyMaxMana: 0,
+
+  seed: 1,
+  rng: null,
+  log: [],
+  fxEnabled: true
 };
 
 // Nexuses: fixed objects, block movement and summoning, cannot be selected
