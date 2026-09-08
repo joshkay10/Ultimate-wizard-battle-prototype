@@ -246,6 +246,9 @@ html, body {
   border-width: 2px;
   background: #fff;
 }
+.wizard-card.summoned .wizard-card-hit:disabled {
+  opacity: 0.78;
+}
 .wizard-card.summoned.fire .wizard-card-hit { border-color: var(--fire); }
 .wizard-card.summoned.ice .wizard-card-hit { border-color: var(--ice); }
 .wizard-card.summoned.wind .wizard-card-hit { border-color: var(--wind); }

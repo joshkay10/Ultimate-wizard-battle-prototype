@@ -180,7 +180,7 @@ async function playCastSpell(ev) {
   const dist = Math.hypot(x1 - x0, y1 - y0);
 
   boardFx.charge = { id: ev.attackerId, t: 0, element: ev.element };
-  await animate(300, function (t) {
+  await animate(420, function (t) {
     boardFx.charge.t = t;
     boardFx.popScale[ev.attackerId] = 1 + t * 0.18;
     if (Math.random() < 0.65) {
@@ -200,7 +200,7 @@ async function playCastSpell(ev) {
   });
 
   boardFx.stream = { x0: x0, y0: y0, x1: x1, y1: y1, head: 0, element: ev.element, fade: 0 };
-  const travel = 160 + dist * 0.42;
+  const travel = 280 + dist * 0.7;
   await animate(travel, function (t) {
     boardFx.stream.head = easeOut(t);
     const hx = x0 + (x1 - x0) * boardFx.stream.head;
