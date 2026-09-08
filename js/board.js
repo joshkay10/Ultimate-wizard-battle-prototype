@@ -1,4 +1,4 @@
-import { BOARD_SIZE, SUMMON_ROW_START } from './constants.js';
+import { BOARD_SIZE, SUMMON_ROW_START, ENEMY_ROW_END } from './constants.js';
 import { state, NEXUS } from './state.js';
 
 export function layTrail(row, col, element) {
@@ -33,6 +33,20 @@ export function isBlocked(row, col) {
 
 export function isSummonTile(row, col) {
   return row >= SUMMON_ROW_START && row < BOARD_SIZE;
+}
+
+export function isEnemySummonTile(row, col) {
+  return row >= 0 && row < ENEMY_ROW_END;
+}
+
+export function getEnemySummonTiles() {
+  const tiles = [];
+  for (let r = 0; r < ENEMY_ROW_END; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+    }
+  }
+  return tiles;
 }
 
 export function inBounds(r, c) {

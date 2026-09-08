@@ -16,16 +16,19 @@ export function checkWinLoss() {
   const enemyDead = NEXUS.enemy.hp <= 0;
   if (mineDead && enemyDead) return 'draw';
 
-  const playerWizardCount = Object.values(state.wizards).filter(w => w.team === 'player' && w.state === 'onboard').length;
-  const enemyWizardCount = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.state === 'onboard').length;
-
-  const playerWiped = mineDead || playerWizardCount === 0;
-  const enemyWiped = enemyDead || enemyWizardCount === 0;
+  const playerWiped = mineDead || !teamHasPresence('player');
+  const enemyWiped = enemyDead || !teamHasPresence('enemy');
 
   if (playerWiped && enemyWiped) return 'draw';
   if (playerWiped) return 'enemy'; // player lost -> enemy wins
   if (enemyWiped) return 'player'; // enemy lost -> player wins
   return null;
+}
+
+function teamHasPresence(team) {
+  return Object.values(state.wizards).some(w =>
+    w.team === team && (w.state === 'onboard' || w.state === 'summoned')
+  );
 }
 
 export function resetActionFlagsFor(team) {
@@ -74,11 +77,13 @@ export function endTurn() {
     }
 
     // --- Round complete: hand the turn back to the player ---
-    state.turnCount++;
-    state.currentTurn = 'player';
-    state.maxMana = Math.min(MANA_CAP, state.maxMana + 1);
-    state.mana = state.maxMana;
-    resetActionFlagsFor('player');
+      state.turnCount++;
+      state.currentTurn = 'player';
+      state.maxMana = Math.min(MANA_CAP, state.maxMana + 1);
+      state.mana = state.maxMana;
+      state.enemyMaxMana = Math.min(MANA_CAP, state.enemyMaxMana + 1);
+      state.enemyMana = state.enemyMaxMana;
+      resetActionFlagsFor('player');
     render();
   }, 500); // brief pause so the "enemy turn" state is visibly readable before AI acts
 }
