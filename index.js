@@ -408,5 +408,536 @@
     }
   }
 
+  // ---------- Attack resolution ----------
+
+  // Direction unit vector from a straight line between two points (assumes same row or same col)
+  function directionBetween(fromRow, fromCol, toRow, toCol) {
+    return {
+      dr: Math.sign(toRow - fromRow),
+      dc: Math.sign(toCol - fromCol)
+    };
+  }
+
+  // Apply displacement to a target sitting at (row,col), moving along (dr,dc) by `amount` tiles.
+  // Positive amount = push further along (dr,dc) away from the attacker.
+  // Negative amount = pull backward along (dr,dc), i.e. toward the attacker.
+  // Returns { finalRow, finalCol, collided, tilesShort } and applies collision damage itself.
+  function applyDisplacement(target, dr, dc, amount, attackerElement) {
+    if (amount === 0) return { finalRow: target.row, finalCol: target.col, collided: false, tilesShort: 0 };
+    const dir = amount > 0 ? 1 : -1;
+    const steps = Math.abs(amount);
+    let curRow = target.row, curCol = target.col;
+    let travelled = 0;
+    for (let i = 0; i < steps; i++) {
+      const nr = curRow + dr * dir;
+      const nc = curCol + dc * dir;
+      if (!inBounds(nr, nc)) break;
+      if (isBlocked(nr, nc)) break; // something else occupies it (wizard or nexus)
+      curRow = nr;
+      curCol = nc;
+      travelled++;
+    }
+    const tilesShort = Math.min(3, steps - travelled);
+    if (tilesShort > 0) {
+      // collision damage: 1 per tile it couldn't travel, capped at 3, to the displaced unit
+      target.hp -= tilesShort;
+    }
+    target.row = curRow;
+    target.col = curCol;
+    return { finalRow: curRow, finalCol: curCol, collided: tilesShort > 0, tilesShort };
+  }
+
+  function killIfDead(wizard) {
+    if (wizard.hp <= 0) {
+      wizard.hp = 0;
+      wizard.state = 'dead';
+      wizard.row = null;
+      wizard.col = null;
+      if (selectedWizardId === wizard.id) selectedWizardId = null;
+    }
+  }
+
+  async function resolveMeleeAttack(attacker, row, col) {
+    if (attacker.state !== 'onboard' || attacker.row === null || attacker.hasAttacked) return;
+    animating = true;
+    render();
+
+    const targetWizard = wizardAt(row, col);
+    const targetNexus = nexusAt(row, col);
+    const dir = directionBetween(attacker.row, attacker.col, row, col);
+
+    await flashTileElement(row, col, attacker.element, 220);
+    layTrail(row, col, attacker.element);
+
+    if (targetWizard) {
+      targetWizard.hp -= attacker.meleeAttack;
+      applyDisplacement(targetWizard, dir.dr, dir.dc, attacker.meleeDisplacement, attacker.element);
+      killIfDead(targetWizard);
+    } else if (targetNexus) {
+      targetNexus.hp = Math.max(0, targetNexus.hp - attacker.meleeAttack);
+    }
+
+    attacker.hasAttacked = true;
+    animating = false;
+    render();
+  }
+
+  async function resolveCastAttack(attacker, row, col) {
+    if (attacker.state !== 'onboard' || attacker.row === null || attacker.hasAttacked) return;
+    animating = true;
+    render();
+
+    const dir = directionBetween(attacker.row, attacker.col, row, col);
+    // build the path of tiles the projectile travels over, from attacker (exclusive) to target (inclusive)
+    const dist = Math.max(Math.abs(row - attacker.row), Math.abs(col - attacker.col));
+    const pathTiles = [];
+    for (let i = 1; i <= dist; i++) {
+      pathTiles.push({ row: attacker.row + dir.dr * i, col: attacker.col + dir.dc * i });
+    }
+
+    await animateProjectile(attacker, pathTiles);
+
+    // leave a trail of the caster's element along the whole line it travelled (ice floor / wind channel / flames)
+    pathTiles.forEach(t => layTrail(t.row, t.col, attacker.element));
+
+    const targetWizard = wizardAt(row, col);
+    const targetNexus = nexusAt(row, col);
+
+    if (targetWizard) {
+      targetWizard.hp -= attacker.castAttack;
+      applyDisplacement(targetWizard, dir.dr, dir.dc, attacker.castDisplacement, attacker.element);
+      killIfDead(targetWizard);
+    } else if (targetNexus) {
+      targetNexus.hp = Math.max(0, targetNexus.hp - attacker.castAttack);
+    }
+
+    attacker.hasAttacked = true;
+    animating = false;
+    render();
+  }
+
+  // Animate a projectile travelling tile-by-tile; each tile flashes the element color then fades (trailing effect)
+  async function animateProjectile(attacker, pathTiles) {
+    for (let i = 0; i < pathTiles.length; i++) {
+      const tile = pathTiles[i];
+      const el = document.querySelector('.tile[data-row="' + tile.row + '"][data-col="' + tile.col + '"]');
+      if (el) {
+        const dot = document.createElement('div');
+        dot.className = 'projectile-dot';
+        dot.style.color = ELEMENT_COLOR[attacker.element];
+        dot.innerHTML = ICONS[attacker.element];
+        el.appendChild(dot);
+        el.classList.add('projectile-trail');
+        el.style.setProperty('--trail-color', ELEMENT_COLOR[attacker.element]);
+      }
+      await sleep(70);
+      if (el) {
+        const dot = el.querySelector('.projectile-dot');
+        if (dot) dot.remove();
+      }
+      // trailing fade handled by CSS transition after class removal
+      if (el) {
+        setTimeout(() => el.classList.remove('projectile-trail'), 260);
+      }
+    }
+    await sleep(120); // brief pause on impact before damage applies
+  }
+
+  function flashTileElement(row, col, element, duration) {
+    return new Promise(resolve => {
+      const el = document.querySelector('.tile[data-row="' + row + '"][data-col="' + col + '"]');
+      if (el) {
+        el.style.setProperty('--trail-color', ELEMENT_COLOR[element]);
+        el.classList.add('projectile-trail');
+        setTimeout(() => {
+          el.classList.remove('projectile-trail');
+          resolve();
+        }, duration);
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  // Returns 'player' | 'enemy' | 'draw' if the game has just ended, otherwise null.
+  // Checked at the end of each side's turn. Neither condition can trigger on a team's
+  // very first turn (both sides get one turn to summon before the board-wipe condition applies).
+  function checkWinLoss() {
+    const mineDead = NEXUS.mine.hp <= 0;
+    const enemyDead = NEXUS.enemy.hp <= 0;
+    if (mineDead && enemyDead) return 'draw';
+
+    const playerWizardCount = Object.values(wizards).filter(w => w.team === 'player' && w.state === 'onboard').length;
+    const enemyWizardCount = Object.values(wizards).filter(w => w.team === 'enemy' && w.state === 'onboard').length;
+
+    const playerWiped = mineDead || playerWizardCount === 0;
+    const enemyWiped = enemyDead || enemyWizardCount === 0;
+
+    if (playerWiped && enemyWiped) return 'draw';
+    if (playerWiped) return 'enemy'; // player lost -> enemy wins
+    if (enemyWiped) return 'player'; // enemy lost -> player wins
+    return null;
+  }
+
+  function resetActionFlagsFor(team) {
+    Object.values(wizards).forEach(w => {
+      if (w.state === 'onboard' && w.team === team) {
+        w.hasMoved = false;
+        w.hasAttacked = false;
+      }
+    });
+  }
+
+  function endTurn() {
+    if (animating || gameOverResult) return;
+
+    // --- Resolve the end of the player's turn ---
+    const isPlayersFirstTurn = !firstPlayerTurnDone;
+    firstPlayerTurnDone = true;
+    tickTrails();
+    selectedWizardId = null;
+    placingWizardId = null;
+
+    let result = isPlayersFirstTurn ? null : checkWinLoss();
+    if (result) {
+      gameOverResult = result;
+      render();
+      return;
+    }
+
+    // --- Hand the turn to the enemy ---
+    currentTurn = 'enemy';
+    render();
+
+    // Enemy turn: run a simple AI pass for each enemy wizard, then hand back to the player.
+    setTimeout(async () => {
+      await runEnemyTurn();
+
+      const isEnemysFirstTurn = !firstEnemyTurnDone;
+      firstEnemyTurnDone = true;
+      resetActionFlagsFor('enemy');
+
+      result = isEnemysFirstTurn ? null : checkWinLoss();
+      if (result) {
+        gameOverResult = result;
+        render();
+        return;
+      }
+
+      // --- Round complete: hand the turn back to the player ---
+      turnCount++;
+      currentTurn = 'player';
+      maxMana = Math.min(MANA_CAP, maxMana + 1);
+      mana = maxMana;
+      resetActionFlagsFor('player');
+      render();
+    }, 500); // brief pause so the "enemy turn" state is visibly readable before AI acts
+  }
+
+  // ---------- Enemy AI (v1) ----------
+  // For each enemy wizard: attack if a target (nexus or player wizard) is already in range
+  // (prefer the nexus when castable, since damaging it progresses the enemy's win condition),
+  // otherwise move as close as possible toward the nearest threat. Deliberately simple —
+  // no target prioritization beyond "nearest", no retreating, no planning ahead.
+  async function runEnemyTurn() {
+    const enemyWizards = Object.values(wizards).filter(w => w.team === 'enemy' && w.state === 'onboard');
+    for (const wizard of enemyWizards) {
+      if (wizard.state !== 'onboard') continue; // may have died mid-turn from another enemy's friendly-fire-free logic; defensive
+      await runEnemyWizardTurn(wizard);
+      await sleep(300); // brief gap so each wizard's action reads as distinct rather than blurring together
+    }
+  }
+
+  async function runEnemyWizardTurn(wizard) {
+    // 1. Try to attack first, before moving — prefer whatever is already in range.
+    if (!wizard.hasAttacked) {
+      const meleeTiles = getMeleeTiles(wizard);
+      const castTiles = getCastTiles(wizard);
+
+      const meleeNexusTile = meleeTiles.find(t => nexusAt(t.row, t.col) === NEXUS.mine);
+      const castNexusTile = castTiles.find(t => nexusAt(t.row, t.col) === NEXUS.mine);
+      const meleePlayerTile = meleeTiles.find(t => { const w2 = wizardAt(t.row, t.col); return w2 && w2.team === 'player'; });
+      const castPlayerTile = castTiles.find(t => { const w2 = wizardAt(t.row, t.col); return w2 && w2.team === 'player'; });
+
+      // Prefer hitting the nexus (progresses the win condition), then a player wizard; cast reaches
+      // further so a cast opportunity on the nexus beats a melee opportunity on a wizard.
+      if (castNexusTile) {
+        await resolveCastAttack(wizard, castNexusTile.row, castNexusTile.col);
+        return;
+      }
+      if (meleeNexusTile) {
+        await resolveMeleeAttack(wizard, meleeNexusTile.row, meleeNexusTile.col);
+        return;
+      }
+      if (meleePlayerTile) {
+        await resolveMeleeAttack(wizard, meleePlayerTile.row, meleePlayerTile.col);
+        return;
+      }
+      if (castPlayerTile) {
+        await resolveCastAttack(wizard, castPlayerTile.row, castPlayerTile.col);
+        return;
+      }
+    }
+
+    // 2. Nothing in range (or already attacked) — move toward the nearest threat.
+    if (!wizard.hasMoved) {
+      const target = nearestThreatTile(wizard);
+      if (target) {
+        const moveTiles = getMoveTiles(wizard);
+        if (moveTiles.length) {
+          // pick the reachable tile that minimizes remaining distance to the target
+          let best = null;
+          let bestDist = Infinity;
+          for (const t of moveTiles) {
+            const d = manhattan(t.row, t.col, target.row, target.col);
+            if (d < bestDist) { bestDist = d; best = t; }
+          }
+          const currentDist = manhattan(wizard.row, wizard.col, target.row, target.col);
+          if (best && bestDist < currentDist) {
+            const path = pathBFS(wizard, best.row, best.col);
+            if (path) await moveWizardAnimated(wizard, path);
+          }
+        }
+      }
+    }
+  }
+
+  // Nearest tile worth marching toward: the closest player wizard, or the player's nexus if none remain.
+  function nearestThreatTile(fromWizard) {
+    const playerWizards = Object.values(wizards).filter(w => w.team === 'player' && w.state === 'onboard');
+    let nearest = null;
+    let nearestDist = Infinity;
+    playerWizards.forEach(w => {
+      const d = manhattan(fromWizard.row, fromWizard.col, w.row, w.col);
+      if (d < nearestDist) { nearestDist = d; nearest = { row: w.row, col: w.col }; }
+    });
+    const nexusDist = manhattan(fromWizard.row, fromWizard.col, NEXUS.mine.row, NEXUS.mine.col);
+    if (nexusDist < nearestDist) {
+      nearest = { row: NEXUS.mine.row, col: NEXUS.mine.col };
+    }
+    return nearest;
+  }
+
+  // ---------- Render ----------
+  function iconSpan(name, color) {
+    return '<span style="color:' + color + '; display:flex; align-items:center; justify-content:center;">' + ICONS[name] + '</span>';
+  }
+
+  function renderBoard() {
+    let highlightTiles = [];
+    let highlightClass = '';
+    const selectedWizard = selectedWizardId ? wizards[selectedWizardId] : null;
+
+    if (placingWizardId && !animating) {
+      highlightClass = 'summon-target';
+      for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          if (!isBlocked(r, c)) highlightTiles.push({ row: r, col: c });
+        }
+      }
+    } else if (selectedWizard && !animating) {
+      if (selectedAction === 'move') {
+        highlightTiles = getMoveTiles(selectedWizard);
+        highlightClass = 'move-target';
+      } else if (selectedAction === 'melee') {
+        highlightTiles = getMeleeTiles(selectedWizard);
+        highlightClass = 'melee-target';
+      } else if (selectedAction === 'cast') {
+        highlightTiles = getCastTiles(selectedWizard);
+        highlightClass = 'cast-target';
+      }
+    }
+
+    let tiles = '';
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const isAlt = (r + c) % 2 === 1;
+        const occ = wizardAt(r, c);
+        const nex = nexusAt(r, c);
+        const isHighlighted = highlightTiles.some(t => t.row === r && t.col === c);
+        let classes = 'tile' + (isAlt ? ' alt' : '');
+        if (isSummonTile(r, c)) classes += ' summon-zone';
+        const trail = trailAt(r, c);
+        if (trail) classes += ' terrain-' + trail.element;
+        if (nex) classes += ' nexus-tile';
+        if (isHighlighted) classes += ' ' + highlightClass;
+        if (occ && occ.id === selectedWizardId) classes += ' occupied-selected';
+
+        let tokenHtml = '';
+        if (occ) {
+          const isSel = occ.id === selectedWizardId;
+          const isEnemy = occ.team === 'enemy';
+          tokenHtml = '<div class="wizard-token' + (isSel ? ' selected-ring' : '') + (isEnemy ? ' enemy-token' : '') + '" data-id="' + occ.id + '" data-wizard-token="1">' +
+            iconSpan(occ.element, ELEMENT_COLOR[occ.element]) +
+          '</div>';
+        } else if (nex) {
+          tokenHtml = '<div class="nexus-token" title="' + (nex === NEXUS.mine ? 'your nexus' : 'enemy nexus') + '">' +
+            '<div class="nexus-hp-label">' + nex.hp + '</div>' +
+          '</div>';
+        }
+        tiles += '<div class="' + classes + '" data-row="' + r + '" data-col="' + c + '">' + tokenHtml + '</div>';
+      }
+    }
+    return '<div class="board-wrap"><div class="board">' + tiles + '</div></div>';
+  }
+
+  function renderPanel() {
+    // Build a card for every wizard still alive, in roster order — summoned or on board.
+    // Cards vanish only once a wizard is dead.
+    const wizardCards = ROSTER.map((r, i) => {
+      const type = WIZARD_TYPES.find(t => t.id === r.typeId);
+      const sameType = Object.values(wizards)
+        .filter(w => w.element === type.element && w.team === 'player')
+        .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10));
+      const indexAmongType = ROSTER.slice(0, i + 1).filter(x => x.typeId === r.typeId).length - 1;
+      const wiz = sameType[indexAmongType];
+      if (!wiz) return '';
+      if (wiz.state === 'dead') return ''; // card vanishes on death
+
+      const isPicked = wiz.id === placingWizardId;
+      const isBoardSelected = wiz.id === selectedWizardId;
+      const isSummoned = wiz.state === 'summoned';
+      const affordable = mana >= wiz.cost;
+      const clickable = isSummoned ? affordable : true;
+
+      const stateLabel = isSummoned ? 'summoned' : 'on board';
+      const cardClasses = 'wizard-card'
+        + (isSummoned ? ' summoned' : '')
+        + (isPicked ? ' placing' : '')
+        + (isBoardSelected ? ' board-selected' : '');
+
+      let actionRow = '';
+      if (isBoardSelected) {
+        const moveDisabled = wiz.hasMoved;
+        const atkDisabled = wiz.hasAttacked;
+        actionRow =
+          '<div class="action-row">' +
+            '<button class="action-btn move' + (selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
+            '<button class="action-btn melee' + (selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
+            '<button class="action-btn cast' + (selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
+          '</div>';
+      }
+
+      const moveFlag = wiz.hasMoved ? '<span class="action-flag used">move</span>' : '<span class="action-flag available">move</span>';
+      const atkFlag = wiz.hasAttacked ? '<span class="action-flag used">attack</span>' : '<span class="action-flag available">attack</span>';
+
+      return (
+        '<div class="' + cardClasses + '">' +
+          '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
+            '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
+            '<div class="wizard-card-head">' +
+              '<div class="wizard-card-icon">' + iconSpan(wiz.element, ELEMENT_COLOR[wiz.element]) + '</div>' +
+              '<div>' +
+                '<div class="wizard-card-name">' + wiz.name + '</div>' +
+                '<div class="wizard-card-state">' + stateLabel + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="wizard-tables">' +
+              '<div class="wizard-table">' +
+                '<div class="wizard-table-row"><span class="label">attack</span><span class="value">' + wiz.meleeAttack + ' &middot; ' + wiz.castAttack + '</span></div>' +
+                '<div class="wizard-table-row"><span class="label">displace</span><span class="value">+' + wiz.meleeDisplacement + ' &middot; +' + wiz.castDisplacement + '</span></div>' +
+              '</div>' +
+              '<div class="wizard-table">' +
+                '<div class="wizard-table-row"><span class="label">health</span><span class="value">' + wiz.hp + '/' + wiz.maxHp + '</span></div>' +
+                '<div class="wizard-table-row"><span class="label">move</span><span class="value">' + wiz.moveRange + '</span></div>' +
+              '</div>' +
+            '</div>' +
+            (isSummoned ? '' : '<div class="wizard-action-flags">' + moveFlag + atkFlag + '</div>') +
+          '</button>' +
+          actionRow +
+        '</div>'
+      );
+    }).filter(Boolean).join('');
+
+    const placingHint = (placingWizardId && wizards[placingWizardId])
+      ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows to place ' + wizards[placingWizardId].name + '</div>'
+      : '';
+
+    return (
+      '<div class="panel">' +
+        placingHint +
+        (wizardCards ? (
+          '<div>' +
+            '<p class="panel-section-label">wizards</p>' +
+            '<div class="wizard-grid">' + wizardCards + '</div>' +
+          '</div>'
+        ) : '') +
+      '</div>'
+    );
+  }
+
+  function render() {
+    const app = document.getElementById('app');
+    app.classList.toggle('is-animating', animating);
+    app.classList.toggle('is-enemy-turn', currentTurn === 'enemy' && !gameOverResult);
+    const turnLabel = gameOverResult ? 'game over' : (currentTurn === 'player' ? 'your turn' : 'enemy turn');
+    app.innerHTML =
+      '<div class="topbar">' +
+        '<div class="topbar-mana">' + ICONS.mana + mana + '<span class="mana-max">/' + maxMana + '</span></div>' +
+        '<div class="topbar-round">round ' + turnCount + ' &middot; ' + turnLabel + '</div>' +
+        '<div class="topbar-end"><button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button></div>' +
+      '</div>' +
+      renderBoard() +
+      renderPanel() +
+      renderGameOverOverlay();
+
+    attachHandlers();
+  }
+
+  function renderGameOverOverlay() {
+    if (!gameOverResult) return '';
+    let heading, sub;
+    if (gameOverResult === 'draw') {
+      heading = 'draw';
+      sub = 'both nexuses fell at the same time';
+    } else if (gameOverResult === 'player') {
+      heading = 'you win';
+      sub = 'the enemy nexus fell, or their wizards were wiped out';
+    } else {
+      heading = 'you lose';
+      sub = 'your nexus fell, or your wizards were wiped out';
+    }
+    return (
+      '<div class="game-over-overlay">' +
+        '<div class="game-over-card">' +
+          '<div class="game-over-heading">' + heading + '</div>' +
+          '<div class="game-over-sub">' + sub + '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function attachHandlers() {
+    document.querySelectorAll('.tile').forEach(el => {
+      el.addEventListener('click', () => {
+        const row = parseInt(el.getAttribute('data-row'), 10);
+        const col = parseInt(el.getAttribute('data-col'), 10);
+        handleTileClick(row, col);
+      });
+    });
+
+    document.querySelectorAll('[data-roster-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        if (el.getAttribute('data-clickable') !== '1') return;
+        const id = el.getAttribute('data-roster-id');
+        const w = wizards[id];
+        if (!w) return;
+        if (w.state === 'summoned') pickWizardToSummon(id);
+        else if (w.state === 'onboard') selectWizard(id);
+      });
+    });
+
+    document.querySelectorAll('.action-btn').forEach(el => {
+      el.addEventListener('click', () => {
+        setAction(el.getAttribute('data-action'));
+      });
+    });
+
+    const endTurnBtn = document.getElementById('end-turn-btn');
+    if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);
+  }
+
+  render();
 })();
+
 
