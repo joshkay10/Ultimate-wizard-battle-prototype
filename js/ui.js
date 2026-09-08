@@ -101,18 +101,6 @@ function renderPanel() {
       + (isPicked ? ' placing' : '')
       + (isBoardSelected ? ' board-selected' : '');
 
-    let actionRow = '';
-    if (isBoardSelected) {
-      const moveDisabled = wiz.hasMoved;
-      const atkDisabled = wiz.hasAttacked;
-      actionRow =
-        '<div class="action-row">' +
-          '<button class="action-btn move' + (state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
-          '<button class="action-btn melee' + (state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
-          '<button class="action-btn cast' + (state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
-        '</div>';
-    }
-
     return (
       '<div class="' + cardClasses + '">' +
         '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
@@ -135,7 +123,6 @@ function renderPanel() {
             '</div>' +
           '</div>' +
         '</button>' +
-        actionRow +
       '</div>'
     );
   }).filter(Boolean).join('');
@@ -147,12 +134,32 @@ function renderPanel() {
   return (
     '<div class="panel">' +
       placingHint +
-      (wizardCards ? (
-        '<div>' +
-          '<p class="panel-section-label">wizards</p>' +
-          '<div class="wizard-grid">' + wizardCards + '</div>' +
-        '</div>'
-      ) : '') +
+      '<div>' +
+        (wizardCards ? '<p class="panel-section-label">wizards</p><div class="wizard-grid">' + wizardCards + '</div>' : '') +
+        renderActionRow() +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderActionRow() {
+  const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  const usable = !!(
+    selected &&
+    selected.state === 'onboard' &&
+    selected.team === 'player' &&
+    !state.placingWizardId &&
+    !state.animating &&
+    canAct()
+  );
+  const moveDisabled = !usable || selected.hasMoved;
+  const atkDisabled = !usable || selected.hasAttacked;
+
+  return (
+    '<div class="action-row">' +
+      '<button class="action-btn move' + (usable && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
+      '<button class="action-btn melee' + (usable && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
+      '<button class="action-btn cast' + (usable && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
     '</div>'
   );
 }

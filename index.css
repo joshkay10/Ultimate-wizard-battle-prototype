@@ -438,7 +438,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin-top: 2px;
+  margin-top: 10px;
 }
 .action-btn {
   display: flex;
@@ -456,7 +456,12 @@ html, body {
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .action-btn:active { transform: scale(0.97); }
+.action-btn:disabled:active { transform: none; }
 .action-btn svg { width: 15px; height: 15px; }
 .action-btn.active {
   border-color: var(--tile-selected-border);
