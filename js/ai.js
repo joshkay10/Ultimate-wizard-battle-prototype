@@ -1,20 +1,66 @@
 import { state, NEXUS } from './state.js';
-import { wizardAt, nexusAt, manhattan, getMoveTiles, getMeleeTiles, getCastTiles, pathBFS } from './board.js';
+import { wizardAt, nexusAt, manhattan, getMoveTiles, getMeleeTiles, getCastTiles, pathBFS, getEnemySummonTiles } from './board.js';
 import { resolveMeleeAttack, resolveCastAttack } from './combat.js';
 import { moveWizardAnimated } from './actions.js';
-import { sleep } from './util.js';
+import { sleep, shuffle } from './util.js';
+import { render } from './ui.js';
 
-// For each enemy wizard: attack if a target (nexus or player wizard) is already in range
-// (prefer the nexus when castable, since damaging it progresses the enemy's win condition),
-// otherwise move as close as possible toward the nearest threat. Deliberately simple —
-// no target prioritization beyond "nearest", no retreating, no planning ahead.
+// Enemy follows the same summon rules as the player: pay mana, place in their
+// back 3 rows, then existing onboard wizards attack or march.
 export async function runEnemyTurn() {
+  await enemySummonPhase();
+
   const enemyWizards = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.state === 'onboard');
   for (const wizard of enemyWizards) {
-    if (wizard.state !== 'onboard') continue; // may have died mid-turn from another enemy's friendly-fire-free logic; defensive
+    if (wizard.state !== 'onboard') continue;
     await runEnemyWizardTurn(wizard);
-    await sleep(300); // brief gap so each wizard's action reads as distinct rather than blurring together
+    await sleep(300);
   }
+}
+
+async function enemySummonPhase() {
+  while (true) {
+    const affordable = Object.values(state.wizards).filter(
+      w => w.team === 'enemy' && w.state === 'summoned' && state.enemyMana >= w.cost
+    );
+    if (!affordable.length) break;
+
+    const tile = pickEnemySummonTile();
+    if (!tile) break;
+
+    const wizard = shuffle(affordable)[0];
+    state.enemyMana -= wizard.cost;
+    wizard.state = 'onboard';
+    wizard.row = tile.row;
+    wizard.col = tile.col;
+    render();
+    await sleep(280);
+  }
+}
+
+function pickEnemySummonTile() {
+  const candidates = getEnemySummonTiles();
+  if (!candidates.length) return null;
+
+  const allies = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.state === 'onboard');
+  if (!allies.length) return candidates[Math.floor(Math.random() * candidates.length)];
+
+  let best = [];
+  let bestScore = -Infinity;
+  for (const tile of candidates) {
+    let nearest = Infinity;
+    allies.forEach(w => {
+      const d = manhattan(tile.row, tile.col, w.row, w.col);
+      if (d < nearest) nearest = d;
+    });
+    if (nearest > bestScore) {
+      bestScore = nearest;
+      best = [tile];
+    } else if (nearest === bestScore) {
+      best.push(tile);
+    }
+  }
+  return best[Math.floor(Math.random() * best.length)];
 }
 
 async function runEnemyWizardTurn(wizard) {
@@ -54,7 +100,6 @@ async function runEnemyWizardTurn(wizard) {
     if (target) {
       const moveTiles = getMoveTiles(wizard);
       if (moveTiles.length) {
-        // pick the reachable tile that minimizes remaining distance to the target
         let best = null;
         let bestDist = Infinity;
         for (const t of moveTiles) {
@@ -71,7 +116,6 @@ async function runEnemyWizardTurn(wizard) {
   }
 }
 
-// Nearest tile worth marching toward: the closest player wizard, or the player's nexus if none remain.
 function nearestThreatTile(fromWizard) {
   const playerWizards = Object.values(state.wizards).filter(w => w.team === 'player' && w.state === 'onboard');
   let nearest = null;

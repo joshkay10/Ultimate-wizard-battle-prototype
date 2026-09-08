@@ -24,9 +24,12 @@ export const state = {
   // Elemental trails left behind by attacks: keyed by "row,col" -> { element, turnsLeft }
   trails: {},
 
-  // Mana: starts at 0, max mana +1 each turn (capped 10), refilled to max on turn start
+  // Mana: starts at 0, max mana +1 each round (capped 10), refilled to max on turn start.
+  // Each team has its own pool so the enemy summons under the same rules.
   mana: 0,
-  maxMana: 0
+  maxMana: 0,
+  enemyMana: 0,
+  enemyMaxMana: 0
 };
 
 // Nexuses: fixed objects, block movement and summoning, cannot be selected

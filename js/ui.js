@@ -113,9 +113,6 @@ function renderPanel() {
         '</div>';
     }
 
-    const moveFlag = wiz.hasMoved ? '<span class="action-flag used">move</span>' : '<span class="action-flag available">move</span>';
-    const atkFlag = wiz.hasAttacked ? '<span class="action-flag used">attack</span>' : '<span class="action-flag available">attack</span>';
-
     return (
       '<div class="' + cardClasses + '">' +
         '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
@@ -137,7 +134,6 @@ function renderPanel() {
               '<div class="wizard-table-row"><span class="label">move</span><span class="value">' + wiz.moveRange + '</span></div>' +
             '</div>' +
           '</div>' +
-          (isSummoned ? '' : '<div class="wizard-action-flags">' + moveFlag + atkFlag + '</div>') +
         '</button>' +
         actionRow +
       '</div>'
