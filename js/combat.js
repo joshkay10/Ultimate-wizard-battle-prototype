@@ -1,9 +1,3 @@
-import { ICONS, ELEMENT_COLOR } from './constants.js';
-import { state } from './state.js';
-import { wizardAt, nexusAt, inBounds, isBlocked, layTrail } from './board.js';
-import { sleep } from './util.js';
-import { render } from './ui.js';
-
 // Direction unit vector from a straight line between two points (assumes same row or same col)
 function directionBetween(fromRow, fromCol, toRow, toCol) {
   return {
@@ -94,7 +88,7 @@ function flashTileElement(row, col, element, duration) {
   });
 }
 
-export async function resolveMeleeAttack(attacker, row, col) {
+async function resolveMeleeAttack(attacker, row, col) {
   if (attacker.state !== 'onboard' || attacker.row === null || attacker.hasAttacked) return;
   state.animating = true;
   render();
@@ -119,7 +113,7 @@ export async function resolveMeleeAttack(attacker, row, col) {
   render();
 }
 
-export async function resolveCastAttack(attacker, row, col) {
+async function resolveCastAttack(attacker, row, col) {
   if (attacker.state !== 'onboard' || attacker.row === null || attacker.hasAttacked) return;
   state.animating = true;
   render();

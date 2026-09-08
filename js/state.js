@@ -1,6 +1,4 @@
-import { BOARD_SIZE, CENTER } from './constants.js';
-
-export const state = {
+const state = {
   // wizards keyed by id: { id, name, element, hp, maxHp, moveRange, state: 'summoned'|'onboard'|'moving', row, col }
   wizards: {},
   nextId: 1,
@@ -34,7 +32,7 @@ export const state = {
 
 // Nexuses: fixed objects, block movement and summoning, cannot be selected
 // Row labels A..I map to 0-indexed rows 0..8; column 5 -> 0-indexed col 4
-export const NEXUS = {
+const NEXUS = {
   mine: { row: BOARD_SIZE - 1, col: CENTER, hp: 20, maxHp: 20 },   // row I, col 5
   enemy: { row: 0, col: CENTER, hp: 20, maxHp: 20 }                // row A, col 5
 };

@@ -1,45 +1,42 @@
-import { BOARD_SIZE, SUMMON_ROW_START, ENEMY_ROW_END } from './constants.js';
-import { state, NEXUS } from './state.js';
-
-export function layTrail(row, col, element) {
+function layTrail(row, col, element) {
   state.trails[row + ',' + col] = { element, turnsLeft: 1 };
 }
 
-export function trailAt(row, col) {
+function trailAt(row, col) {
   return state.trails[row + ',' + col] || null;
 }
 
-export function tickTrails() {
+function tickTrails() {
   Object.keys(state.trails).forEach(key => {
     state.trails[key].turnsLeft -= 1;
     if (state.trails[key].turnsLeft <= 0) delete state.trails[key];
   });
 }
 
-export function nexusAt(row, col) {
+function nexusAt(row, col) {
   if (NEXUS.mine.row === row && NEXUS.mine.col === col) return NEXUS.mine;
   if (NEXUS.enemy.row === row && NEXUS.enemy.col === col) return NEXUS.enemy;
   return null;
 }
 
-export function wizardAt(row, col) {
+function wizardAt(row, col) {
   return Object.values(state.wizards).find(w => w.state === 'onboard' && w.row === row && w.col === col);
 }
 
 // A tile is blocked (can't summon onto it, can't move through/onto it) if it holds a wizard or a nexus
-export function isBlocked(row, col) {
+function isBlocked(row, col) {
   return !!wizardAt(row, col) || !!nexusAt(row, col);
 }
 
-export function isSummonTile(row, col) {
+function isSummonTile(row, col) {
   return row >= SUMMON_ROW_START && row < BOARD_SIZE;
 }
 
-export function isEnemySummonTile(row, col) {
+function isEnemySummonTile(row, col) {
   return row >= 0 && row < ENEMY_ROW_END;
 }
 
-export function getEnemySummonTiles() {
+function getEnemySummonTiles() {
   const tiles = [];
   for (let r = 0; r < ENEMY_ROW_END; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
@@ -49,16 +46,16 @@ export function getEnemySummonTiles() {
   return tiles;
 }
 
-export function inBounds(r, c) {
+function inBounds(r, c) {
   return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
 }
 
-export function manhattan(r1, c1, r2, c2) {
+function manhattan(r1, c1, r2, c2) {
   return Math.abs(r1 - r2) + Math.abs(c1 - c2);
 }
 
 // BFS move range respecting obstacles (other wizards block passage)
-export function getMoveTiles(wizard) {
+function getMoveTiles(wizard) {
   const result = [];
   const visited = new Set([wizard.row + ',' + wizard.col]);
   let frontier = [{ row: wizard.row, col: wizard.col, dist: 0 }];
@@ -83,7 +80,7 @@ export function getMoveTiles(wizard) {
   return result;
 }
 
-export function getMeleeTiles(wizard) {
+function getMeleeTiles(wizard) {
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   const result = [];
   for (const [dr, dc] of dirs) {
@@ -94,7 +91,7 @@ export function getMeleeTiles(wizard) {
 }
 
 // Cast: line in each of 4 cardinal directions out to range 4 (stops at first blocker, inclusive of blocker tile as far as it can reach)
-export function getCastTiles(wizard) {
+function getCastTiles(wizard) {
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   const result = [];
   for (const [dr, dc] of dirs) {
@@ -108,7 +105,7 @@ export function getCastTiles(wizard) {
   return result;
 }
 
-export function pathBFS(wizard, targetRow, targetCol) {
+function pathBFS(wizard, targetRow, targetCol) {
   // returns array of {row, col} steps from current to target (exclusive of start)
   const start = { row: wizard.row, col: wizard.col };
   const visited = new Set([start.row + ',' + start.col]);

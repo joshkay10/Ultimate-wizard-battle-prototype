@@ -1,8 +1,8 @@
-export function sleep(ms) {
+function sleep(ms) {
   return new Promise(res => setTimeout(res, ms));
 }
 
-export function shuffle(arr) {
+function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

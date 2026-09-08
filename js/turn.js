@@ -1,17 +1,11 @@
-import { MANA_CAP } from './constants.js';
-import { state, NEXUS } from './state.js';
-import { tickTrails } from './board.js';
-import { runEnemyTurn } from './ai.js';
-import { render } from './ui.js';
-
-export function canAct() {
+function canAct() {
   return !state.gameOverResult && state.currentTurn === 'player';
 }
 
 // Returns 'player' | 'enemy' | 'draw' if the game has just ended, otherwise null.
 // Checked at the end of each side's turn. Neither condition can trigger on a team's
 // very first turn (both sides get one turn to summon before the board-wipe condition applies).
-export function checkWinLoss() {
+function checkWinLoss() {
   const mineDead = NEXUS.mine.hp <= 0;
   const enemyDead = NEXUS.enemy.hp <= 0;
   if (mineDead && enemyDead) return 'draw';
@@ -31,7 +25,7 @@ function teamHasPresence(team) {
   );
 }
 
-export function resetActionFlagsFor(team) {
+function resetActionFlagsFor(team) {
   Object.values(state.wizards).forEach(w => {
     if (w.state === 'onboard' && w.team === team) {
       w.hasMoved = false;
@@ -40,7 +34,7 @@ export function resetActionFlagsFor(team) {
   });
 }
 
-export function endTurn() {
+function endTurn() {
   if (state.animating || state.gameOverResult) return;
 
   // --- Resolve the end of the player's turn ---

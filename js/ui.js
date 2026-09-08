@@ -1,19 +1,3 @@
-import { ICONS, ELEMENT_COLOR, WIZARD_TYPES, BOARD_SIZE, SUMMON_ROW_START } from './constants.js';
-import { state, NEXUS } from './state.js';
-import {
-  wizardAt,
-  nexusAt,
-  isBlocked,
-  isSummonTile,
-  trailAt,
-  getMoveTiles,
-  getMeleeTiles,
-  getCastTiles
-} from './board.js';
-import { ROSTER } from './units.js';
-import { canAct, endTurn } from './turn.js';
-import { handleTileClick, pickWizardToSummon, selectWizard, setAction } from './actions.js';
-
 function iconSpan(name, color) {
   return '<span style="color:' + color + '; display:flex; align-items:center; justify-content:center;">' + ICONS[name] + '</span>';
 }
@@ -152,8 +136,8 @@ function renderActionRow() {
     !state.animating &&
     canAct()
   );
-  const moveDisabled = !usable || selected.hasMoved;
-  const atkDisabled = !usable || selected.hasAttacked;
+  const moveDisabled = !usable || !selected || selected.hasMoved;
+  const atkDisabled = !usable || !selected || selected.hasAttacked;
 
   return (
     '<div class="action-row">' +
@@ -217,7 +201,7 @@ function attachHandlers() {
   if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);
 }
 
-export function render() {
+function render() {
   const app = document.getElementById('app');
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);

@@ -1,12 +1,9 @@
-import { WIZARD_TYPES } from './constants.js';
-import { state } from './state.js';
-
-export const ROSTER = [
+const ROSTER = [
   { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' },
   { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' }
 ];
 
-export function createWizard(typeId, team) {
+function createWizard(typeId, team) {
   const type = WIZARD_TYPES.find(t => t.id === typeId);
   const id = 'w' + (state.nextId++);
   state.wizards[id] = {
@@ -31,7 +28,7 @@ export function createWizard(typeId, team) {
   return id;
 }
 
-export function seedRosters() {
+function seedRosters() {
   ROSTER.forEach(r => createWizard(r.typeId, 'player'));
   ROSTER.forEach(r => createWizard(r.typeId, 'enemy'));
 }

@@ -1,13 +1,6 @@
-import { state, NEXUS } from './state.js';
-import { wizardAt, nexusAt, manhattan, getMoveTiles, getMeleeTiles, getCastTiles, pathBFS, getEnemySummonTiles } from './board.js';
-import { resolveMeleeAttack, resolveCastAttack } from './combat.js';
-import { moveWizardAnimated } from './actions.js';
-import { sleep, shuffle } from './util.js';
-import { render } from './ui.js';
-
 // Enemy follows the same summon rules as the player: pay mana, place in their
 // back 3 rows, then existing onboard wizards attack or march.
-export async function runEnemyTurn() {
+async function runEnemyTurn() {
   await enemySummonPhase();
 
   const enemyWizards = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.state === 'onboard');

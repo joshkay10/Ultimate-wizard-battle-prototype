@@ -1,19 +1,4 @@
-import { state } from './state.js';
-import {
-  wizardAt,
-  isBlocked,
-  isSummonTile,
-  getMoveTiles,
-  getMeleeTiles,
-  getCastTiles,
-  pathBFS
-} from './board.js';
-import { resolveMeleeAttack, resolveCastAttack } from './combat.js';
-import { canAct } from './turn.js';
-import { sleep } from './util.js';
-import { render } from './ui.js';
-
-export function pickWizardToSummon(id) {
+function pickWizardToSummon(id) {
   if (state.animating || !canAct()) return;
   const wizard = state.wizards[id];
   if (!wizard || wizard.state !== 'summoned') return;
@@ -23,7 +8,7 @@ export function pickWizardToSummon(id) {
   render();
 }
 
-export function placeWizard(row, col) {
+function placeWizard(row, col) {
   if (!canAct()) return;
   if (!state.placingWizardId) return;
   if (!isSummonTile(row, col)) return;
@@ -39,7 +24,7 @@ export function placeWizard(row, col) {
   render();
 }
 
-export function selectWizard(id) {
+function selectWizard(id) {
   if (state.animating || !canAct()) return;
   const wizard = state.wizards[id];
   if (!wizard || wizard.state !== 'onboard' || wizard.team !== 'player') return;
@@ -52,19 +37,19 @@ export function selectWizard(id) {
   render();
 }
 
-export function deselect() {
+function deselect() {
   state.selectedWizardId = null;
   state.placingWizardId = null;
   render();
 }
 
-export function setAction(action) {
+function setAction(action) {
   if (!state.selectedWizardId || state.animating || !canAct()) return;
   state.selectedAction = action;
   render();
 }
 
-export async function moveWizardAnimated(wizard, path) {
+async function moveWizardAnimated(wizard, path) {
   state.animating = true;
   for (const step of path) {
     render(); // ensure current position rendered
@@ -89,7 +74,7 @@ export async function moveWizardAnimated(wizard, path) {
   render();
 }
 
-export function handleTileClick(row, col) {
+function handleTileClick(row, col) {
   if (state.animating || !canAct()) return;
 
   if (state.placingWizardId) {
