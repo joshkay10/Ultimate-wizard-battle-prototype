@@ -180,24 +180,28 @@ async function playCastSpell(ev) {
   const dist = Math.hypot(x1 - x0, y1 - y0);
 
   boardFx.charge = { id: ev.attackerId, t: 0, element: ev.element };
-  await animate(420, function (t) {
+  spawnBurst(x0, y0, color, 12, 2.4);
+  ensureFxLoop();
+  await animate(480, function (t) {
     boardFx.charge.t = t;
-    boardFx.popScale[ev.attackerId] = 1 + t * 0.18;
-    if (Math.random() < 0.65) {
+    boardFx.popScale[ev.attackerId] = 1 + t * 0.3;
+    boardFx.screenFlash = Math.max(boardFx.screenFlash, t * 0.16);
+    if (Math.random() < 0.9) {
       const a = Math.random() * Math.PI * 2;
-      const d = 32 * (1 - t * 0.7);
+      const d = 36 * (1 - t * 0.65);
       boardFx.particles.push({
         x: x0 + Math.cos(a) * d,
         y: y0 + Math.sin(a) * d,
-        vx: -Math.cos(a) * 1.4,
-        vy: -Math.sin(a) * 1.4,
-        life: 0.75,
+        vx: -Math.cos(a) * 1.6,
+        vy: -Math.sin(a) * 1.6,
+        life: 0.8,
         color: color,
-        size: 2 + Math.random() * 2
+        size: 2.4 + Math.random() * 2.4
       });
     }
     ensureFxLoop();
   });
+  await sleep(140);
 
   boardFx.stream = { x0: x0, y0: y0, x1: x1, y1: y1, head: 0, element: ev.element, fade: 0 };
   const travel = 280 + dist * 0.7;

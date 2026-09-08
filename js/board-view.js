@@ -295,13 +295,16 @@ function drawChargeGlow(ctx, box, element, t) {
   const color = BOARD_COLORS[element] || '#fff';
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.25 + t * 0.55;
-  ctx.lineWidth = 3;
+  ctx.globalAlpha = 0.45 + t * 0.55;
+  ctx.lineWidth = 4.5;
   ctx.beginPath();
-  ctx.arc(cx, cy, box.s * (0.32 + t * 0.18), 0, Math.PI * 2);
+  ctx.arc(cx, cy, box.s * (0.38 + t * 0.28), 0, Math.PI * 2);
   ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = t * 0.22;
+  ctx.fill();
   ctx.fillStyle = color;
-  ctx.globalAlpha = t * 0.18;
+  ctx.globalAlpha = t * 0.28;
   ctx.fill();
   ctx.restore();
 }
