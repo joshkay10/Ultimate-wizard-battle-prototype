@@ -116,4 +116,297 @@
     return id;
   }
 
+  // seed roster: one of each element available to summon, but allow multiple summons of same type up to 2 each for team feel
+  const ROSTER = [
+    { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' },
+    { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' }
+  ];
+  ROSTER.forEach(r => createWizard(r.typeId, 'player'));
+
+  // Place 3 random enemy wizards directly on the board, spread across the enemy zone (top 3 rows)
+  const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  (function spawnRandomEnemies() {
+    const occupied = new Set();
+    const elementPool = shuffle(['fire', 'ice', 'wind']);
+
+    // Split the 9 columns into 3 bands so each of the 3 enemies lands in a different third
+    // of the row, then pick a random free row+column within that band — avoids the visual
+    // clustering that pure uniform-random-across-all-tiles can produce.
+    const bandWidth = Math.ceil(BOARD_SIZE / 3);
+    const bands = shuffle([0, 1, 2]);
+
+    for (let i = 0; i < 3; i++) {
+      const typeId = elementPool[i];
+      const bandIndex = bands[i];
+      const colStart = bandIndex * bandWidth;
+      const colEnd = Math.min(BOARD_SIZE, colStart + bandWidth);
+
+      const candidates = [];
+      for (let r = 0; r < ENEMY_ROW_END; r++) {
+        for (let c = colStart; c < colEnd; c++) {
+          const key = r + ',' + c;
+          if (!occupied.has(key) && !nexusAt(r, c)) candidates.push({ row: r, col: c });
+        }
+      }
+      if (!candidates.length) continue; // band full/blocked, skip rather than crash
+
+      const tile = candidates[Math.floor(Math.random() * candidates.length)];
+      const id = createWizard(typeId, 'enemy');
+      const w = wizards[id];
+      w.state = 'onboard';
+      w.row = tile.row;
+      w.col = tile.col;
+      occupied.add(tile.row + ',' + tile.col);
+    }
+  })();
+
+  // Turn 1 starts with 1 mana per the ruleset (mana progression normally happens on endTurn)
+  maxMana = 1;
+  mana = 1;
+
+  // ---------- Helpers ----------
+  function wizardAt(row, col) {
+    return Object.values(wizards).find(w => w.state === 'onboard' && w.row === row && w.col === col);
+  }
+
+  function inBounds(r, c) {
+    return r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+  }
+
+  function manhattan(r1, c1, r2, c2) {
+    return Math.abs(r1 - r2) + Math.abs(c1 - c2);
+  }
+
+  // BFS move range respecting obstacles (other wizards block passage)
+  function getMoveTiles(wizard) {
+    const result = [];
+    const visited = new Set([wizard.row + ',' + wizard.col]);
+    let frontier = [{ row: wizard.row, col: wizard.col, dist: 0 }];
+    while (frontier.length) {
+      const next = [];
+      for (const cell of frontier) {
+        if (cell.dist >= wizard.moveRange) continue;
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of dirs) {
+          const nr = cell.row + dr, nc = cell.col + dc;
+          if (!inBounds(nr, nc)) continue;
+          const key = nr + ',' + nc;
+          if (visited.has(key)) continue;
+          if (isBlocked(nr, nc)) continue; // blocked by wizard or nexus
+          visited.add(key);
+          result.push({ row: nr, col: nc });
+          next.push({ row: nr, col: nc, dist: cell.dist + 1 });
+        }
+      }
+      frontier = next;
+    }
+    return result;
+  }
+
+  function getMeleeTiles(wizard) {
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    const result = [];
+    for (const [dr, dc] of dirs) {
+      const nr = wizard.row + dr, nc = wizard.col + dc;
+      if (inBounds(nr, nc)) result.push({ row: nr, col: nc });
+    }
+    return result;
+  }
+
+  // Cast: line in each of 4 cardinal directions out to range 4 (stops at first blocker, inclusive of blocker tile as far as it can reach)
+  function getCastTiles(wizard) {
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    const result = [];
+    for (const [dr, dc] of dirs) {
+      for (let dist = 1; dist <= 4; dist++) {
+        const nr = wizard.row + dr * dist, nc = wizard.col + dc * dist;
+        if (!inBounds(nr, nc)) break;
+        result.push({ row: nr, col: nc });
+        if (isBlocked(nr, nc)) break; // line stops at first occupied tile (wizard or nexus)
+      }
+    }
+    return result;
+  }
+
+  function pathBFS(wizard, targetRow, targetCol) {
+    // returns array of {row, col} steps from current to target (exclusive of start)
+    const start = { row: wizard.row, col: wizard.col };
+    const visited = new Set([start.row + ',' + start.col]);
+    const prev = {};
+    let frontier = [start];
+    let found = false;
+    let steps = 0;
+    while (frontier.length && steps <= wizard.moveRange && !found) {
+      const next = [];
+      for (const cell of frontier) {
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of dirs) {
+          const nr = cell.row + dr, nc = cell.col + dc;
+          if (!inBounds(nr, nc)) continue;
+          const key = nr + ',' + nc;
+          if (visited.has(key)) continue;
+          if (isBlocked(nr, nc)) continue;
+          visited.add(key);
+          prev[key] = cell;
+          next.push({ row: nr, col: nc });
+          if (nr === targetRow && nc === targetCol) { found = true; break; }
+        }
+        if (found) break;
+      }
+      frontier = next;
+      steps++;
+    }
+    if (!found) return null;
+    // reconstruct
+    const path = [];
+    let cur = { row: targetRow, col: targetCol };
+    while (!(cur.row === start.row && cur.col === start.col)) {
+      path.unshift(cur);
+      cur = prev[cur.row + ',' + cur.col];
+    }
+    return path;
+  }
+
+  // ---------- Actions ----------
+  // Player-initiated actions are only valid when the game is ongoing and it's the player's turn.
+  function canAct() {
+    return !gameOverResult && currentTurn === 'player';
+  }
+
+  function pickWizardToSummon(id) {
+    if (animating || !canAct()) return;
+    const wizard = wizards[id];
+    if (!wizard || wizard.state !== 'summoned') return;
+    if (mana < wizard.cost) return; // can't afford — ignore the tap
+    selectedWizardId = null; // picking a summon clears any board selection
+    placingWizardId = (placingWizardId === id) ? null : id;
+    render();
+  }
+
+  function placeWizard(row, col) {
+    if (!canAct()) return;
+    if (!placingWizardId) return;
+    if (!isSummonTile(row, col)) return;
+    if (isBlocked(row, col)) return; // occupied by a wizard or the nexus
+    const wizard = wizards[placingWizardId];
+    if (!wizard || wizard.state !== 'summoned') return;
+    if (mana < wizard.cost) { placingWizardId = null; render(); return; } // safety net, shouldn't happen
+    mana -= wizard.cost;
+    wizard.state = 'onboard';
+    wizard.row = row;
+    wizard.col = col;
+    placingWizardId = null;
+    render();
+  }
+
+  function selectWizard(id) {
+    if (animating || !canAct()) return;
+    const wizard = wizards[id];
+    if (!wizard || wizard.state !== 'onboard' || wizard.team !== 'player') return;
+    if (selectedWizardId === id) {
+      selectedWizardId = null;
+    } else {
+      selectedWizardId = id;
+      selectedAction = 'move';
+    }
+    render();
+  }
+
+  function deselect() {
+    selectedWizardId = null;
+    placingWizardId = null;
+    render();
+  }
+
+  function setAction(action) {
+    if (!selectedWizardId || animating || !canAct()) return;
+    selectedAction = action;
+    render();
+  }
+
+  async function moveWizardAnimated(wizard, path) {
+    animating = true;
+    for (const step of path) {
+      render(); // ensure current position rendered
+      const tokenEl = document.querySelector('.wizard-token[data-id="' + wizard.id + '"]');
+      if (tokenEl) {
+        tokenEl.classList.add('lifted');
+        await sleep(100);
+      }
+      wizard.row = step.row;
+      wizard.col = step.col;
+      render();
+      const movedEl = document.querySelector('.wizard-token[data-id="' + wizard.id + '"]');
+      if (movedEl) {
+        movedEl.classList.add('lifted');
+        await sleep(10);
+        movedEl.classList.remove('lifted');
+      }
+      await sleep(90);
+    }
+    wizard.hasMoved = true;
+    animating = false;
+    render();
+  }
+
+  function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+  function handleTileClick(row, col) {
+    if (animating || !canAct()) return;
+
+    if (placingWizardId) {
+      placeWizard(row, col);
+      return;
+    }
+
+    if (!selectedWizardId) {
+      // clicking an occupied tile selects that wizard
+      const occ = wizardAt(row, col);
+      if (occ) selectWizard(occ.id);
+      return;
+    }
+    const wizard = wizards[selectedWizardId];
+    if (!wizard) return;
+
+    // Try to act first; if the tile isn't a valid target for the current mode, fall back to
+    // reselecting whatever wizard is standing there (lets you switch wizards without deselecting
+    // first, no matter which action mode you're currently in).
+    const reselectOrBail = () => {
+      const occ = wizardAt(row, col);
+      if (occ && occ.id !== wizard.id) selectWizard(occ.id);
+    };
+
+    if (selectedAction === 'move') {
+      if (wizard.hasMoved) { reselectOrBail(); return; }
+      const moveTiles = getMoveTiles(wizard);
+      const isValid = moveTiles.some(t => t.row === row && t.col === col);
+      if (!isValid) { reselectOrBail(); return; }
+      const path = pathBFS(wizard, row, col);
+      if (path) moveWizardAnimated(wizard, path);
+    } else if (selectedAction === 'melee') {
+      if (wizard.hasAttacked) { reselectOrBail(); return; }
+      const tiles = getMeleeTiles(wizard);
+      const isValid = tiles.some(t => t.row === row && t.col === col);
+      if (!isValid) { reselectOrBail(); return; }
+      resolveMeleeAttack(wizard, row, col);
+    } else if (selectedAction === 'cast') {
+      if (wizard.hasAttacked) { reselectOrBail(); return; }
+      const tiles = getCastTiles(wizard);
+      const isValid = tiles.some(t => t.row === row && t.col === col);
+      if (!isValid) { reselectOrBail(); return; }
+      resolveCastAttack(wizard, row, col);
+    }
+  }
+
 })();
+
