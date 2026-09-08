@@ -63,20 +63,20 @@ function handleTileClick(row, col) {
   };
 
   if (state.selectedAction === 'move') {
-    if (wizard.hasMoved) { reselectOrBail(); return; }
+    if (!canMove(wizard)) { reselectOrBail(); return; }
     const moveTiles = getMoveTiles(wizard);
     const isValid = moveTiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     const path = pathBFS(wizard, row, col);
     if (path) present(simMove(wizard, path));
   } else if (state.selectedAction === 'melee') {
-    if (wizard.hasAttacked) { reselectOrBail(); return; }
+    if (!canAttack(wizard)) { reselectOrBail(); return; }
     const tiles = getMeleeTiles(wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     resolveMeleeAttack(wizard, row, col);
   } else if (state.selectedAction === 'cast') {
-    if (wizard.hasAttacked) { reselectOrBail(); return; }
+    if (!canAttack(wizard)) { reselectOrBail(); return; }
     const tiles = getCastTiles(wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }

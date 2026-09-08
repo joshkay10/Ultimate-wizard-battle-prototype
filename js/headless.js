@@ -73,6 +73,18 @@ async function runSimSelfTests() {
   assert(moves.length > 0, 'move range should be open');
   assert(!moves.some(t => t.row === NEXUS.mine.row && t.col === NEXUS.mine.col), 'move range should not include the nexus');
 
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mana = 10;
+  const sick = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const placed = simSummon(sick, 7, 3, 'player');
+  assert(placed.length === 1, 'summon should succeed');
+  assert(sick.summoningSickness, 'new summon should have sickness');
+  assert(simMove(sick, [{ row: 6, col: 3 }]).length === 0, 'sick wizard cannot move');
+  assert(simAttack(sick, 6, 3, 'melee').length === 0, 'sick wizard cannot attack');
+  resetActionFlagsFor('player');
+  assert(!sick.summoningSickness && canMove(sick) && canAttack(sick), 'sickness clears next turn');
+
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
   assert(m1.result === m2.result, 'same seed should same winner (' + m1.result + ' vs ' + m2.result + ')');

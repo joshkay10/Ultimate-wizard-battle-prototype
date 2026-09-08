@@ -90,8 +90,17 @@ function resetActionFlagsFor(team) {
     if (w.state === 'onboard' && w.team === team) {
       w.hasMoved = false;
       w.hasAttacked = false;
+      w.summoningSickness = false;
     }
   });
+}
+
+function canMove(wizard) {
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness);
+}
+
+function canAttack(wizard) {
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness);
 }
 
 function directionBetween(fromRow, fromCol, toRow, toCol) {
@@ -173,6 +182,9 @@ function simSummon(wizard, row, col, team) {
   wizard.state = 'onboard';
   wizard.row = row;
   wizard.col = col;
+  wizard.hasMoved = true;
+  wizard.hasAttacked = true;
+  wizard.summoningSickness = true;
   if (team === 'player') state.placingWizardId = null;
   return [{
     type: 'summon',
@@ -185,7 +197,7 @@ function simSummon(wizard, row, col, team) {
 }
 
 function simMove(wizard, path) {
-  if (!wizard || wizard.state !== 'onboard' || wizard.hasMoved) return [];
+  if (!canMove(wizard)) return [];
   if (!path || !path.length) return [];
   const from = { row: wizard.row, col: wizard.col };
   const last = path[path.length - 1];
@@ -196,7 +208,7 @@ function simMove(wizard, path) {
 }
 
 function simAttack(attacker, row, col, kind) {
-  if (!attacker || attacker.state !== 'onboard' || attacker.row === null || attacker.hasAttacked) return [];
+  if (!canAttack(attacker) || attacker.row === null) return [];
   const legal = kind === 'cast' ? getCastTiles(attacker) : getMeleeTiles(attacker);
   if (!legal.some(t => t.row === row && t.col === col)) return [];
 

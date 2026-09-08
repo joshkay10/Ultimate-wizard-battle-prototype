@@ -56,7 +56,7 @@ function pickSummonTile(team) {
 
 function teamWizardAct(wizard, team) {
   const events = [];
-  if (!wizard.hasAttacked) {
+  if (canAttack(wizard)) {
     const meleeTiles = getMeleeTiles(wizard);
     const castTiles = getCastTiles(wizard);
     const foeNexus = foeNexusOf(team);
@@ -79,7 +79,7 @@ function teamWizardAct(wizard, team) {
     if (castFoeTile) return simAttack(wizard, castFoeTile.row, castFoeTile.col, 'cast');
   }
 
-  if (!wizard.hasMoved) {
+  if (canMove(wizard)) {
     const target = nearestThreatTile(wizard, team);
     if (target) {
       const moveTiles = getMoveTiles(wizard);

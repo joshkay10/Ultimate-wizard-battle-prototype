@@ -11,7 +11,9 @@ const boardFx = {
   screenFlash: 0,
   popScale: {},
   fade: {},
-  lungeReturn: null
+  lungeReturn: null,
+  stream: null,
+  charge: null
 };
 
 const BOARD_COLORS = {
@@ -98,13 +100,13 @@ function highlightSet() {
       }
     }
   } else if (selectedWizard && !state.animating) {
-    if (state.selectedAction === 'move' && !selectedWizard.hasMoved) {
+    if (state.selectedAction === 'move' && canMove(selectedWizard)) {
       return { tiles: getMoveTiles(selectedWizard), kind: 'move' };
     }
-    if (state.selectedAction === 'melee' && !selectedWizard.hasAttacked) {
+    if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
       return { tiles: getMeleeTiles(selectedWizard), kind: 'melee' };
     }
-    if (state.selectedAction === 'cast' && !selectedWizard.hasAttacked) {
+    if (state.selectedAction === 'cast' && canAttack(selectedWizard)) {
       return { tiles: getCastTiles(selectedWizard), kind: 'cast' };
     }
   }
@@ -224,6 +226,84 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(wizard.hp), cx, cy + radius * 0.52);
+}
+
+function drawStream(ctx) {
+  const s = boardFx.stream;
+  if (!s) return;
+  const fade = s.fade != null ? 1 - s.fade : 1;
+  const t = s.head;
+  const x = s.x0 + (s.x1 - s.x0) * t;
+  const y = s.y0 + (s.y1 - s.y0) * t;
+  const color = BOARD_COLORS[s.element] || '#fff';
+  const now = performance.now() / 90;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.22 * fade;
+  ctx.lineWidth = 18;
+  ctx.beginPath();
+  ctx.moveTo(s.x0, s.y0);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.55 * fade;
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.moveTo(s.x0, s.y0);
+  const dx = s.x1 - s.x0;
+  const dy = s.y1 - s.y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const steps = 12;
+  for (let i = 1; i <= steps; i++) {
+    const u = (i / steps) * t;
+    const wobble = Math.sin(u * 18 + now) * 3.5 * (0.4 + u);
+    ctx.lineTo(s.x0 + dx * u + nx * wobble, s.y0 + dy * u + ny * wobble);
+  }
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.95 * fade;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.moveTo(s.x0, s.y0);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawChargeGlow(ctx, box, element, t) {
+  const cx = box.x + box.s / 2;
+  const cy = box.y + box.s / 2;
+  const color = BOARD_COLORS[element] || '#fff';
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.25 + t * 0.55;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, box.s * (0.32 + t * 0.18), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = t * 0.18;
+  ctx.fill();
+  ctx.restore();
 }
 
 function spawnBurst(cx, cy, color, n, speed) {
@@ -351,6 +431,9 @@ function drawBoard() {
     const scale = boardFx.popScale[wizard.id] || 1;
     const flashBox = boardFx.flash ? cellRect(layout, boardFx.flash.row, boardFx.flash.col) : null;
     const flashHere = !!(flashBox && Math.abs(box.x - flashBox.x) < 1 && Math.abs(box.y - flashBox.y) < 1);
+    if (boardFx.charge && boardFx.charge.id === wizard.id) {
+      drawChargeGlow(ctx, box, boardFx.charge.element, boardFx.charge.t);
+    }
     ctx.save();
     if (boardFx.fade[wizard.id] != null) ctx.globalAlpha = boardFx.fade[wizard.id];
     drawTokenAt(ctx, box, wizard, wizard.id === state.selectedWizardId, flashHere, scale);
@@ -378,6 +461,7 @@ function drawBoard() {
     ctx.restore();
   });
 
+  if (boardFx.stream) drawStream(ctx);
   if (boardFx.projectile) {
     const p = boardFx.projectile;
     ctx.save();
@@ -432,13 +516,14 @@ function drawBoard() {
 
   boardFx.popups.forEach(p => {
     const b = cellRect(layout, p.row, p.col);
+    const punch = 1 + (1 - p.t) * 0.28;
     ctx.save();
     ctx.globalAlpha = 1 - p.t;
     ctx.fillStyle = BOARD_COLORS.fire;
-    ctx.font = '800 ' + Math.max(13, b.s * 0.3) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.font = '800 ' + Math.max(14, b.s * 0.32 * punch) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.text, b.x + b.s / 2, b.y + b.s * 0.22 - p.t * 16);
+    ctx.fillText(p.text, b.x + b.s / 2, b.y + b.s * 0.18 - p.t * 18);
     ctx.restore();
   });
 

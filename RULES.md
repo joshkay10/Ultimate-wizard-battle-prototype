@@ -20,9 +20,9 @@ A two-player turn game on a 9×9 grid. Destroy the enemy nexus, or wipe their wi
 
 On your turn you may, in any order:
 
-1. **Summon** — pay a wizard’s cost, place it in your back 3 rows (not on a nexus or occupied tile).
-2. **Move** — each onboard wizard may move once, up to its move range. Other wizards and nexuses block the path.
-3. **Attack** — each onboard wizard may attack once, melee or cast.
+1. **Summon** — pay a wizard’s cost, place it in your back 3 rows (not on a nexus or occupied tile). **Summoning sickness:** it cannot move or attack the turn it is placed.
+2. **Move** — each onboard wizard that is not sick and has not moved may move once, up to its move range. Other wizards and nexuses block the path.
+3. **Attack** — each onboard wizard that is not sick and has not attacked may attack once, melee or cast.
 4. **End turn** — the other player takes their turn.
 
 ## Combat

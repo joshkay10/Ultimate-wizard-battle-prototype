@@ -34,10 +34,12 @@ function renderPanel() {
     const isSummoned = wiz.state === 'summoned';
     const affordable = state.mana >= wiz.cost;
     const clickable = isSummoned ? affordable : true;
+    const sick = !isSummoned && !!wiz.summoningSickness;
 
-    const stateLabel = isSummoned ? 'summoned' : 'on board';
+    const stateLabel = isSummoned ? 'summoned' : (sick ? 'summoning sickness' : 'on board');
     const cardClasses = 'wizard-card'
-      + (isSummoned ? ' summoned' : '')
+      + (isSummoned ? ' summoned ' + wiz.element : '')
+      + (sick ? ' sick' : '')
       + (isPicked ? ' placing' : '')
       + (isBoardSelected ? ' board-selected' : '');
 
@@ -87,14 +89,14 @@ function renderActionRow() {
     !state.animating &&
     canAct()
   );
-  const moveDisabled = !usable || !selected || selected.hasMoved;
-  const atkDisabled = !usable || !selected || selected.hasAttacked;
+  const moveDisabled = !usable || !selected || !canMove(selected);
+  const atkDisabled = !usable || !selected || !canAttack(selected);
 
   return (
     '<div class="action-row">' +
-      '<button class="action-btn move' + (usable && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
-      '<button class="action-btn melee' + (usable && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
-      '<button class="action-btn cast' + (usable && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
+      '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
+      '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
+      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
   );

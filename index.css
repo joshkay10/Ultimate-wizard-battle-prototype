@@ -242,6 +242,16 @@ html, body {
   border-color: var(--tile-selected-border);
   background: var(--tile-selected);
 }
+.wizard-card.summoned .wizard-card-hit {
+  border-width: 2px;
+  background: #fff;
+}
+.wizard-card.summoned.fire .wizard-card-hit { border-color: var(--fire); }
+.wizard-card.summoned.ice .wizard-card-hit { border-color: var(--ice); }
+.wizard-card.summoned.wind .wizard-card-hit { border-color: var(--wind); }
+.wizard-card.sick .wizard-card-hit {
+  border: 2px dashed var(--text-faint);
+}
 .wizard-card.dead .wizard-card-hit {
   opacity: 0.4;
   cursor: default;

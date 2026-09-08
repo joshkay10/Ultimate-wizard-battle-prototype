@@ -23,7 +23,8 @@ function createWizard(typeId, team) {
     row: null,
     col: null,
     hasMoved: false,
-    hasAttacked: false
+    hasAttacked: false,
+    summoningSickness: false
   };
   return id;
 }

@@ -49,6 +49,8 @@ async function playEvents(events) {
   boardFx.flash = null;
   boardFx.projectile = null;
   boardFx.slash = null;
+  boardFx.stream = null;
+  boardFx.charge = null;
   boardFx.override = {};
   boardFx.ghosts = [];
   boardFx.lungeReturn = null;
@@ -114,7 +116,7 @@ async function playEvent(ev) {
 }
 
 async function playAttack(ev) {
-  if (ev.kind === 'cast') await playProjectile(ev);
+  if (ev.kind === 'cast') await playCastSpell(ev);
   else await playMeleeLunge(ev);
 }
 
@@ -165,33 +167,90 @@ async function returnLunge() {
   boardFx.lungeReturn = null;
 }
 
-async function playProjectile(ev) {
+async function playCastSpell(ev) {
   const layout = boardLayout();
   if (!layout) return;
-  const tiles = ev.pathTiles && ev.pathTiles.length ? ev.pathTiles : [{ row: ev.row, col: ev.col }];
-  const pts = [];
   const start = cellRect(layout, ev.from.row, ev.from.col);
-  pts.push({ x: start.x + start.s / 2, y: start.y + start.s / 2 });
-  tiles.forEach(t => {
-    const b = cellRect(layout, t.row, t.col);
-    pts.push({ x: b.x + b.s / 2, y: b.y + b.s / 2 });
+  const end = cellRect(layout, ev.row, ev.col);
+  const x0 = start.x + start.s / 2;
+  const y0 = start.y + start.s / 2;
+  const x1 = end.x + end.s / 2;
+  const y1 = end.y + end.s / 2;
+  const color = BOARD_COLORS[ev.element] || '#fff';
+  const dist = Math.hypot(x1 - x0, y1 - y0);
+
+  boardFx.charge = { id: ev.attackerId, t: 0, element: ev.element };
+  await animate(300, function (t) {
+    boardFx.charge.t = t;
+    boardFx.popScale[ev.attackerId] = 1 + t * 0.18;
+    if (Math.random() < 0.65) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 32 * (1 - t * 0.7);
+      boardFx.particles.push({
+        x: x0 + Math.cos(a) * d,
+        y: y0 + Math.sin(a) * d,
+        vx: -Math.cos(a) * 1.4,
+        vy: -Math.sin(a) * 1.4,
+        life: 0.75,
+        color: color,
+        size: 2 + Math.random() * 2
+      });
+    }
+    ensureFxLoop();
   });
-  const dur = 38 * (pts.length - 1) + 70;
-  await animate(dur, function (t) {
-    const f = t * (pts.length - 1);
-    const i = Math.min(pts.length - 2, Math.floor(f));
-    const u = f - i;
-    boardFx.projectile = {
-      x: pts[i].x + (pts[i + 1].x - pts[i].x) * u,
-      y: pts[i].y + (pts[i + 1].y - pts[i].y) * u,
-      element: ev.element
-    };
+
+  boardFx.stream = { x0: x0, y0: y0, x1: x1, y1: y1, head: 0, element: ev.element, fade: 0 };
+  const travel = 160 + dist * 0.42;
+  await animate(travel, function (t) {
+    boardFx.stream.head = easeOut(t);
+    const hx = x0 + (x1 - x0) * boardFx.stream.head;
+    const hy = y0 + (y1 - y0) * boardFx.stream.head;
+    const nx = -(y1 - y0);
+    const ny = (x1 - x0);
+    const nlen = Math.hypot(nx, ny) || 1;
+    if (Math.random() < 0.9) {
+      const off = (Math.random() - 0.5) * 12;
+      boardFx.particles.push({
+        x: hx + (nx / nlen) * off,
+        y: hy + (ny / nlen) * off,
+        vx: (Math.random() - 0.5) * 1.1,
+        vy: (Math.random() - 0.5) * 1.1,
+        life: 0.7,
+        color: color,
+        size: 2 + Math.random() * 2.2
+      });
+    }
+    ensureFxLoop();
   });
-  const last = pts[pts.length - 1];
-  spawnBurst(last.x, last.y, BOARD_COLORS[ev.element] || '#fff', 12, 3.6);
+
+  spawnBurst(x1, y1, color, 24, 5.4);
+  spawnBurst(x1, y1, '#ffffff', 10, 3.2);
   boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
+  boardFx.shake = Math.max(boardFx.shake, 7);
+  boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.3);
   ensureFxLoop();
-  boardFx.projectile = null;
+  await sleep(70);
+
+  const recoilX = (x0 - x1) / (dist || 1) * 10;
+  const recoilY = (y0 - y1) / (dist || 1) * 10;
+  await animate(140, function (t) {
+    const k = 1 - t;
+    boardFx.override[ev.attackerId] = {
+      x: start.x + recoilX * k,
+      y: start.y + recoilY * k,
+      s: start.s
+    };
+    boardFx.stream.fade = t;
+    boardFx.popScale[ev.attackerId] = 1.18 - t * 0.18;
+  });
+  delete boardFx.override[ev.attackerId];
+  delete boardFx.popScale[ev.attackerId];
+  boardFx.stream = null;
+  boardFx.charge = null;
+}
+
+async function playProjectile(ev) {
+  return playCastSpell(ev);
 }
 
 async function playGround(ev) {
