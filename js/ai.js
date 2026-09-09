@@ -58,11 +58,16 @@ function pickSummonWizard(affordable, tile, team) {
   const threatened = mostThreatenedNexus(team);
   const front = team === 'player' ? tile.row === SUMMON_ROW_START : tile.row === ENEMY_ROW_END - 1;
   if (threatened && manhattan(tile.row, tile.col, threatened.row, threatened.col) <= 2) {
-    const tank = affordable.find(w => w.element === 'ice') || affordable[0];
+    const tank = affordable.find(w => w.element === 'earth')
+      || affordable.find(w => w.element === 'ice')
+      || affordable[0];
     return tank;
   }
   if (front) {
-    return affordable.find(w => w.element === 'wind') || affordable.find(w => w.element === 'fire') || affordable[0];
+    return affordable.find(w => w.element === 'wind')
+      || affordable.find(w => w.element === 'lightning')
+      || affordable.find(w => w.element === 'fire')
+      || affordable[0];
   }
   return shuffle(affordable)[0];
 }
@@ -142,6 +147,10 @@ function pickAttack(wizard, team) {
 }
 
 function attackScore(wizard, tile, kind, team) {
+  if (kind === 'cast' && wizard.castKind === 'pulse') return pulseScore(wizard, team);
+  if (kind === 'cast' && wizard.castKind === 'raise') return raiseScore(tile, team);
+  if (kind === 'cast' && wizard.castKind === 'swap') return swapScore(wizard, tile, team);
+
   const dmg = kind === 'cast' ? wizard.castAttack : wizard.meleeAttack;
   const n = nexusAt(tile.row, tile.col);
   if (n && n.team === opposingTeam(team) && n.hp > 0) {
@@ -151,9 +160,85 @@ function attackScore(wizard, tile, kind, team) {
   const w2 = wizardAt(tile.row, tile.col);
   if (w2 && w2.team === opposingTeam(team)) {
     const lethal = dmg >= w2.hp ? 180 : 0;
-    return 90 + lethal + dmg + (kind === 'melee' ? 3 : 0);
+    let score = 90 + lethal + dmg + (kind === 'melee' ? 3 : 0);
+    if (kind === 'cast' && wizard.castKind === 'bolt') score += 35;
+    if (kind === 'cast' && wizard.castKind === 'gust') score += wizard.castDisplacement * 4;
+    return score;
   }
   return 0;
+}
+
+function pulseScore(wizard, team) {
+  let score = 0;
+  getPulseTiles(wizard).forEach(function (t) {
+    const dmg = wizard.castAttack;
+    const n = nexusAt(t.row, t.col);
+    if (n && n.hp > 0) {
+      if (n.team === opposingTeam(team)) {
+        const lethal = dmg >= n.hp ? 400 : 0;
+        score += 220 + lethal + (n.maxHp - n.hp) * 8 + dmg;
+      } else {
+        score -= 120;
+      }
+    }
+    const w2 = wizardAt(t.row, t.col);
+    if (w2) {
+      if (w2.team === opposingTeam(team)) {
+        const lethal = dmg >= w2.hp ? 180 : 0;
+        score += 90 + lethal + dmg;
+      } else {
+        score -= 55;
+      }
+    }
+  });
+  return Math.max(0, score);
+}
+
+function raiseScore(tile, team) {
+  let score = 0;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.state !== 'onboard' || w.team === team) return;
+    const d = manhattan(tile.row, tile.col, w.row, w.col);
+    if (d === 1) score += 48;
+    else if (d === 2) score += 12;
+  });
+  livingNexuses(team).forEach(function (n) {
+    if (manhattan(tile.row, tile.col, n.row, n.col) === 1) score += 22;
+  });
+  return score;
+}
+
+function swapScore(wizard, tile, team) {
+  const other = wizardAt(tile.row, tile.col);
+  if (other) {
+    if (other.team === team) return 0;
+    let score = 20;
+    const foeN = nearestLivingNexusFrom(other.row, other.col, opposingTeam(team));
+    if (foeN) {
+      const before = manhattan(wizard.row, wizard.col, foeN.row, foeN.col);
+      const after = manhattan(other.row, other.col, foeN.row, foeN.col);
+      score += (before - after) * 18;
+      if (after <= 1) score += 140;
+    }
+    const ownN = nearestLivingNexusFrom(wizard.row, wizard.col, team);
+    if (ownN) {
+      const theyBefore = manhattan(other.row, other.col, ownN.row, ownN.col);
+      const theyAfter = manhattan(wizard.row, wizard.col, ownN.row, ownN.col);
+      if (theyAfter < theyBefore) score -= 70;
+      else score += 16;
+      if (theyBefore <= 2 && theyAfter > theyBefore) score += 80;
+    }
+    return Math.max(0, score);
+  }
+
+  const foeN = nearestLivingNexusFrom(tile.row, tile.col, opposingTeam(team));
+  if (!foeN) return 0;
+  const before = manhattan(wizard.row, wizard.col, foeN.row, foeN.col);
+  const after = manhattan(tile.row, tile.col, foeN.row, foeN.col);
+  if (after >= before) return 0;
+  let score = 24 + (before - after) * 14;
+  if (after <= 1) score += 140;
+  return score;
 }
 
 function pickMoveTile(wizard, team) {

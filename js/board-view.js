@@ -24,6 +24,9 @@ const BOARD_COLORS = {
   fireBg: '#fbe9e2',
   iceBg: '#e5f2fa',
   windBg: '#e6f5ee',
+  earthBg: '#f3ead8',
+  lightningBg: '#fbf3d5',
+  temporalBg: '#efe8f7',
   move: '#dcecff',
   melee: '#ffdddb',
   cast: '#ffe9c2',
@@ -32,6 +35,9 @@ const BOARD_COLORS = {
   fire: '#d1481f',
   ice: '#1f7fb8',
   wind: '#2f9e6b',
+  earth: '#7a6238',
+  lightning: '#c9a227',
+  temporal: '#6b4c9a',
   mountain: '#d5cfc0',
   mountainAlt: '#c8c1b0',
   mountainBody: '#5a554a',
@@ -147,6 +153,10 @@ function tileFill(row, col, highlight, kind) {
   if (trail) {
     if (trail.element === 'fire') return isAlt ? '#f4ddd6' : BOARD_COLORS.fireBg;
     if (trail.element === 'ice') return isAlt ? '#d7e8f3' : BOARD_COLORS.iceBg;
+    if (trail.element === 'wind') return isAlt ? '#d8ebe1' : BOARD_COLORS.windBg;
+    if (trail.element === 'earth') return isAlt ? '#e8ddc8' : BOARD_COLORS.earthBg;
+    if (trail.element === 'lightning') return isAlt ? '#f3e9c4' : BOARD_COLORS.lightningBg;
+    if (trail.element === 'temporal') return isAlt ? '#e4d8ef' : BOARD_COLORS.temporalBg;
     return isAlt ? '#d8ebe1' : BOARD_COLORS.windBg;
   }
   if (isSummonTile(row, col)) return isAlt ? BOARD_COLORS.summonAlt : BOARD_COLORS.summon;
@@ -180,6 +190,34 @@ function drawElementIcon(ctx, element, cx, cy, size) {
     ctx.lineTo(cx + size * 0.55, cy);
     ctx.moveTo(cx - size, cy + size * 0.45);
     ctx.lineTo(cx + size * 0.15, cy + size * 0.45);
+    ctx.stroke();
+  } else if (element === 'earth') {
+    ctx.beginPath();
+    ctx.moveTo(cx - size, cy + size * 0.75);
+    ctx.lineTo(cx - size * 0.15, cy - size * 0.35);
+    ctx.lineTo(cx + size * 0.2, cy + size * 0.15);
+    ctx.lineTo(cx + size, cy + size * 0.75);
+    ctx.closePath();
+    ctx.fill();
+  } else if (element === 'lightning') {
+    ctx.beginPath();
+    ctx.moveTo(cx + size * 0.15, cy - size);
+    ctx.lineTo(cx - size * 0.45, cy + size * 0.05);
+    ctx.lineTo(cx + size * 0.05, cy + size * 0.05);
+    ctx.lineTo(cx - size * 0.15, cy + size);
+    ctx.lineTo(cx + size * 0.5, cy - size * 0.05);
+    ctx.lineTo(cx - size * 0.05, cy - size * 0.05);
+    ctx.closePath();
+    ctx.fill();
+  } else if (element === 'temporal') {
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.85, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - size * 0.45);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + size * 0.4, cy + size * 0.2);
     ctx.stroke();
   } else {
     ctx.beginPath();
@@ -338,6 +376,15 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   }
   ctx.restore();
   if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.08, radius * 0.42);
+  if (wizard.silenced && !flash) {
+    ctx.save();
+    ctx.strokeStyle = BOARD_COLORS.lightning;
+    ctx.lineWidth = Math.max(1.6, box.s * 0.045);
+    ctx.beginPath();
+    ctx.arc(cx, cy, box.s * 0.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
   ctx.fillStyle = flash ? '#1c1e1b' : (wizard.team === 'enemy' ? '#ffffff' : BOARD_COLORS.text);
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';

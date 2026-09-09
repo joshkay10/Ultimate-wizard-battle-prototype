@@ -2,6 +2,13 @@ function iconSpan(name, color) {
   return '<span style="color:' + color + '; display:flex; align-items:center; justify-content:center;">' + ICONS[name] + '</span>';
 }
 
+function castStatText(wiz) {
+  if (wiz.castKind === 'raise') return 'raise';
+  if (wiz.castKind === 'swap') return 'swap';
+  if (wiz.castKind === 'bolt') return wiz.castAttack + '/sil';
+  return wiz.castAttack + '/' + wiz.castDisplacement;
+}
+
 function ensureShell() {
   const app = document.getElementById('app');
   if (document.getElementById('board-canvas')) return;
@@ -45,7 +52,7 @@ function renderPanel() {
             '</div>' +
             '<div class="wizard-stats">' +
               '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
-              '<span class="wizard-stat">' + ICONS.cast + '<span>' + wiz.castAttack + '/' + wiz.castDisplacement + '</span></span>' +
+              '<span class="wizard-stat">' + ICONS.cast + '<span>' + castStatText(wiz) + '</span></span>' +
               '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '</span></span>' +
             '</div>' +
           '</button>' +

@@ -15,7 +15,23 @@ function tickTrails() {
 }
 
 function mountainAt(row, col) {
-  return !!(state.mountains && state.mountains[row + ',' + col]);
+  const key = row + ',' + col;
+  if (state.mountains && state.mountains[key]) return true;
+  if (state.tempMountains && state.tempMountains[key]) return true;
+  return false;
+}
+
+function tickTempMountains() {
+  if (!state.tempMountains) return;
+  Object.keys(state.tempMountains).forEach(function (key) {
+    state.tempMountains[key].turnsLeft -= 1;
+    if (state.tempMountains[key].turnsLeft <= 0) delete state.tempMountains[key];
+  });
+}
+
+function raiseMountain(row, col) {
+  if (!state.tempMountains) state.tempMountains = {};
+  state.tempMountains[row + ',' + col] = { turnsLeft: TEMP_MOUNTAIN_TURNS, element: 'earth' };
 }
 
 function waterAt(row, col) {
@@ -147,15 +163,15 @@ function getMeleeTiles(wizard) {
   return result;
 }
 
-// Cast: line in each of 4 cardinal directions out to range 4.
+// Line in each of 4 cardinal directions out to `range`.
 // Stops on the first wizard or nexus (that tile is a valid hit).
 // Mountains are fully opaque: the line does not include them and does not continue past them.
 // Water is impassable to walk/push but spells fly over it.
-function getCastTiles(wizard) {
+function getLineCastTiles(wizard, range) {
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   const result = [];
   for (const [dr, dc] of dirs) {
-    for (let dist = 1; dist <= 4; dist++) {
+    for (let dist = 1; dist <= range; dist++) {
       const nr = wizard.row + dr * dist, nc = wizard.col + dc * dist;
       if (!inBounds(nr, nc)) break;
       if (mountainAt(nr, nc)) break;
@@ -164,6 +180,66 @@ function getCastTiles(wizard) {
     }
   }
   return result;
+}
+
+function getPulseTiles(wizard) {
+  const result = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (!dr && !dc) continue;
+      const nr = wizard.row + dr, nc = wizard.col + dc;
+      if (!inBounds(nr, nc)) continue;
+      if (mountainAt(nr, nc) || waterAt(nr, nc)) continue;
+      result.push({ row: nr, col: nc });
+    }
+  }
+  return result;
+}
+
+function getRaiseTiles(wizard) {
+  const result = [];
+  const range = wizard.castRange || 2;
+  for (let r = wizard.row - range; r <= wizard.row + range; r++) {
+    for (let c = wizard.col - range; c <= wizard.col + range; c++) {
+      const dist = manhattan(wizard.row, wizard.col, r, c);
+      if (dist < 1 || dist > range) continue;
+      if (!inBounds(r, c)) continue;
+      if (isBlocked(r, c) || portalAt(r, c)) continue;
+      result.push({ row: r, col: c });
+    }
+  }
+  return result;
+}
+
+function getSwapTiles(wizard) {
+  const result = [];
+  const range = wizard.castRange || 3;
+  for (let r = wizard.row - range; r <= wizard.row + range; r++) {
+    for (let c = wizard.col - range; c <= wizard.col + range; c++) {
+      const dist = manhattan(wizard.row, wizard.col, r, c);
+      if (dist < 1 || dist > range) continue;
+      if (!inBounds(r, c)) continue;
+      const other = wizardAt(r, c);
+      if (other && other.id !== wizard.id) {
+        result.push({ row: r, col: c });
+        continue;
+      }
+      if (other) continue;
+      if (isBlocked(r, c)) continue;
+      result.push({ row: r, col: c });
+    }
+  }
+  return result;
+}
+
+function getCastTiles(wizard) {
+  const kind = wizard.castKind || 'stream';
+  if (kind === 'pulse') return getPulseTiles(wizard);
+  if (kind === 'gust') return getLineCastTiles(wizard, wizard.castRange || 3);
+  if (kind === 'raise') return getRaiseTiles(wizard);
+  if (kind === 'bolt') return getLineCastTiles(wizard, wizard.castRange || 4);
+  if (kind === 'swap') return getSwapTiles(wizard);
+  return getLineCastTiles(wizard, wizard.castRange || 4);
 }
 
 function pathBFS(wizard, targetRow, targetCol) {

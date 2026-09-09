@@ -2,6 +2,8 @@
 
 Prototype. Open `index.html` over HTTP.
 
+Six unique wizards: Ember, Ice, Gale, Earth, Lightning, Temporal. Each has its own cast.
+
 - [Rules](RULES.md)
 - [To-do](TODO.md)
 

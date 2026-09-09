@@ -1,6 +1,10 @@
 const ROSTER = [
-  { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' },
-  { typeId: 'fire' }, { typeId: 'ice' }, { typeId: 'wind' }
+  { typeId: 'fire' },
+  { typeId: 'ice' },
+  { typeId: 'wind' },
+  { typeId: 'earth' },
+  { typeId: 'lightning' },
+  { typeId: 'temporal' }
 ];
 
 function createWizard(typeId, team) {
@@ -10,6 +14,8 @@ function createWizard(typeId, team) {
     id,
     name: type.name,
     element: type.element,
+    castKind: type.castKind,
+    castRange: type.castRange,
     moveRange: type.moveRange,
     hp: type.hp,
     maxHp: type.hp,
@@ -24,7 +30,8 @@ function createWizard(typeId, team) {
     col: null,
     hasMoved: false,
     hasAttacked: false,
-    summoningSickness: false
+    summoningSickness: false,
+    silenced: false
   };
   return id;
 }

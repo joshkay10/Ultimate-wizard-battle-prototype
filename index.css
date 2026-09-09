@@ -13,6 +13,12 @@
   --ice-bg: #e5f2fa;
   --wind: #2f9e6b;
   --wind-bg: #e6f5ee;
+  --earth: #7a6238;
+  --earth-bg: #f3ead8;
+  --lightning: #c9a227;
+  --lightning-bg: #fbf3d5;
+  --temporal: #6b4c9a;
+  --temporal-bg: #efe8f7;
 
   --tile: #ffffff;
   --tile-alt: #edefeb;
@@ -245,6 +251,9 @@ html, body {
 .wizard-card.summoned.fire .wizard-card-hit { border-color: var(--fire); }
 .wizard-card.summoned.ice .wizard-card-hit { border-color: var(--ice); }
 .wizard-card.summoned.wind .wizard-card-hit { border-color: var(--wind); }
+.wizard-card.summoned.earth .wizard-card-hit { border-color: var(--earth); }
+.wizard-card.summoned.lightning .wizard-card-hit { border-color: var(--lightning); }
+.wizard-card.summoned.temporal .wizard-card-hit { border-color: var(--temporal); }
 .wizard-card-icon {
   grid-row: 1 / 3;
   grid-column: 1;
@@ -260,6 +269,9 @@ html, body {
 .wizard-card-icon.fire { background: var(--fire-bg); color: var(--fire); }
 .wizard-card-icon.ice { background: var(--ice-bg); color: var(--ice); }
 .wizard-card-icon.wind { background: var(--wind-bg); color: var(--wind); }
+.wizard-card-icon.earth { background: var(--earth-bg); color: var(--earth); }
+.wizard-card-icon.lightning { background: var(--lightning-bg); color: var(--lightning); }
+.wizard-card-icon.temporal { background: var(--temporal-bg); color: var(--temporal); }
 .wizard-card-icon svg { width: 22px; height: 22px; }
 .wizard-card-top {
   grid-row: 1;
@@ -289,6 +301,9 @@ html, body {
 .wizard-cost-badge.fire { color: var(--fire); }
 .wizard-cost-badge.ice { color: var(--ice); }
 .wizard-cost-badge.wind { color: var(--wind); }
+.wizard-cost-badge.earth { color: var(--earth); }
+.wizard-cost-badge.lightning { color: var(--lightning); }
+.wizard-cost-badge.temporal { color: var(--temporal); }
 .wizard-stats {
   grid-row: 2;
   grid-column: 2;

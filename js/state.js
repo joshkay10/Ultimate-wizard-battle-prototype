@@ -22,6 +22,7 @@ const state = {
   // Elemental trails left behind by attacks: keyed by "row,col" -> { element, turnsLeft }
   trails: {},
   mountains: {},
+  tempMountains: {},
   water: {},
   portals: {},
 

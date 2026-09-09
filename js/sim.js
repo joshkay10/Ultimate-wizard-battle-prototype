@@ -67,6 +67,7 @@ function resetMatch(seed) {
   state.placingWizardId = null;
   state.trails = {};
   state.mountains = {};
+  state.tempMountains = {};
   state.water = {};
   state.portals = {};
   state.mana = 1;
@@ -119,10 +120,25 @@ function resetActionFlagsFor(team) {
   Object.values(state.wizards).forEach(w => {
     if (w.state === 'onboard' && w.team === team) {
       w.hasMoved = false;
-      w.hasAttacked = false;
       w.summoningSickness = false;
+      if (w.silenced) {
+        w.hasAttacked = true;
+        w.silenced = false;
+      } else {
+        w.hasAttacked = false;
+      }
     }
   });
+}
+
+function applySilence(wizard) {
+  if (!wizard || wizard.state !== 'onboard') return;
+  if (wizard.team === state.currentTurn && !wizard.hasAttacked) {
+    wizard.hasAttacked = true;
+    wizard.silenced = false;
+    return;
+  }
+  wizard.silenced = true;
 }
 
 function canMove(wizard) {
@@ -362,6 +378,13 @@ function simAttack(attacker, row, col, kind) {
   const legal = kind === 'cast' ? getCastTiles(attacker) : getMeleeTiles(attacker);
   if (!legal.some(t => t.row === row && t.col === col)) return [];
 
+  if (kind === 'cast' && attacker.castKind === 'pulse') return simPulse(attacker, row, col);
+  if (kind === 'cast' && attacker.castKind === 'raise') return simRaise(attacker, row, col);
+  if (kind === 'cast' && attacker.castKind === 'swap') return simSwap(attacker, row, col);
+  return simStrike(attacker, row, col, kind);
+}
+
+function simStrike(attacker, row, col, kind) {
   const events = [];
   const dir = directionBetween(attacker.row, attacker.col, row, col);
   const dmg = kind === 'cast' ? attacker.castAttack : attacker.meleeAttack;
@@ -389,6 +412,7 @@ function simAttack(attacker, row, col, kind) {
   events.push({
     type: 'attack',
     kind: kind,
+    castKind: kind === 'cast' ? (attacker.castKind || 'stream') : null,
     attackerId: attacker.id,
     from: { row: attacker.row, col: attacker.col },
     row: row,
@@ -414,7 +438,16 @@ function simAttack(attacker, row, col, kind) {
       col: col,
       cause: kind
     });
-    events.push.apply(events, simPush(targetWizard, dir.dr, dir.dc, pushAmt));
+    if (kind === 'cast' && attacker.castKind === 'bolt') {
+      applySilence(targetWizard);
+      events.push({
+        type: 'silence',
+        targetId: targetWizard.id,
+        row: targetWizard.row,
+        col: targetWizard.col
+      });
+    }
+    if (pushAmt) events.push.apply(events, simPush(targetWizard, dir.dr, dir.dc, pushAmt));
     const death = simKill(targetWizard);
     if (death) events.push(death);
   } else if (targetNexus) {
@@ -436,11 +469,162 @@ function simAttack(attacker, row, col, kind) {
   return events;
 }
 
+function simPulse(attacker, clickRow, clickCol) {
+  const tiles = getPulseTiles(attacker);
+  const events = [];
+  const dmg = attacker.castAttack;
+  const pushAmt = attacker.castDisplacement;
+  const trails = [];
+  const hits = [];
+
+  tiles.forEach(function (t) {
+    layTrail(t.row, t.col, attacker.element);
+    trails.push({ row: t.row, col: t.col, element: attacker.element });
+    const w = wizardAt(t.row, t.col);
+    const n = nexusAt(t.row, t.col);
+    if (w) hits.push({ kind: 'wizard', wizard: w, row: t.row, col: t.col });
+    else if (n) hits.push({ kind: 'nexus', nexus: n, row: t.row, col: t.col });
+  });
+
+  events.push({
+    type: 'attack',
+    kind: 'cast',
+    castKind: 'pulse',
+    attackerId: attacker.id,
+    from: { row: attacker.row, col: attacker.col },
+    row: clickRow,
+    col: clickCol,
+    element: attacker.element,
+    hit: hits.length ? 'burst' : 'tile',
+    pathTiles: tiles.slice(),
+    burstTiles: tiles.slice(),
+    trails: trails,
+    damage: dmg
+  });
+  trails.forEach(t => {
+    events.push({ type: 'trail', row: t.row, col: t.col, element: t.element });
+  });
+
+  hits.forEach(function (h) {
+    if (h.kind === 'wizard') {
+      h.wizard.hp -= dmg;
+      events.push({
+        type: 'damage',
+        targetKind: 'wizard',
+        targetId: h.wizard.id,
+        amount: dmg,
+        row: h.row,
+        col: h.col,
+        cause: 'cast'
+      });
+    } else {
+      h.nexus.hp = Math.max(0, h.nexus.hp - dmg);
+      events.push({
+        type: 'damage',
+        targetKind: 'nexus',
+        targetId: nexusId(h.nexus),
+        amount: dmg,
+        row: h.row,
+        col: h.col,
+        cause: 'cast'
+      });
+    }
+  });
+
+  hits.forEach(function (h) {
+    if (h.kind !== 'wizard') return;
+    const death = simKill(h.wizard);
+    if (death) events.push(death);
+  });
+
+  const survivors = hits.filter(h => h.kind === 'wizard' && h.wizard.state === 'onboard');
+  survivors.sort(function (a, b) {
+    return manhattan(attacker.row, attacker.col, b.row, b.col) - manhattan(attacker.row, attacker.col, a.row, a.col);
+  });
+  survivors.forEach(function (h) {
+    const dir = directionBetween(attacker.row, attacker.col, h.row, h.col);
+    if (pushAmt) events.push.apply(events, simPush(h.wizard, dir.dr, dir.dc, pushAmt));
+  });
+
+  if (!hits.length) {
+    events.push({ type: 'ground', row: clickRow, col: clickCol, element: attacker.element, kind: 'cast' });
+  }
+
+  attacker.hasAttacked = true;
+  return events;
+}
+
+function simRaise(attacker, row, col) {
+  raiseMountain(row, col);
+  attacker.hasAttacked = true;
+  return [{
+    type: 'attack',
+    kind: 'cast',
+    castKind: 'raise',
+    attackerId: attacker.id,
+    from: { row: attacker.row, col: attacker.col },
+    row: row,
+    col: col,
+    element: attacker.element,
+    hit: 'tile',
+    pathTiles: [{ row: row, col: col }],
+    trails: [],
+    damage: 0
+  }, {
+    type: 'raise',
+    row: row,
+    col: col,
+    attackerId: attacker.id,
+    turnsLeft: TEMP_MOUNTAIN_TURNS
+  }];
+}
+
+function simSwap(attacker, row, col) {
+  const other = wizardAt(row, col);
+  const fromA = { row: attacker.row, col: attacker.col };
+  let fromB = null;
+  if (other) {
+    fromB = { row: other.row, col: other.col };
+    attacker.row = fromB.row;
+    attacker.col = fromB.col;
+    other.row = fromA.row;
+    other.col = fromA.col;
+  } else {
+    attacker.row = row;
+    attacker.col = col;
+  }
+  attacker.hasAttacked = true;
+  return [{
+    type: 'attack',
+    kind: 'cast',
+    castKind: 'swap',
+    attackerId: attacker.id,
+    from: fromA,
+    row: row,
+    col: col,
+    element: attacker.element,
+    hit: other ? 'wizard' : 'tile',
+    pathTiles: [],
+    trails: [],
+    damage: 0
+  }, {
+    type: 'swap',
+    aId: attacker.id,
+    bId: other ? other.id : null,
+    fromA: fromA,
+    fromB: fromB,
+    toA: { row: attacker.row, col: attacker.col },
+    toB: other ? { row: other.row, col: other.col } : null,
+    element: attacker.element
+  }];
+}
+
 function simEndPlayerTurn() {
   const events = [];
   const isFirst = !state.firstPlayerTurnDone;
   state.firstPlayerTurnDone = true;
   tickTrails();
+  tickTempMountains();
   state.selectedWizardId = null;
   state.placingWizardId = null;
   events.push({ type: 'turnEnd', team: 'player' });
@@ -468,6 +652,7 @@ function simEndEnemyTurn() {
   const events = [];
   const isFirst = !state.firstEnemyTurnDone;
   state.firstEnemyTurnDone = true;
+  tickTempMountains();
   resetActionFlagsFor('enemy');
   events.push({ type: 'turnEnd', team: 'enemy' });
   if (!isFirst) {
