@@ -604,9 +604,10 @@ function drawNexus(ctx, box, hp, flash) {
     ctx.closePath();
     ctx.fill();
   }
-  ctx.strokeStyle = frame;
-  ctx.globalAlpha = 0.28;
-  ctx.lineWidth = Math.max(1, box.s * 0.02);
+  ctx.strokeStyle = flash ? '#1c1e1b' : '#f4f5f2';
+  ctx.globalAlpha = diamondsLeft ? 0.92 : 0.35;
+  ctx.lineWidth = Math.max(1.8, box.s * 0.035);
+  ctx.lineCap = 'round';
   quarters.forEach(function (q) {
     ctx.beginPath();
     ctx.moveTo(cx, cy);
