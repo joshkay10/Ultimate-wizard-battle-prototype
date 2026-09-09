@@ -273,6 +273,9 @@ function tileThreatScore(wizard, tile, team, target) {
   const p = portalAt(tile.row, tile.col);
   if (p && p.team !== team) score += 80;
   if (p && p.team === team) score -= 120;
+  const trail = trailAt(tile.row, tile.col);
+  if (trail && trail.element === 'fire') score -= 30;
+  if (trail && trail.element === 'wind') score += 6;
   return score;
 }
 

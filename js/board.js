@@ -1,6 +1,6 @@
 function layTrail(row, col, element) {
   if (mountainAt(row, col) || waterAt(row, col) || nexusAt(row, col)) return;
-  state.trails[row + ',' + col] = { element, turnsLeft: 1 };
+  state.trails[row + ',' + col] = { element, turnsLeft: TRAIL_TURNS };
 }
 
 function trailAt(row, col) {
@@ -31,7 +31,9 @@ function tickTempMountains() {
 
 function raiseMountain(row, col) {
   if (!state.tempMountains) state.tempMountains = {};
-  state.tempMountains[row + ',' + col] = { turnsLeft: TEMP_MOUNTAIN_TURNS, element: 'earth' };
+  const key = row + ',' + col;
+  state.tempMountains[key] = { turnsLeft: TEMP_MOUNTAIN_TURNS, element: 'earth' };
+  if (state.trails) delete state.trails[key];
 }
 
 function waterAt(row, col) {

@@ -108,7 +108,8 @@ async function runSimSelfTests() {
 
   resetMatch(1);
   state.fxEnabled = false;
-  assert(!playerHasLegalAction(), 'round 1 with 1 mana has nothing to do');
+  assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
+  assert(playerHasLegalAction(), 'round 1 with 2 mana can open a 2-cost portal');
 
   resetMatch(1);
   state.fxEnabled = false;
@@ -401,6 +402,60 @@ async function runSimSelfTests() {
   const gustTiles = getCastTiles(gust);
   assert(gustTiles.some(t => t.row === 7 && t.col === 7), 'gust reaches range 3');
   assert(!gustTiles.some(t => t.row === 7 && t.col === 0), 'gust does not reach range 4');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.tempMountains = {};
+  layTrail(4, 4, 'fire');
+  tickTrails();
+  assert(trailAt(4, 4) && trailAt(4, 4).element === 'fire', 'trails last through the opponent turn');
+  tickTrails();
+  assert(!trailAt(4, 4), 'trails crumble after a round');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const burned = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  burned.state = 'onboard';
+  burned.row = 4;
+  burned.col = 3;
+  burned.hp = 12;
+  layTrail(4, 4, 'fire');
+  simMove(burned, [{ row: 4, col: 4 }]);
+  assert(burned.hp === 11, 'walking onto fire costs 1');
+  assert(burned.row === 4 && burned.col === 4, 'fire does not block the step');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const batterIce = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const slider = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  batterIce.state = 'onboard';
+  batterIce.row = 4;
+  batterIce.col = 3;
+  slider.state = 'onboard';
+  slider.row = 4;
+  slider.col = 4;
+  slider.hp = 12;
+  layTrail(4, 5, 'ice');
+  simAttack(batterIce, 4, 4, 'melee');
+  assert(slider.row === 4 && slider.col === 7, 'push over ice does not spend a pip');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const rider = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  rider.state = 'onboard';
+  rider.row = 4;
+  rider.col = 4;
+  layTrail(4, 5, 'wind');
+  simMove(rider, [{ row: 4, col: 5 }]);
+  assert(rider.row === 4 && rider.col === 6, 'wind carries you one more tile');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);

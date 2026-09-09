@@ -70,10 +70,10 @@ function resetMatch(seed) {
   state.tempMountains = {};
   state.water = {};
   state.portals = {};
-  state.mana = 1;
-  state.maxMana = 1;
-  state.enemyMana = 1;
-  state.enemyMaxMana = 1;
+  state.mana = STARTING_MANA;
+  state.maxMana = STARTING_MANA;
+  state.enemyMana = STARTING_MANA;
+  state.enemyMaxMana = STARTING_MANA;
   state.log = [];
   resetNexuses();
   generateTerrain();
@@ -179,19 +179,22 @@ function directionBetween(fromRow, fromCol, toRow, toCol) {
 function getDisplacementPath(target, dr, dc, amount) {
   if (amount === 0) return { path: [], tilesShort: 0, crash: null };
   const dir = amount > 0 ? 1 : -1;
-  const steps = Math.abs(amount);
+  let remaining = Math.abs(amount);
   const path = [];
   let curRow = target.row, curCol = target.col;
-  for (let i = 0; i < steps; i++) {
+  let guard = 0;
+  while (remaining > 0 && guard++ < BOARD_SIZE + 2) {
     const nr = curRow + dr * dir;
     const nc = curCol + dc * dir;
     const crash = crashObstacle(nr, nc);
     if (crash) {
-      return { path, tilesShort: Math.min(CRASH_DAMAGE_CAP, steps - i), crash: crash };
+      return { path, tilesShort: Math.min(CRASH_DAMAGE_CAP, remaining), crash: crash };
     }
     path.push({ row: nr, col: nc });
     curRow = nr;
     curCol = nc;
+    const trail = trailAt(nr, nc);
+    if (!(trail && trail.element === 'ice')) remaining -= 1;
   }
   return { path, tilesShort: 0, crash: null };
 }
@@ -224,18 +227,67 @@ function simKill(wizard) {
   return ev;
 }
 
+function applyFireEnter(wizard) {
+  const events = [];
+  if (!wizard || wizard.state !== 'onboard') return events;
+  const trail = trailAt(wizard.row, wizard.col);
+  if (!trail || trail.element !== 'fire') return events;
+  wizard.hp -= FIRE_TRAIL_DAMAGE;
+  events.push({
+    type: 'damage',
+    targetKind: 'wizard',
+    targetId: wizard.id,
+    amount: FIRE_TRAIL_DAMAGE,
+    row: wizard.row,
+    col: wizard.col,
+    cause: 'fire'
+  });
+  const death = simKill(wizard);
+  if (death) events.push(death);
+  return events;
+}
+
+function applyWindCarry(wizard, dr, dc, travelled) {
+  const events = [];
+  if (!wizard || wizard.state !== 'onboard') return events;
+  if (!dr && !dc) return events;
+  let guard = 0;
+  while (wizard.state === 'onboard' && guard++ < BOARD_SIZE) {
+    const trail = trailAt(wizard.row, wizard.col);
+    if (!trail || trail.element !== 'wind') break;
+    const nr = wizard.row + dr;
+    const nc = wizard.col + dc;
+    if (crashObstacle(nr, nc)) break;
+    wizard.row = nr;
+    wizard.col = nc;
+    travelled.push({ row: nr, col: nc });
+    events.push.apply(events, applyFireEnter(wizard));
+  }
+  return events;
+}
+
 function simPush(target, dr, dc, amount) {
   const from = { row: target.row, col: target.col };
-  const { path, tilesShort, crash } = getDisplacementPath(target, dr, dc, amount);
+  const planned = getDisplacementPath(target, dr, dc, amount);
   const events = [];
-  if (path.length) {
-    const last = path[path.length - 1];
-    target.row = last.row;
-    target.col = last.col;
+  const extra = [];
+  const travelled = [];
+  for (let i = 0; i < planned.path.length; i++) {
+    const step = planned.path[i];
+    target.row = step.row;
+    target.col = step.col;
+    travelled.push(step);
+    extra.push.apply(extra, applyFireEnter(target));
+    if (target.state !== 'onboard') break;
   }
-  events.push({ type: 'push', wizardId: target.id, from, path, tilesShort, crash: crash });
-  if (tilesShort > 0 && crash) {
-    events.push.apply(events, applyCrashDamage(target, crash, tilesShort));
+  const finished = travelled.length === planned.path.length && target.state === 'onboard';
+  if (finished) {
+    extra.push.apply(extra, applyWindCarry(target, dr, dc, travelled));
+  }
+  events.push({ type: 'push', wizardId: target.id, from: from, path: travelled, tilesShort: planned.tilesShort, crash: planned.crash });
+  events.push.apply(events, extra);
+  if (finished && planned.tilesShort > 0 && planned.crash) {
+    events.push.apply(events, applyCrashDamage(target, planned.crash, planned.tilesShort));
   }
   return events;
 }
@@ -358,6 +410,7 @@ function simResolvePortals(team) {
       team: team,
       element: wizard.element
     });
+    events.push.apply(events, applyFireEnter(wizard));
   });
   return events;
 }
@@ -366,11 +419,23 @@ function simMove(wizard, path) {
   if (!canMove(wizard)) return [];
   if (!path || !path.length) return [];
   const from = { row: wizard.row, col: wizard.col };
-  const last = path[path.length - 1];
-  wizard.row = last.row;
-  wizard.col = last.col;
+  const travelled = [];
+  const extra = [];
+  for (let i = 0; i < path.length; i++) {
+    const step = path[i];
+    wizard.row = step.row;
+    wizard.col = step.col;
+    travelled.push(step);
+    extra.push.apply(extra, applyFireEnter(wizard));
+    if (wizard.state !== 'onboard') break;
+  }
+  if (wizard.state === 'onboard' && travelled.length) {
+    const last = travelled[travelled.length - 1];
+    const prev = travelled.length >= 2 ? travelled[travelled.length - 2] : from;
+    extra.push.apply(extra, applyWindCarry(wizard, last.row - prev.row, last.col - prev.col, travelled));
+  }
   wizard.hasMoved = true;
-  return [{ type: 'move', wizardId: wizard.id, from: from, path: path }];
+  return [{ type: 'move', wizardId: wizard.id, from: from, path: travelled }].concat(extra);
 }
 
 function simAttack(attacker, row, col, kind) {
@@ -594,7 +659,7 @@ function simSwap(attacker, row, col) {
     attacker.col = col;
   }
   attacker.hasAttacked = true;
-  return [{
+  const events = [{
     type: 'attack',
     kind: 'cast',
     castKind: 'swap',
@@ -617,6 +682,9 @@ function simSwap(attacker, row, col) {
     toB: other ? { row: other.row, col: other.col } : null,
     element: attacker.element
   }];
+  events.push.apply(events, applyFireEnter(attacker));
+  if (other) events.push.apply(events, applyFireEnter(other));
+  return events;
 }
 
 function simEndPlayerTurn() {
@@ -652,6 +720,7 @@ function simEndEnemyTurn() {
   const events = [];
   const isFirst = !state.firstEnemyTurnDone;
   state.firstEnemyTurnDone = true;
+  tickTrails();
   tickTempMountains();
   resetActionFlagsFor('enemy');
   events.push({ type: 'turnEnd', team: 'enemy' });

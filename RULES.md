@@ -9,7 +9,7 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 - **Water** appears on some maps (not every seed). You cannot walk, summon, or push onto it, but line spells fly over it.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
 - Each player has the same roster of **six unique wizards**: Ember, Ice, Gale, Earth, Lightning, Temporal. All start off the board.
-- Round 1 starts with 1 mana. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn.
+- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn.
 
 ## Wizards
 
@@ -50,7 +50,11 @@ On your turn you may, in any order:
 - **Crash:** if the push hits a wall (edge, mountain, water, or nexus), the pushed wizard takes 1 damage per tile they could not travel (max 3).
 - If they crash into **another wizard**, both take that crash damage. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse hits everyone in the ring.
 - HP 0 = dead, token leaves the board.
-- Stream, gust, bolt, and pulse also leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one turn. Right now they are visual only; later they become terrain (fire hurts to cross, wind carries, ice is frictionless). Raise does not paint; it builds a wall.
+- Stream, gust, bolt, and pulse also leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
+  - **Fire:** walking, sliding, blinking, or arriving onto it costs 1 damage.
+  - **Ice:** a push that enters ice does not spend a knockback pip, so you keep sliding.
+  - **Wind:** if you finish a move or push on wind, it carries you one more tile in that direction (and chains if you land on wind again).
+  - Lightning and temporal trails are still visual only. Raise does not paint; it builds a wall.
 
 ## Winning
 

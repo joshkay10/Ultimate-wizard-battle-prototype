@@ -1,6 +1,6 @@
 # To-do
 
-Six unique wizards are in: Ember stream, Ice pulse, Gale gust, Earth raise, Lightning bolt, Temporal swap/blink. Trails are still cosmetic except Earth’s raised mountains, which are real walls.
+Six unique wizards are in: Ember stream, Ice pulse, Gale gust, Earth raise, Lightning bolt, Temporal swap/blink. Fire, ice, and wind trails are real terrain. Round 1 starts at 2 mana.
 
 ## Next: terrain
 
@@ -10,11 +10,12 @@ Board tiles that are not just a flat grid.
 - [ ] Voids
 - [x] Mountains — impassable edge ridges; block walk, summon, and cast
 - [x] Earth raise — temporary mountain, about one round
-- [ ] Fire, ice, and wind trails become real terrain:
+- [x] Fire, ice, and wind trails become real terrain:
   - Fire: walking onto a fire tile costs 1 damage
   - Wind: an escalator (it carries you)
   - Ice: no friction — a push over ice does not spend a displacement count
 - [ ] Lightning / earth matchups later: bolt jumps on water, grounds on raised earth
+- [ ] Wind fans fire (spreads it)
 
 ## Combat
 

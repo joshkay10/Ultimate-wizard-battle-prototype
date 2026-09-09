@@ -40,6 +40,9 @@ const NEXUS_HP = 5;
 const PORTAL_BLOCK_DAMAGE = 2;
 const CRASH_DAMAGE_CAP = 3;
 const TEMP_MOUNTAIN_TURNS = 2;
+const TRAIL_TURNS = 2;
+const FIRE_TRAIL_DAMAGE = 1;
+const STARTING_MANA = 2;
 // Four crystals per camp, spread through the back 3 rows and vertically mirrored.
 const NEXUS_LAYOUT = {
   enemy: [
