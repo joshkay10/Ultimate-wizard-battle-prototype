@@ -54,6 +54,22 @@ const BOARD_COLORS = {
   iceRim: 'rgba(255,255,255,0.92)',
   iceInner: 'rgba(130, 190, 220, 0.7)',
   token: '#b9bcb5',
+  tokenFillPlayer: {
+    fire: '#d1481f',
+    ice: '#1f7fb8',
+    wind: '#2f9e6b',
+    earth: '#7a6238',
+    lightning: '#8a6a12',
+    temporal: '#6b4c9a'
+  },
+  tokenFillEnemy: {
+    fire: '#4a160c',
+    ice: '#0a3048',
+    wind: '#0f3d28',
+    earth: '#2e2514',
+    lightning: '#3a2e08',
+    temporal: '#2a1c3e'
+  },
   enemy: '#1c1e1b',
   text: '#1c1e1b',
   selectedBorder: '#d9b527',
@@ -194,9 +210,9 @@ function canvasArc(ctx, x, y, r) {
   ctx.arc(x, y, r, 0, Math.PI * 2);
 }
 
-function drawElementIcon(ctx, element, cx, cy, size) {
+function drawElementIcon(ctx, element, cx, cy, size, color) {
   size = clampPositive(size, 0.5);
-  const color = BOARD_COLORS[element] || BOARD_COLORS.text;
+  color = color || BOARD_COLORS[element] || BOARD_COLORS.text;
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
@@ -489,6 +505,7 @@ function drawPortal(ctx, box, portal) {
   canvasArc(ctx, cx, cy, box.s * 0.32);
   ctx.stroke();
   ctx.restore();
+  drawElementIcon(ctx, portal.element, cx, cy, box.s * 0.16, color);
   ctx.save();
   ctx.fillStyle = color;
   ctx.globalAlpha = 0.9;
@@ -525,23 +542,36 @@ function drawNexus(ctx, box, hp, flash) {
   ctx.restore();
 }
 
+function tokenFillFor(wizard) {
+  const map = wizard.team === 'enemy' ? BOARD_COLORS.tokenFillEnemy : BOARD_COLORS.tokenFillPlayer;
+  return (map && map[wizard.element]) || BOARD_COLORS.token;
+}
+
 function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   scale = tokenPopScale(scale);
   const radius = box.s * 0.38 * scale;
   const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
+  const yours = wizard.team !== 'enemy';
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   ctx.beginPath();
   canvasArc(ctx, cx, cy, box.s * 0.38);
-  ctx.fillStyle = flash ? '#ffffff' : (wizard.team === 'enemy' ? BOARD_COLORS.enemy : '#f7f4ee');
+  ctx.fillStyle = flash ? '#ffffff' : tokenFillFor(wizard);
   ctx.fill();
-  ctx.lineWidth = Math.max(2.6, box.s * 0.06);
-  ctx.strokeStyle = flash ? '#ffffff' : elColor;
+  ctx.lineWidth = Math.max(2.8, box.s * 0.065);
+  ctx.strokeStyle = flash ? '#ffffff' : (yours ? '#ffffff' : elColor);
   ctx.stroke();
+  if (yours && !flash) {
+    ctx.lineWidth = Math.max(1.4, box.s * 0.03);
+    ctx.strokeStyle = elColor;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, box.s * 0.32);
+    ctx.stroke();
+  }
   if (selected && !flash) {
     ctx.lineWidth = Math.max(2, box.s * 0.045);
     ctx.strokeStyle = BOARD_COLORS.selectedBorder;
@@ -550,7 +580,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
   }
   ctx.restore();
-  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.12, radius * 0.5);
+  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.12, radius * 0.52, '#ffffff');
   if (wizard.silenced && !flash) {
     ctx.save();
     ctx.strokeStyle = BOARD_COLORS.lightning;
@@ -560,7 +590,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
     ctx.restore();
   }
-  ctx.fillStyle = flash ? '#1c1e1b' : (wizard.team === 'enemy' ? '#ffffff' : BOARD_COLORS.text);
+  ctx.fillStyle = flash ? '#1c1e1b' : '#ffffff';
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

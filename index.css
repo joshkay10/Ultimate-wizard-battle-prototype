@@ -257,6 +257,18 @@ html, body {
   cursor: default;
 }
 .wizard-card-hit:disabled:active { transform: none; }
+.wizard-card.fire .wizard-card-hit { border-color: var(--fire); }
+.wizard-card.ice .wizard-card-hit { border-color: var(--ice); }
+.wizard-card.wind .wizard-card-hit { border-color: var(--wind); }
+.wizard-card.earth .wizard-card-hit { border-color: var(--earth); }
+.wizard-card.lightning .wizard-card-hit { border-color: var(--lightning); }
+.wizard-card.temporal .wizard-card-hit { border-color: var(--temporal); }
+.wizard-card.in-hand.fire .wizard-card-hit { background: var(--fire-bg); }
+.wizard-card.in-hand.ice .wizard-card-hit { background: var(--ice-bg); }
+.wizard-card.in-hand.wind .wizard-card-hit { background: var(--wind-bg); }
+.wizard-card.in-hand.earth .wizard-card-hit { background: var(--earth-bg); }
+.wizard-card.in-hand.lightning .wizard-card-hit { background: var(--lightning-bg); }
+.wizard-card.in-hand.temporal .wizard-card-hit { background: var(--temporal-bg); }
 .wizard-card.placing .wizard-card-hit {
   border-color: var(--tile-move-border);
   background: var(--tile-move);
@@ -265,31 +277,25 @@ html, body {
   border-color: var(--tile-selected-border);
   background: var(--tile-selected);
 }
-.wizard-card.in-hand .wizard-card-hit { border-color: #9a9d95; }
-.wizard-card.summoned.fire .wizard-card-hit { border-color: var(--fire); }
-.wizard-card.summoned.ice .wizard-card-hit { border-color: var(--ice); }
-.wizard-card.summoned.wind .wizard-card-hit { border-color: var(--wind); }
-.wizard-card.summoned.earth .wizard-card-hit { border-color: var(--earth); }
-.wizard-card.summoned.lightning .wizard-card-hit { border-color: var(--lightning); }
-.wizard-card.summoned.temporal .wizard-card-hit { border-color: var(--temporal); }
 .wizard-card-icon {
   grid-row: 1 / 3;
   grid-column: 1;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 50%;
   background: #e8e9e5;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
 }
-.wizard-card-icon.fire { background: var(--fire-bg); color: var(--fire); }
-.wizard-card-icon.ice { background: var(--ice-bg); color: var(--ice); }
-.wizard-card-icon.wind { background: var(--wind-bg); color: var(--wind); }
-.wizard-card-icon.earth { background: var(--earth-bg); color: var(--earth); }
-.wizard-card-icon.lightning { background: var(--lightning-bg); color: var(--lightning); }
-.wizard-card-icon.temporal { background: var(--temporal-bg); color: var(--temporal); }
+.wizard-card-icon.fire { background: var(--fire); color: #fff; }
+.wizard-card-icon.ice { background: var(--ice); color: #fff; }
+.wizard-card-icon.wind { background: var(--wind); color: #fff; }
+.wizard-card-icon.earth { background: var(--earth); color: #fff; }
+.wizard-card-icon.lightning { background: #8a6a12; color: #fff; }
+.wizard-card-icon.temporal { background: var(--temporal); color: #fff; }
 .wizard-card-icon svg { width: 22px; height: 22px; }
 .wizard-card-top {
   grid-row: 1;
@@ -300,16 +306,34 @@ html, body {
   gap: 8px;
   min-width: 0;
 }
+.wizard-card-id {
+  min-width: 0;
+  overflow: hidden;
+}
 .wizard-card-name {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
-  line-height: 1.2;
+  line-height: 1.15;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.wizard-card-element {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+.wizard-card.fire .wizard-card-element { color: var(--fire); }
+.wizard-card.ice .wizard-card-element { color: var(--ice); }
+.wizard-card.wind .wizard-card-element { color: var(--wind); }
+.wizard-card.earth .wizard-card-element { color: var(--earth); }
+.wizard-card.lightning .wizard-card-element { color: var(--lightning); }
+.wizard-card.temporal .wizard-card-element { color: var(--temporal); }
 .wizard-cost-badge {
   font-size: 14px;
   font-weight: 800;

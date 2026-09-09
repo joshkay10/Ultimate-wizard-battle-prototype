@@ -192,7 +192,7 @@ function renderElementsPage() {
 function kitCard(element, name, cast, detail) {
   return (
     '<div class="kit-card ' + element + '">' +
-      '<div class="wizard-card-icon ' + element + '">' + iconSpan(element, ELEMENT_COLOR[element]) + '</div>' +
+      '<div class="wizard-card-icon ' + element + '">' + iconSpan(element, '#ffffff') + '</div>' +
       '<div>' +
         '<div class="kit-name">' + name + '</div>' +
         '<div class="kit-cast">' + cast + '</div>' +

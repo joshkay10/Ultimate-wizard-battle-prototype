@@ -67,9 +67,12 @@ function renderPanel() {
       return (
         '<div class="' + cardClasses + '">' +
           '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
-            '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, ELEMENT_COLOR[wiz.element]) + '</div>' +
+            '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, '#ffffff') + '</div>' +
             '<div class="wizard-card-top">' +
-              '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
+              '<div class="wizard-card-id">' +
+                '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
+                '<div class="wizard-card-element">' + wiz.element + '</div>' +
+              '</div>' +
               '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
             '</div>' +
             '<div class="wizard-stats">' +
