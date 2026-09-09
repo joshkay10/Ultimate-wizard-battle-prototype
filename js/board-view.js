@@ -510,6 +510,7 @@ function drawBoard() {
   }
 
   if (state.portals && Object.keys(state.portals).length) ensureFxLoop();
+  const marks = highlightSet();
   const highlightKey = {};
   marks.tiles.forEach(t => { highlightKey[t.row + ',' + t.col] = true; });
 

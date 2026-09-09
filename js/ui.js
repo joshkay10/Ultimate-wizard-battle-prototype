@@ -46,7 +46,7 @@ function renderPanel() {
             '<div class="wizard-stats">' +
               '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
               '<span class="wizard-stat">' + ICONS.cast + '<span>' + wiz.castAttack + '/' + wiz.castDisplacement + '</span></span>' +
-              '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '/' + wiz.maxHp + '</span></span>' +
+              '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '</span></span>' +
             '</div>' +
           '</button>' +
         '</div>'
