@@ -636,4 +636,14 @@ html, body {
 }
 .todo-list .done { color: var(--text-dim); }
 .todo-list .open .todo-mark { background: #fff; }
+.todo-list .need .todo-mark {
+  border-color: var(--fire);
+  background: var(--fire-bg);
+}
+.need-note {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
 

@@ -47,6 +47,12 @@ const BOARD_COLORS = {
   waterAlt: '#b3d9ea',
   waterWave: 'rgba(255,255,255,0.55)',
   waterLine: '#6ea9c4',
+  magma: '#4a2214',
+  magmaAlt: '#5c2c18',
+  magmaCrack: '#ff8a3a',
+  magmaHot: '#ffd36a',
+  iceRim: 'rgba(255,255,255,0.92)',
+  iceInner: 'rgba(130, 190, 220, 0.7)',
   token: '#b9bcb5',
   enemy: '#1c1e1b',
   text: '#1c1e1b',
@@ -159,8 +165,8 @@ function tileFill(row, col, highlight, kind, castKind) {
   }
   const trail = trailAt(row, col);
   if (trail) {
-    if (trail.element === 'fire') return isAlt ? '#f4ddd6' : BOARD_COLORS.fireBg;
-    if (trail.element === 'ice') return isAlt ? '#d7e8f3' : BOARD_COLORS.iceBg;
+    if (trail.element === 'fire') return isAlt ? BOARD_COLORS.magmaAlt : BOARD_COLORS.magma;
+    if (trail.element === 'ice') return isAlt ? '#d4eaf6' : '#eaf5fb';
     if (trail.element === 'wind') return isAlt ? '#d8ebe1' : BOARD_COLORS.windBg;
     if (trail.element === 'earth') return isAlt ? '#e8ddc8' : BOARD_COLORS.earthBg;
     if (trail.element === 'lightning') return isAlt ? '#f3e9c4' : BOARD_COLORS.lightningBg;
@@ -326,6 +332,130 @@ function drawWater(ctx, box, row, col) {
   ctx.quadraticCurveTo(x + s * 0.4, wy2 + s * 0.05, x + s * 0.78, wy2 - s * 0.02);
   ctx.stroke();
   ctx.restore();
+}
+
+function drawMagma(ctx, box, row, col) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  const variant = (row * 5 + col * 11) % 3;
+  ctx.save();
+  roundRect(ctx, x, y, s, s, 2);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(18, 6, 2, 0.35)';
+  ctx.fillRect(x, y, s, s);
+  ctx.strokeStyle = BOARD_COLORS.magmaCrack;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2.2, s * 0.07);
+  ctx.beginPath();
+  if (variant === 0) {
+    ctx.moveTo(x + s * 0.12, y + s * 0.22);
+    ctx.lineTo(x + s * 0.42, y + s * 0.48);
+    ctx.lineTo(x + s * 0.34, y + s * 0.88);
+    ctx.moveTo(x + s * 0.48, y + s * 0.1);
+    ctx.lineTo(x + s * 0.72, y + s * 0.58);
+    ctx.lineTo(x + s * 0.9, y + s * 0.7);
+  } else if (variant === 1) {
+    ctx.moveTo(x + s * 0.18, y + s * 0.82);
+    ctx.lineTo(x + s * 0.5, y + s * 0.4);
+    ctx.lineTo(x + s * 0.86, y + s * 0.28);
+    ctx.moveTo(x + s * 0.08, y + s * 0.38);
+    ctx.lineTo(x + s * 0.38, y + s * 0.52);
+  } else {
+    ctx.moveTo(x + s * 0.1, y + s * 0.55);
+    ctx.lineTo(x + s * 0.46, y + s * 0.3);
+    ctx.lineTo(x + s * 0.7, y + s * 0.72);
+    ctx.lineTo(x + s * 0.92, y + s * 0.5);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = BOARD_COLORS.magmaHot;
+  ctx.globalAlpha = 0.9;
+  ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.stroke();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = BOARD_COLORS.magmaHot;
+  const pools = variant === 1
+    ? [[0.4, 0.46], [0.7, 0.32]]
+    : variant === 2
+      ? [[0.48, 0.34], [0.72, 0.7]]
+      : [[0.42, 0.48], [0.72, 0.58]];
+  pools.forEach(function (p) {
+    ctx.beginPath();
+    ctx.ellipse(x + s * p[0], y + s * p[1], s * 0.07, s * 0.045, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawIceFrost(ctx, box, row, col) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  const inset = Math.max(2.2, s * 0.07);
+  ctx.save();
+  roundRect(ctx, x, y, s, s, 2);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + s * 0.62, y);
+  ctx.lineTo(x, y + s * 0.42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = BOARD_COLORS.iceRim;
+  ctx.lineWidth = Math.max(2.4, s * 0.075);
+  ctx.lineJoin = 'round';
+  roundRect(ctx, x + inset, y + inset, s - inset * 2, s - inset * 2, 2);
+  ctx.stroke();
+  ctx.strokeStyle = BOARD_COLORS.iceInner;
+  ctx.lineWidth = Math.max(1, s * 0.03);
+  roundRect(ctx, x + inset + 2, y + inset + 2, s - inset * 2 - 4, s - inset * 2 - 4, 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.1, s * 0.035);
+  const corner = (row + col) % 2 === 0;
+  const cx = corner ? x + s * 0.2 : x + s * 0.8;
+  const cy = corner ? y + s * 0.22 : y + s * 0.78;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.1);
+  ctx.lineTo(cx, cy + s * 0.1);
+  ctx.moveTo(cx - s * 0.1, cy);
+  ctx.lineTo(cx + s * 0.1, cy);
+  ctx.moveTo(cx - s * 0.07, cy - s * 0.07);
+  ctx.lineTo(cx + s * 0.07, cy + s * 0.07);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawWindStreaks(ctx, box, row, col) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  const shift = ((row * 3 + col * 5) % 3) * 0.04;
+  ctx.save();
+  roundRect(ctx, x, y, s, s, 2);
+  ctx.clip();
+  ctx.strokeStyle = BOARD_COLORS.wind;
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = Math.max(1.4, s * 0.05);
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const wy = y + s * (0.28 + i * 0.22 + shift);
+    ctx.beginPath();
+    ctx.moveTo(x + s * 0.12, wy);
+    ctx.quadraticCurveTo(x + s * 0.4, wy - s * 0.08, x + s * 0.62, wy);
+    ctx.quadraticCurveTo(x + s * 0.78, wy + s * 0.06, x + s * 0.9, wy - s * 0.02);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTrail(ctx, box, row, col, element) {
+  if (element === 'fire') drawMagma(ctx, box, row, col);
+  else if (element === 'ice') drawIceFrost(ctx, box, row, col);
+  else if (element === 'wind') drawWindStreaks(ctx, box, row, col);
 }
 
 function drawPortal(ctx, box, portal) {
@@ -636,7 +766,11 @@ function drawBoard() {
       ctx.fill();
 
       if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
-      if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
+      else if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
+      else if (!flashHere) {
+        const trail = trailAt(r, c);
+        if (trail) drawTrail(ctx, box, r, c, trail.element);
+      }
       const portal = portalAt(r, c);
       if (portal && !flashHere) drawPortal(ctx, box, portal);
 

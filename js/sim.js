@@ -192,7 +192,7 @@ function getDisplacementPath(target, dr, dc, amount) {
     const nc = curCol + dc * dir;
     const crash = crashObstacle(nr, nc);
     if (crash) {
-      return { path, tilesShort: Math.min(CRASH_DAMAGE_CAP, remaining), crash: crash };
+      return { path, tilesShort: remaining, crash: crash };
     }
     path.push({ row: nr, col: nc });
     curRow = nr;
@@ -290,8 +290,8 @@ function simPush(target, dr, dc, amount) {
   }
   events.push({ type: 'push', wizardId: target.id, from: from, path: travelled, tilesShort: planned.tilesShort, crash: planned.crash });
   events.push.apply(events, extra);
-  if (finished && planned.tilesShort > 0 && planned.crash) {
-    events.push.apply(events, applyCrashDamage(target, planned.crash, planned.tilesShort));
+  if (finished && planned.crash) {
+    events.push.apply(events, applyCrashDamage(target, planned.crash, CRASH_DAMAGE));
   }
   return events;
 }

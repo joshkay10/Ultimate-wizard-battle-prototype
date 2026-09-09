@@ -61,7 +61,7 @@ function renderRulesPage() {
       '<ul>' +
         '<li>Melee is adjacent (cardinals). Mountains and water are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
-        '<li><strong>Crash:</strong> into a wall (edge, mountain, water, nexus) = 1 per tile short, max 3. Into a wizard = both take it, allies included.</li>' +
+        '<li><strong>Crash:</strong> into a wall (edge, mountain, water, nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1, allies included.</li>' +
         '<li>Friendly fire is on. Ice pulse hits everyone in the ring.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +
@@ -73,13 +73,22 @@ function renderRulesPage() {
 }
 
 function renderTodoPage() {
-  function item(text) {
-    return '<li class="open"><span class="todo-mark"></span>' + text + '</li>';
+  function item(text, cls) {
+    return '<li class="' + (cls || 'open') + '"><span class="todo-mark"></span>' + text + '</li>';
   }
   return (
     '<article class="page">' +
       '<h1>To-do</h1>' +
       '<p class="lede">What still makes a fight mean more. Done work is gone from this list.</p>' +
+
+      '<h2>Need from you</h2>' +
+      '<p class="need-note">Canvas drawings are placeholders. A sprite sheet is fine if that’s easier than separate files — say the frame size.</p>' +
+      '<ul class="todo-list">' +
+        item('<strong>Element icons</strong> (highest value): flame, ice/snowflake, wind, earth/mountain, bolt, clock. Transparent PNG, about 64×64, or one sheet. Replaces the doodles on cards and discs.', 'need') +
+        item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
+        item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, later void. 64×64 tiles that can repeat. Magma and ice frost are painted in code now; sprites can replace them.', 'need') +
+      '</ul>' +
+      '<p class="need-note">Not blocking: unique cast VFX and the AI. Those are code.</p>' +
 
       '<h2>Play</h2>' +
       '<ul class="todo-list">' +
@@ -88,7 +97,7 @@ function renderTodoPage() {
 
       '<h2>Look</h2>' +
       '<ul class="todo-list">' +
-        item('Sprite icons for the six elements (card badge and board).') +
+        item('Swap in element icons / wizard sprites once they exist (see Need from you).') +
         item('Better walks, pushes, blinks, and hit animations.') +
       '</ul>' +
 

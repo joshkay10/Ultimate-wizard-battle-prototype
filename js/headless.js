@@ -65,7 +65,7 @@ async function runSimSelfTests() {
   const hp0 = gale.hp;
   simAttack(ember, 0, 6, 'melee');
   assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
-  assert(gale.hp === hp0 - ember.meleeAttack - 2, 'blocked push should deal collision damage');
+  assert(gale.hp === hp0 - ember.meleeAttack - CRASH_DAMAGE, 'blocked push should deal flat crash damage');
 
   resetMatch(1);
   state.fxEnabled = false;
@@ -87,8 +87,25 @@ async function runSimSelfTests() {
   wallWiz.hp = 8;
   simAttack(batter, 4, 3, 'melee');
   assert(shoved.row === 4 && shoved.col === 3, 'crash into a wizard should stop the push');
-  assert(shoved.hp === 12 - batter.meleeAttack - 2, 'crashed wizard takes hit plus crash');
-  assert(wallWiz.hp === 6, 'the wizard they hit takes crash damage too');
+  assert(shoved.hp === 12 - batter.meleeAttack - CRASH_DAMAGE, 'crashed wizard takes hit plus flat crash');
+  assert(wallWiz.hp === 8 - CRASH_DAMAGE, 'the wizard they hit takes the same flat crash');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = { '4,4': true };
+  state.water = {};
+  const gustCrash = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  const pinned = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  gustCrash.state = 'onboard';
+  gustCrash.row = 4;
+  gustCrash.col = 2;
+  pinned.state = 'onboard';
+  pinned.row = 4;
+  pinned.col = 3;
+  pinned.hp = 12;
+  simAttack(gustCrash, 4, 3, 'cast');
+  assert(pinned.row === 4 && pinned.col === 3, 'gust crash does not move the target');
+  assert(pinned.hp === 12 - gustCrash.castAttack - CRASH_DAMAGE, 'crash is 1 even when three pips are leftover');
 
   resetMatch(1);
   state.fxEnabled = false;

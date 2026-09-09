@@ -47,8 +47,8 @@ On your turn you may, in any order:
 
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains and water are not melee targets.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away (0 push means they stay).
-- **Crash:** if the push hits a wall (edge, mountain, water, or nexus), the pushed wizard takes 1 damage per tile they could not travel (max 3).
-- If they crash into **another wizard**, both take that crash damage. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse hits everyone in the ring.
+- **Crash:** if the push hits a wall (edge, mountain, water, or nexus), the pushed wizard takes **1** damage. Leftover push distance does not add more.
+- If they crash into **another wizard**, both take that 1. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse hits everyone in the ring.
 - HP 0 = dead, token leaves the board.
 - Stream, gust, and pulse leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
   - **Fire:** walking, sliding, blinking, or arriving onto it costs 1 damage.
