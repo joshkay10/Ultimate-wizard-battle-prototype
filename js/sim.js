@@ -208,7 +208,9 @@ function crashObstacle(row, col) {
   if (!inBounds(row, col)) return { kind: 'wall', row: row, col: col };
   const w = wizardAt(row, col);
   if (w) return { kind: 'wizard', wizardId: w.id, row: row, col: col };
-  if (nexusAt(row, col) || mountainAt(row, col)) {
+  const n = nexusAt(row, col);
+  if (n) return { kind: 'nexus', nexusId: n.id, row: row, col: col };
+  if (mountainAt(row, col)) {
     return { kind: 'wall', row: row, col: col };
   }
   return null;
@@ -384,6 +386,11 @@ function applyCrashDamage(pushed, crash, amount) {
       const otherDeath = simKill(other);
       if (otherDeath) events.push(otherDeath);
     }
+  }
+  if (crash.kind === 'nexus') {
+    const n = NEXUS.player.concat(NEXUS.enemy).find(function (x) { return x.id === crash.nexusId; })
+      || nexusAt(crash.row, crash.col);
+    events.push.apply(events, hurtNexus(n, amount, 'crash'));
   }
   return events;
 }

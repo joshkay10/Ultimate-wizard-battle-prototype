@@ -123,6 +123,8 @@ async function runSimSelfTests() {
   simAttack(ember, 0, 6, 'melee');
   assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
   assert(gale.hp === hp0 - ember.meleeAttack - CRASH_DAMAGE, 'blocked push should deal flat crash damage');
+  const slammed = nexusAt(0, 7);
+  assert(slammed && slammed.hp === NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
 
   resetMatch(1);
   state.fxEnabled = false;
@@ -662,6 +664,26 @@ async function runSimSelfTests() {
   state.water = { '4,5': true, '4,6': true };
   simAttack(pusher, 4, 4, 'cast');
   assert(doomedPush.state === 'dead', 'push onto water kills');
+  assert(doomedPush.row == null, 'pushed wizard leaves the water tile');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const voidShove = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const voidVictim = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  voidShove.state = 'onboard';
+  voidShove.row = 4;
+  voidShove.col = 3;
+  voidVictim.state = 'onboard';
+  voidVictim.row = 4;
+  voidVictim.col = 4;
+  voidVictim.hp = 12;
+  openVoid(4, 5);
+  simAttack(voidShove, 4, 4, 'melee');
+  assert(voidVictim.state === 'dead', 'push onto a void kills');
+  assert(voidAt(4, 5), 'void is still there after the fall');
 
   resetMatch(1);
   state.fxEnabled = false;

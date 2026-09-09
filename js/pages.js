@@ -62,7 +62,7 @@ function renderRulesPage() {
       '<ul>' +
         '<li>Melee is adjacent (cardinals). Mountains, water, and voids are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
-        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1, allies included. Water and voids are not walls — you slide on and die.</li>' +
+        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1. Into a nexus = the crystal also takes 1. Water and voids are not walls — you are pushed on and you die.</li>' +
         '<li>Friendly fire is on. Ice pulse hits everyone in the ring.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +

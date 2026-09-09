@@ -560,58 +560,68 @@ function drawPortal(ctx, box, portal) {
   ctx.restore();
 }
 
-function drawDiamond(ctx, x, y, s) {
-  ctx.beginPath();
-  ctx.moveTo(x, y - s);
-  ctx.lineTo(x + s, y);
-  ctx.lineTo(x, y + s);
-  ctx.lineTo(x - s, y);
-  ctx.closePath();
-}
-
 function drawNexus(ctx, box, hp, flash) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
-  const size = box.s * 0.32;
+  const r = box.s * 0.42;
   const frame = flash ? '#ffffff' : BOARD_COLORS.text;
-  const pip = flash ? '#1c1e1b' : BOARD_COLORS.text;
-
-  ctx.save();
-  if (hp <= 0) ctx.globalAlpha = 0.35;
-  ctx.translate(cx, cy);
-  ctx.rotate(Math.PI / 4);
-  ctx.lineWidth = Math.max(2, box.s * 0.055);
-  ctx.strokeStyle = frame;
-  ctx.fillStyle = flash ? '#ffffff' : 'transparent';
-  ctx.beginPath();
-  ctx.rect(-size, -size, size * 2, size * 2);
-  if (flash) ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-
-  if (hp <= 0) return;
-
-  ctx.save();
-  ctx.fillStyle = pip;
-  ctx.strokeStyle = pip;
-  const pipSize = box.s * 0.052;
-  const reach = box.s * 0.175;
-  const slots = [
-    { x: cx, y: cy - reach },
-    { x: cx + reach, y: cy },
-    { x: cx, y: cy + reach },
-    { x: cx - reach, y: cy }
+  const fill = flash ? '#ffffff' : BOARD_COLORS.text;
+  const north = { x: cx, y: cy - r };
+  const east = { x: cx + r, y: cy };
+  const south = { x: cx, y: cy + r };
+  const west = { x: cx - r, y: cy };
+  const quarters = [
+    [north, east],
+    [east, south],
+    [south, west],
+    [west, north]
   ];
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(2, box.s * 0.05);
+  ctx.strokeStyle = frame;
+  ctx.beginPath();
+  ctx.moveTo(north.x, north.y);
+  ctx.lineTo(east.x, east.y);
+  ctx.lineTo(south.x, south.y);
+  ctx.lineTo(west.x, west.y);
+  ctx.closePath();
+  ctx.stroke();
+
+  if (hp <= 0) {
+    ctx.restore();
+    return;
+  }
+
   const diamondsLeft = Math.max(0, Math.min(4, hp - 1));
+  ctx.fillStyle = fill;
   for (let i = 0; i < diamondsLeft; i++) {
-    drawDiamond(ctx, slots[i].x, slots[i].y, pipSize);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(quarters[i][0].x, quarters[i][0].y);
+    ctx.lineTo(quarters[i][1].x, quarters[i][1].y);
+    ctx.closePath();
     ctx.fill();
   }
-  const core = Math.max(3.4, box.s * 0.08);
+  ctx.strokeStyle = frame;
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = Math.max(1, box.s * 0.02);
+  quarters.forEach(function (q) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(q[0].x, q[0].y);
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  const core = Math.max(4.2, box.s * 0.11);
+  ctx.fillStyle = fill;
   ctx.beginPath();
   canvasArc(ctx, cx, cy, core);
   ctx.fill();
-  ctx.lineWidth = Math.max(1.2, box.s * 0.025);
+  ctx.strokeStyle = flash ? '#1c1e1b' : '#f4f5f2';
+  ctx.lineWidth = Math.max(1.4, box.s * 0.028);
   ctx.beginPath();
   canvasArc(ctx, cx, cy, core);
   ctx.stroke();
