@@ -26,16 +26,17 @@ Ice’s extra step is so a back-row arrival can actually threaten midboard. Gale
 On your turn you may, in any order:
 
 1. **Summon** — pay a wizard’s cost and open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If an enemy is standing on the portal when it resolves, the summoning wizard dies and the blocker takes 2 damage. Same rules for the enemy.
-2. **Move** — each onboard wizard that is not sick and has not moved may move once, up to its move range. Other wizards, nexuses, mountains, and water block the path.
-3. **Attack** — each onboard wizard that is not sick and has not attacked may attack once, melee or cast.
-4. **End turn** — the other player takes their turn.
+2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, nexuses, mountains, and water block the path.
+3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid.
+4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own.
 
 ## Combat
 
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains and water are not melee targets.
 - **Cast** hits a straight line, range 4, and stops on the first wizard or nexus. Mountains block the line entirely (you cannot target them or shoot through them). Water does not.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away.
-- If the push is blocked (wizard, nexus, mountain, water, or edge), the target takes 1 extra damage per tile they could not travel (max 3).
+- **Crash:** if the push hits a wall (edge, mountain, water, or nexus), the pushed wizard takes 1 damage per tile they could not travel (max 3).
+- If they crash into **another wizard**, both take that crash damage. Allies count. Friendly fire is on — you can melee or cast your own wizards.
 - HP 0 = dead, token leaves the board.
 - Attacks also leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** — that is how you paint the ground (ice it, burn it, wind it). Trails last about one turn. Right now they are visual only; later they become terrain (fire hurts to cross, wind carries, ice is frictionless).
 

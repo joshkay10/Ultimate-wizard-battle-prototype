@@ -276,11 +276,11 @@ async function playGround(ev) {
 }
 
 async function playDamage(ev) {
-  const killish = ev.amount >= 5 || ev.cause === 'collision';
+  const killish = ev.amount >= 5 || ev.cause === 'collision' || ev.cause === 'crash';
   boardFx.popups.push({ row: ev.row, col: ev.col, text: '-' + ev.amount, t: 0 });
   boardFx.flash = { row: ev.row, col: ev.col };
   boardFx.screenFlash = ev.targetKind === 'nexus' ? 0.55 : (killish ? 0.48 : 0.38);
-  boardFx.shake = ev.targetKind === 'nexus' ? 12 : (ev.cause === 'collision' ? 11 : 8);
+  boardFx.shake = ev.targetKind === 'nexus' ? 12 : (ev.cause === 'collision' || ev.cause === 'crash' ? 11 : 8);
   const layout = boardLayout();
   if (layout) {
     const b = cellRect(layout, ev.row, ev.col);
@@ -288,7 +288,7 @@ async function playDamage(ev) {
   }
   ensureFxLoop();
   drawBoard();
-  const stop = ev.cause === 'collision' ? 110 : (ev.targetKind === 'nexus' ? 100 : 85);
+  const stop = ev.cause === 'collision' || ev.cause === 'crash' ? 110 : (ev.targetKind === 'nexus' ? 100 : 85);
   await sleep(stop);
   boardFx.flash = null;
   drawBoard();

@@ -13,7 +13,7 @@ function placeWizard(row, col) {
   if (!state.placingWizardId) return;
   const wizard = state.wizards[state.placingWizardId];
   if (!wizard) return;
-  present(simSummon(wizard, row, col, 'player'));
+  present(simSummon(wizard, row, col, 'player')).then(afterPlayerAction);
 }
 
 function selectWizard(id) {
@@ -68,7 +68,7 @@ function handleTileClick(row, col) {
     const isValid = moveTiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     const path = pathBFS(wizard, row, col);
-    if (path) present(simMove(wizard, path));
+    if (path) present(simMove(wizard, path)).then(afterPlayerAction);
   } else if (state.selectedAction === 'melee') {
     if (!canAttack(wizard)) { reselectOrBail(); return; }
     const tiles = getMeleeTiles(wizard);

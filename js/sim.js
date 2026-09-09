@@ -133,6 +133,26 @@ function canAttack(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked);
 }
 
+function playerHasLegalAction() {
+  if (state.gameOverResult || state.currentTurn !== 'player') return false;
+  if (state.placingWizardId && getPlayerSummonTiles().length) return true;
+
+  const canPortal = Object.values(state.wizards).some(w =>
+    w.team === 'player' && w.state === 'summoned' && state.mana >= w.cost
+  );
+  if (canPortal && getPlayerSummonTiles().length) return true;
+
+  const onboard = Object.values(state.wizards).filter(w =>
+    w.team === 'player' && w.state === 'onboard'
+  );
+  for (let i = 0; i < onboard.length; i++) {
+    const w = onboard[i];
+    if (canMove(w) && getMoveTiles(w).length) return true;
+    if (canAttack(w) && (getMeleeTiles(w).length || getCastTiles(w).length)) return true;
+  }
+  return false;
+}
+
 function directionBetween(fromRow, fromCol, toRow, toCol) {
   return {
     dr: Math.sign(toRow - fromRow),
@@ -141,7 +161,7 @@ function directionBetween(fromRow, fromCol, toRow, toCol) {
 }
 
 function getDisplacementPath(target, dr, dc, amount) {
-  if (amount === 0) return { path: [], tilesShort: 0 };
+  if (amount === 0) return { path: [], tilesShort: 0, crash: null };
   const dir = amount > 0 ? 1 : -1;
   const steps = Math.abs(amount);
   const path = [];
@@ -149,18 +169,29 @@ function getDisplacementPath(target, dr, dc, amount) {
   for (let i = 0; i < steps; i++) {
     const nr = curRow + dr * dir;
     const nc = curCol + dc * dir;
-    if (!inBounds(nr, nc) || isBlocked(nr, nc)) {
-      return { path, tilesShort: Math.min(3, steps - i) };
+    const crash = crashObstacle(nr, nc);
+    if (crash) {
+      return { path, tilesShort: Math.min(CRASH_DAMAGE_CAP, steps - i), crash: crash };
     }
     path.push({ row: nr, col: nc });
     curRow = nr;
     curCol = nc;
   }
-  return { path, tilesShort: 0 };
+  return { path, tilesShort: 0, crash: null };
+}
+
+function crashObstacle(row, col) {
+  if (!inBounds(row, col)) return { kind: 'wall', row: row, col: col };
+  const w = wizardAt(row, col);
+  if (w) return { kind: 'wizard', wizardId: w.id, row: row, col: col };
+  if (nexusAt(row, col) || mountainAt(row, col) || waterAt(row, col)) {
+    return { kind: 'wall', row: row, col: col };
+  }
+  return null;
 }
 
 function simKill(wizard) {
-  if (!wizard || wizard.hp > 0) return null;
+  if (!wizard || wizard.state === 'dead' || wizard.hp > 0) return null;
   const ev = {
     type: 'death',
     wizardId: wizard.id,
@@ -179,25 +210,50 @@ function simKill(wizard) {
 
 function simPush(target, dr, dc, amount) {
   const from = { row: target.row, col: target.col };
-  const { path, tilesShort } = getDisplacementPath(target, dr, dc, amount);
+  const { path, tilesShort, crash } = getDisplacementPath(target, dr, dc, amount);
   const events = [];
   if (path.length) {
     const last = path[path.length - 1];
     target.row = last.row;
     target.col = last.col;
   }
-  events.push({ type: 'push', wizardId: target.id, from, path, tilesShort });
-  if (tilesShort > 0) {
-    target.hp -= tilesShort;
-    events.push({
-      type: 'damage',
-      targetKind: 'wizard',
-      targetId: target.id,
-      amount: tilesShort,
-      row: target.row,
-      col: target.col,
-      cause: 'collision'
-    });
+  events.push({ type: 'push', wizardId: target.id, from, path, tilesShort, crash: crash });
+  if (tilesShort > 0 && crash) {
+    events.push.apply(events, applyCrashDamage(target, crash, tilesShort));
+  }
+  return events;
+}
+
+function applyCrashDamage(pushed, crash, amount) {
+  const events = [];
+  pushed.hp -= amount;
+  events.push({
+    type: 'damage',
+    targetKind: 'wizard',
+    targetId: pushed.id,
+    amount: amount,
+    row: pushed.row,
+    col: pushed.col,
+    cause: 'crash'
+  });
+  const death = simKill(pushed);
+  if (death) events.push(death);
+  if (crash.kind === 'wizard') {
+    const other = state.wizards[crash.wizardId];
+    if (other && other.state === 'onboard') {
+      other.hp -= amount;
+      events.push({
+        type: 'damage',
+        targetKind: 'wizard',
+        targetId: other.id,
+        amount: amount,
+        row: other.row,
+        col: other.col,
+        cause: 'crash'
+      });
+      const otherDeath = simKill(other);
+      if (otherDeath) events.push(otherDeath);
+    }
   }
   return events;
 }
