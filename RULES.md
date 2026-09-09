@@ -1,10 +1,10 @@
 # Wizard Battle — Rules
 
-A two-player turn game on a 9×9 grid. Destroy both enemy nexuses, or wipe their wizards.
+A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Setup
 
-- Each player has **two nexuses** (12 HP each) on their back row, at columns 3 and 7. You must drop **both** of a side’s crystals to win that way. Two targets split pressure across the board; a single center nexus just piled everyone into one lane. Three would be too many on a 9×9.
+- Each player has **four nexuses** (5 HP each) spread through their back 3 rows: two on the back line (wings) and two a step forward (inner). You must drop **all** of a side’s crystals to win that way. Multiple targets keep the fight from collapsing into one lane.
 - **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** appears on some maps (not every seed). You cannot walk, summon, or push onto it, but spells fly over it.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
@@ -43,5 +43,5 @@ On your turn you may, in any order:
 
 Checked after each side’s turn (not on that side’s very first turn):
 
-- You win if **both** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
+- You win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
 - Draw if both sides lose at the same time.

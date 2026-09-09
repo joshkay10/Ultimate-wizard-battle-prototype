@@ -42,11 +42,11 @@ async function runSimSelfTests() {
   state.water = {};
   const rime = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   rime.state = 'onboard';
-  rime.row = 6;
-  rime.col = 3;
-  const emptyHit = simAttack(rime, 5, 3, 'melee');
+  rime.row = 5;
+  rime.col = 4;
+  const emptyHit = simAttack(rime, 4, 4, 'melee');
   assert(emptyHit.some(e => e.type === 'ground'), 'empty melee should strike the ground');
-  assert(trailAt(5, 3) && trailAt(5, 3).element === 'ice', 'empty melee should ice the tile');
+  assert(trailAt(4, 4) && trailAt(4, 4).element === 'ice', 'empty melee should ice the tile');
   assert(rime.hasAttacked, 'empty melee still spends the attack');
 
   resetMatch(1);
@@ -57,14 +57,14 @@ async function runSimSelfTests() {
   const gale = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   ember.state = 'onboard';
   ember.row = 0;
-  ember.col = 0;
+  ember.col = 5;
   gale.state = 'onboard';
   gale.row = 0;
-  gale.col = 1;
+  gale.col = 6;
   gale.hp = 12;
   const hp0 = gale.hp;
-  simAttack(ember, 0, 1, 'melee');
-  assert(gale.row === 0 && gale.col === 1, 'push into a nexus should stay put');
+  simAttack(ember, 0, 6, 'melee');
+  assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
   assert(gale.hp === hp0 - ember.meleeAttack - 2, 'blocked push should deal collision damage');
 
   resetMatch(1);
@@ -78,8 +78,10 @@ async function runSimSelfTests() {
   const moves = getMoveTiles(walker);
   assert(moves.length > 0, 'move range should be open');
   assert(!moves.some(t => nexusAt(t.row, t.col)), 'move range should not include a nexus');
-  assert(NEXUS.player.length === 2 && NEXUS.enemy.length === 2, 'each side has two nexuses');
-  assert(NEXUS.player[0].col === 2 && NEXUS.player[1].col === 6, 'player nexuses sit on the wings');
+  assert(NEXUS.player.length === 4 && NEXUS.enemy.length === 4, 'each side has four nexuses');
+  assert(NEXUS.player.every(n => n.maxHp === 5), 'nexuses have 5 HP');
+  assert(NEXUS.enemy.some(n => n.row === 0 && n.col === 1), 'enemy back-west nexus');
+  assert(NEXUS.enemy.some(n => n.row === 2 && n.col === 5), 'enemy front-east nexus');
 
   resetMatch(1);
   state.fxEnabled = false;
@@ -94,10 +96,25 @@ async function runSimSelfTests() {
 
   resetMatch(1);
   state.fxEnabled = false;
-  NEXUS.enemy[0].hp = 0;
+  NEXUS.enemy.forEach((n, i) => { if (i < 3) n.hp = 0; });
   assert(checkWinLoss() === null, 'one living enemy nexus should keep the game going');
-  NEXUS.enemy[1].hp = 0;
-  assert(checkWinLoss() === 'player', 'both enemy nexuses down is a win');
+  NEXUS.enemy[3].hp = 0;
+  assert(checkWinLoss() === 'player', 'all enemy nexuses down is a win');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const hunter = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  hunter.state = 'onboard';
+  hunter.row = 2;
+  hunter.col = 4;
+  const wounded = NEXUS.enemy.find(n => n.row === 2 && n.col === 3);
+  const healthy = NEXUS.enemy.find(n => n.row === 2 && n.col === 5);
+  wounded.hp = 1;
+  healthy.hp = 5;
+  const snipe = pickAttack(hunter, 'player');
+  assert(snipe && snipe.row === 2 && snipe.col === 3, 'AI should snipe the wounded nexus');
 
   resetMatch(1);
   state.fxEnabled = false;
@@ -191,6 +208,7 @@ async function runSimSelfTests() {
     assertVerticalMirror(state.water, 'water seed ' + s);
     if (Object.keys(state.water).length) waterMaps++;
     else dryMaps++;
+    assert(campsConnected(state.mountains, state.water), 'camps should stay connected on seed ' + s);
   }
   assert(waterMaps > 0, 'some maps should have water');
   assert(dryMaps > 0, 'some maps should be dry');

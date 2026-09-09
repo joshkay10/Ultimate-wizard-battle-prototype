@@ -27,5 +27,19 @@ const CENTER = 4; // 0-indexed center of 9x9
 const MANA_CAP = 10;
 const SUMMON_ROW_START = BOARD_SIZE - 3;
 const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
-const NEXUS_HP = 12;
-const NEXUS_COLS = [2, 6]; // two nexuses per back row, not the center lane
+const NEXUS_HP = 5;
+// Four crystals per camp, spread through the back 3 rows and vertically mirrored.
+const NEXUS_LAYOUT = {
+  enemy: [
+    { id: 'enemy-back-west', row: 0, col: 1 },
+    { id: 'enemy-back-east', row: 0, col: 7 },
+    { id: 'enemy-front-west', row: 2, col: 3 },
+    { id: 'enemy-front-east', row: 2, col: 5 }
+  ],
+  player: [
+    { id: 'player-back-west', row: 8, col: 1 },
+    { id: 'player-back-east', row: 8, col: 7 },
+    { id: 'player-front-west', row: 6, col: 3 },
+    { id: 'player-front-east', row: 6, col: 5 }
+  ]
+};

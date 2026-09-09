@@ -107,13 +107,13 @@ function renderGameOverOverlay() {
   let heading, sub;
   if (state.gameOverResult === 'draw') {
     heading = 'draw';
-    sub = 'both sides lost their nexuses at the same time';
+    sub = 'all nexuses on both sides fell at the same time';
   } else if (state.gameOverResult === 'player') {
     heading = 'you win';
-    sub = 'both enemy nexuses fell, or their wizards were wiped out';
+    sub = 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
     heading = 'you lose';
-    sub = 'both of your nexuses fell, or your wizards were wiped out';
+    sub = 'all of your nexuses fell, or your wizards were wiped out';
   }
   return (
     '<div class="game-over-overlay">' +

@@ -37,15 +37,11 @@ const state = {
   fxEnabled: true
 };
 
-// Two nexuses per side. Destroy both of a team's crystals (or wipe their
-// wizards) to win. Side pockets matter; the old single center nexus did not.
+function makeNexus(spec, team) {
+  return { id: spec.id, team: team, row: spec.row, col: spec.col, hp: NEXUS_HP, maxHp: NEXUS_HP };
+}
+
 const NEXUS = {
-  player: [
-    { id: 'player-west', team: 'player', row: BOARD_SIZE - 1, col: NEXUS_COLS[0], hp: NEXUS_HP, maxHp: NEXUS_HP },
-    { id: 'player-east', team: 'player', row: BOARD_SIZE - 1, col: NEXUS_COLS[1], hp: NEXUS_HP, maxHp: NEXUS_HP }
-  ],
-  enemy: [
-    { id: 'enemy-west', team: 'enemy', row: 0, col: NEXUS_COLS[0], hp: NEXUS_HP, maxHp: NEXUS_HP },
-    { id: 'enemy-east', team: 'enemy', row: 0, col: NEXUS_COLS[1], hp: NEXUS_HP, maxHp: NEXUS_HP }
-  ]
+  player: NEXUS_LAYOUT.player.map(spec => makeNexus(spec, 'player')),
+  enemy: NEXUS_LAYOUT.enemy.map(spec => makeNexus(spec, 'enemy'))
 };

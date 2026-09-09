@@ -254,6 +254,36 @@ function pruneTerrainSingletons(map) {
   });
 }
 
+function campsConnected(mountains, water) {
+  function blocked(row, col) {
+    if (!inBounds(row, col)) return true;
+    if (nexusAt(row, col)) return true;
+    return terrainTaken(row, col, mountains, water);
+  }
+  const visited = new Set();
+  const queue = [];
+  for (let c = 0; c < BOARD_SIZE; c++) {
+    if (blocked(SUMMON_ROW_START + 1, c)) continue;
+    const k = terrainKey(SUMMON_ROW_START + 1, c);
+    visited.add(k);
+    queue.push({ row: SUMMON_ROW_START + 1, col: c });
+  }
+  while (queue.length) {
+    const cur = queue.pop();
+    if (cur.row < ENEMY_ROW_END) return true;
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    for (let i = 0; i < dirs.length; i++) {
+      const nr = cur.row + dirs[i][0];
+      const nc = cur.col + dirs[i][1];
+      const k = terrainKey(nr, nc);
+      if (visited.has(k) || blocked(nr, nc)) continue;
+      visited.add(k);
+      queue.push({ row: nr, col: nc });
+    }
+  }
+  return false;
+}
+
 function countOpenSummonTiles(mountains, water, team) {
   let n = 0;
   const start = team === 'player' ? SUMMON_ROW_START : 0;
@@ -369,7 +399,15 @@ function generateTerrain() {
   const mountains = {};
   const water = {};
   generateMountainsInto(mountains, water);
+  if (!campsConnected(mountains, water)) {
+    state.mountains = fallbackMountains();
+    state.water = {};
+    return;
+  }
   if (state.rng.next() < 0.48) generateWaterInto(mountains, water);
+  if (!campsConnected(mountains, water)) {
+    Object.keys(water).forEach(function (k) { delete water[k]; });
+  }
 
   if (countOpenSummonTiles(mountains, water, 'player') < 6 || countOpenSummonTiles(mountains, water, 'enemy') < 6) {
     state.mountains = fallbackMountains();
