@@ -17,53 +17,42 @@ function ensureShell() {
 }
 
 function renderPanel() {
-  // Build a card for every wizard still alive, in roster order — summoned or on board.
-  // Cards vanish only once a wizard is dead.
-  const wizardCards = ROSTER.map((r, i) => {
-    const type = WIZARD_TYPES.find(t => t.id === r.typeId);
-    const sameType = Object.values(state.wizards)
-      .filter(w => w.element === type.element && w.team === 'player')
-      .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10));
-    const indexAmongType = ROSTER.slice(0, i + 1).filter(x => x.typeId === r.typeId).length - 1;
-    const wiz = sameType[indexAmongType];
-    if (!wiz) return '';
-    if (wiz.state === 'dead') return ''; // card vanishes on death
+  const wizardCards = Object.values(state.wizards)
+    .filter(w => w.team === 'player' && w.state !== 'dead')
+    .sort((a, b) => {
+      const aUsed = a.state === 'summoned' ? 0 : 1;
+      const bUsed = b.state === 'summoned' ? 0 : 1;
+      if (aUsed !== bUsed) return aUsed - bUsed;
+      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
+    })
+    .map(wiz => {
+      const inHand = wiz.state === 'summoned';
+      const isPicked = wiz.id === state.placingWizardId;
+      const isBoardSelected = wiz.id === state.selectedWizardId;
+      const clickable = inHand ? state.mana >= wiz.cost : wiz.state === 'onboard';
+      const cardClasses = 'wizard-card ' + wiz.element
+        + (inHand ? ' in-hand' : ' summoned')
+        + (isPicked ? ' placing' : '')
+        + (isBoardSelected ? ' board-selected' : '');
 
-    const isPicked = wiz.id === state.placingWizardId;
-    const isBoardSelected = wiz.id === state.selectedWizardId;
-    const isSummoned = wiz.state === 'summoned';
-    const isPortaling = wiz.state === 'portaling';
-    const affordable = state.mana >= wiz.cost;
-    const clickable = isSummoned ? affordable : (!isPortaling);
-    const sick = !isSummoned && !!wiz.summoningSickness;
-
-    const stateLabel = isSummoned ? 'summoned' : (isPortaling ? 'portal' : (sick ? 'summoning sickness' : 'on board'));
-    const cardClasses = 'wizard-card'
-      + (isSummoned ? ' summoned ' + wiz.element : '')
-      + (sick ? ' sick' : '')
-      + (isPicked ? ' placing' : '')
-      + (isBoardSelected ? ' board-selected' : '');
-
-    return (
-      '<div class="' + cardClasses + '">' +
-        '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
-          '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
-          '<div class="wizard-card-head">' +
-            '<div class="wizard-card-icon">' + iconSpan(wiz.element, ELEMENT_COLOR[wiz.element]) + '</div>' +
-            '<div>' +
+      return (
+        '<div class="' + cardClasses + '">' +
+          '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
+            '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, ELEMENT_COLOR[wiz.element]) + '</div>' +
+            '<div class="wizard-card-top">' +
               '<div class="wizard-card-name">' + wiz.name + '</div>' +
-              '<div class="wizard-card-state">' + stateLabel + '</div>' +
+              '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
             '</div>' +
-          '</div>' +
-          '<div class="wizard-stats">' +
-            '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
-            '<span class="wizard-stat">' + ICONS.cast + '<span>' + wiz.castAttack + '/' + wiz.castDisplacement + '</span></span>' +
-            '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '/' + wiz.maxHp + '</span></span>' +
-          '</div>' +
-        '</button>' +
-      '</div>'
-    );
-  }).filter(Boolean).join('');
+            '<div class="wizard-stats">' +
+              '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
+              '<span class="wizard-stat">' + ICONS.cast + '<span>' + wiz.castAttack + '/' + wiz.castDisplacement + '</span></span>' +
+              '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '/' + wiz.maxHp + '</span></span>' +
+            '</div>' +
+          '</button>' +
+        '</div>'
+      );
+    })
+    .join('');
 
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
     ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows to open a portal for ' + state.wizards[state.placingWizardId].name + '</div>'

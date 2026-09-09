@@ -8,7 +8,7 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 - **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** appears on some maps (not every seed). You cannot walk, summon, or push onto it, but spells fly over it.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
-- Each player has the same roster: two Ember, two Rime, two Gale. All start off the board.
+- Each player has the same roster: two Ember, two Ice, two Gale. All start off the board.
 - Round 1 starts with 1 mana. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn.
 
 ## Wizards
@@ -16,10 +16,10 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Cast (dmg / push) |
 | --- | --- | --- | --- | --- | --- |
 | Ember (fire) | 3 | 3 | 10 | 5 / 2 | 3 / 1 |
-| Rime (ice) | 2 | 3 | 12 | 4 / 2 | 2 / 1 |
+| Ice | 2 | 3 | 12 | 4 / 2 | 2 / 1 |
 | Gale (wind) | 2 | 4 | 8 | 3 / 2 | 2 / 1 |
 
-Rime’s extra step is so a back-row arrival can actually threaten midboard. Gale stays the skirmisher at 4.
+Ice’s extra step is so a back-row arrival can actually threaten midboard. Gale stays the skirmisher at 4.
 
 ## Turn
 

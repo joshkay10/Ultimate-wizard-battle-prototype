@@ -55,9 +55,7 @@ html, body {
   pointer-events: none;
 }
 #app.is-enemy-turn .panel {
-  opacity: 0.55;
   pointer-events: none;
-  transition: opacity 0.2s ease;
 }
 #app.is-enemy-turn .topbar-round {
   color: var(--fire);
@@ -206,34 +204,35 @@ html, body {
 
 .wizard-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 .wizard-card {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  min-width: 0;
 }
 .wizard-card-hit {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: center;
   width: 100%;
-  padding: 9px 9px 8px;
-  border: 1px solid var(--line);
+  padding: 8px 10px;
+  border: 2px solid var(--line-strong);
   border-radius: 10px;
-  background: #fafaf8;
+  background: #fff;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 .wizard-card-hit:active { transform: scale(0.98); }
 .wizard-card-hit:disabled {
-  opacity: 0.45;
   cursor: default;
 }
+.wizard-card-hit:disabled:active { transform: none; }
 .wizard-card.placing .wizard-card-hit {
   border-color: var(--tile-move-border);
   background: var(--tile-move);
@@ -242,68 +241,57 @@ html, body {
   border-color: var(--tile-selected-border);
   background: var(--tile-selected);
 }
-.wizard-card.summoned .wizard-card-hit {
-  border-width: 2px;
-  background: #fff;
-}
-.wizard-card.summoned .wizard-card-hit:disabled {
-  opacity: 0.78;
-}
-.wizard-card.summoned.fire .wizard-card-hit { border-color: var(--fire); }
-.wizard-card.summoned.ice .wizard-card-hit { border-color: var(--ice); }
-.wizard-card.summoned.wind .wizard-card-hit { border-color: var(--wind); }
-.wizard-card.sick .wizard-card-hit {
-  border: 2px dashed var(--text-faint);
-}
-.wizard-card.dead .wizard-card-hit {
-  opacity: 0.4;
-  cursor: default;
-}
-.wizard-card.summoned .wizard-card-icon,
-.wizard-card.summoned .wizard-stat span,
-.wizard-card.summoned .wizard-card-name {
-  opacity: 0.5;
-}
-.wizard-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.wizard-card.in-hand.fire .wizard-card-hit { border-color: var(--fire); }
+.wizard-card.in-hand.ice .wizard-card-hit { border-color: var(--ice); }
+.wizard-card.in-hand.wind .wizard-card-hit { border-color: var(--wind); }
+.wizard-card.summoned .wizard-card-hit { border-color: #9a9d95; }
 .wizard-card-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #b9bcb5;
+  grid-row: 1 / 3;
+  grid-column: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #e8e9e5;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.wizard-card-icon svg { width: 17px; height: 17px; }
+.wizard-card-icon.fire { background: var(--fire-bg); color: var(--fire); }
+.wizard-card-icon.ice { background: var(--ice-bg); color: var(--ice); }
+.wizard-card-icon.wind { background: var(--wind-bg); color: var(--wind); }
+.wizard-card-icon svg { width: 22px; height: 22px; }
+.wizard-card-top {
+  grid-row: 1;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
 .wizard-card-name {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.2;
-}
-.wizard-card-state {
-  font-size: 9px;
-  color: var(--text-faint);
-  text-transform: lowercase;
-  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wizard-cost-badge {
-  position: absolute;
-  top: 7px;
-  right: 8px;
   font-size: 14px;
   font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
 }
 .wizard-cost-badge.fire { color: var(--fire); }
 .wizard-cost-badge.ice { color: var(--ice); }
 .wizard-cost-badge.wind { color: var(--wind); }
-
 .wizard-stats {
+  grid-row: 2;
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
