@@ -59,11 +59,10 @@ function teamWizardAct(wizard, team) {
   if (canAttack(wizard)) {
     const meleeTiles = getMeleeTiles(wizard);
     const castTiles = getCastTiles(wizard);
-    const foeNexus = foeNexusOf(team);
+    const meleeNexusTile = meleeTiles.find(t => isFoeNexusAt(t.row, t.col, team));
+    const castNexusTile = castTiles.find(t => isFoeNexusAt(t.row, t.col, team));
     const foeTeam = opposingTeam(team);
 
-    const meleeNexusTile = meleeTiles.find(t => nexusAt(t.row, t.col) === foeNexus);
-    const castNexusTile = castTiles.find(t => nexusAt(t.row, t.col) === foeNexus);
     const meleeFoeTile = meleeTiles.find(t => {
       const w2 = wizardAt(t.row, t.col);
       return w2 && w2.team === foeTeam;
@@ -113,7 +112,7 @@ function nearestThreatTile(fromWizard, team) {
       nearest = { row: w.row, col: w.col };
     }
   });
-  const nexus = foeNexusOf(team);
+  const nexus = nearestFoeNexus(fromWizard, team);
   const nexusDist = manhattan(fromWizard.row, fromWizard.col, nexus.row, nexus.col);
   if (nexusDist < nearestDist) {
     nearest = { row: nexus.row, col: nexus.col };

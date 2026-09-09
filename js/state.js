@@ -22,6 +22,7 @@ const state = {
   // Elemental trails left behind by attacks: keyed by "row,col" -> { element, turnsLeft }
   trails: {},
   mountains: {},
+  water: {},
 
   // Mana: starts at 0, max mana +1 each round (capped 10), refilled to max on turn start.
   // Each team has its own pool so the enemy summons under the same rules.
@@ -36,9 +37,15 @@ const state = {
   fxEnabled: true
 };
 
-// Nexuses: fixed objects, block movement and summoning, cannot be selected
-// Row labels A..I map to 0-indexed rows 0..8; column 5 -> 0-indexed col 4
+// Two nexuses per side. Destroy both of a team's crystals (or wipe their
+// wizards) to win. Side pockets matter; the old single center nexus did not.
 const NEXUS = {
-  mine: { row: BOARD_SIZE - 1, col: CENTER, hp: 20, maxHp: 20 },   // row I, col 5
-  enemy: { row: 0, col: CENTER, hp: 20, maxHp: 20 }                // row A, col 5
+  player: [
+    { id: 'player-west', team: 'player', row: BOARD_SIZE - 1, col: NEXUS_COLS[0], hp: NEXUS_HP, maxHp: NEXUS_HP },
+    { id: 'player-east', team: 'player', row: BOARD_SIZE - 1, col: NEXUS_COLS[1], hp: NEXUS_HP, maxHp: NEXUS_HP }
+  ],
+  enemy: [
+    { id: 'enemy-west', team: 'enemy', row: 0, col: NEXUS_COLS[0], hp: NEXUS_HP, maxHp: NEXUS_HP },
+    { id: 'enemy-east', team: 'enemy', row: 0, col: NEXUS_COLS[1], hp: NEXUS_HP, maxHp: NEXUS_HP }
+  ]
 };

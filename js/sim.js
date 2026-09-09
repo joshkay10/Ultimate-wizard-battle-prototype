@@ -12,15 +12,42 @@ function spendMana(team, amount) {
 }
 
 function foeNexusOf(team) {
-  return team === 'player' ? NEXUS.enemy : NEXUS.mine;
+  const living = livingNexuses(opposingTeam(team));
+  return living.length ? living[0] : NEXUS[opposingTeam(team)][0];
+}
+
+function nearestFoeNexus(fromWizard, team) {
+  const living = livingNexuses(opposingTeam(team));
+  if (!living.length) return NEXUS[opposingTeam(team)][0];
+  let best = living[0];
+  let bestD = manhattan(fromWizard.row, fromWizard.col, best.row, best.col);
+  for (let i = 1; i < living.length; i++) {
+    const d = manhattan(fromWizard.row, fromWizard.col, living[i].row, living[i].col);
+    if (d < bestD) {
+      bestD = d;
+      best = living[i];
+    }
+  }
+  return best;
+}
+
+function isFoeNexusAt(row, col, team) {
+  const n = nexusAt(row, col);
+  return !!(n && n.team === opposingTeam(team) && n.hp > 0);
 }
 
 function ownNexusOf(team) {
-  return team === 'player' ? NEXUS.mine : NEXUS.enemy;
+  return NEXUS[team][0];
 }
 
 function nexusId(nex) {
-  return nex === NEXUS.mine ? 'mine' : 'enemy';
+  return nex && nex.id;
+}
+
+function resetNexuses() {
+  eachNexus(function (n) {
+    n.hp = n.maxHp;
+  });
 }
 
 function resetMatch(seed) {
@@ -45,9 +72,9 @@ function resetMatch(seed) {
   state.enemyMana = 1;
   state.enemyMaxMana = 1;
   state.log = [];
-  NEXUS.mine.hp = NEXUS.mine.maxHp;
-  NEXUS.enemy.hp = NEXUS.enemy.maxHp;
-  generateMountains();
+  state.water = {};
+  resetNexuses();
+  generateTerrain();
   seedRosters();
 }
 
@@ -74,8 +101,8 @@ function teamHasPresence(team) {
 }
 
 function checkWinLoss() {
-  const mineDead = NEXUS.mine.hp <= 0;
-  const enemyDead = NEXUS.enemy.hp <= 0;
+  const mineDead = teamNexusesFallen('player');
+  const enemyDead = teamNexusesFallen('enemy');
   if (mineDead && enemyDead) return 'draw';
 
   const playerWiped = mineDead || !teamHasPresence('player');

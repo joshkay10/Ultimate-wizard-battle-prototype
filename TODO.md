@@ -6,7 +6,7 @@ Empty-tile attacks are valid. You can ice / burn / wind a tile on purpose. Trail
 
 Board tiles that are not just a flat grid.
 
-- [ ] Water
+- [x] Water — impassable lakes on some maps; spells fly over
 - [ ] Voids
 - [x] Mountains — impassable edge ridges; block walk, summon, and cast
 - [ ] Fire, ice, and wind trails become real terrain:

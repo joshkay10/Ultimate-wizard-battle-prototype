@@ -18,7 +18,7 @@ const ELEMENT_COLOR = {
 
 const WIZARD_TYPES = [
   { id: 'fire', name: 'Ember', element: 'fire', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2, castAttack: 3, castDisplacement: 1 },
-  { id: 'ice', name: 'Rime', element: 'ice', moveRange: 2, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1 },
+  { id: 'ice', name: 'Rime', element: 'ice', moveRange: 3, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1 },
   { id: 'wind', name: 'Gale', element: 'wind', moveRange: 4, hp: 8, cost: 2, meleeAttack: 3, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1 }
 ];
 
@@ -27,3 +27,5 @@ const CENTER = 4; // 0-indexed center of 9x9
 const MANA_CAP = 10;
 const SUMMON_ROW_START = BOARD_SIZE - 3;
 const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
+const NEXUS_HP = 12;
+const NEXUS_COLS = [2, 6]; // two nexuses per back row, not the center lane

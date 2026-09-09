@@ -37,6 +37,10 @@ const BOARD_COLORS = {
   mountainBody: '#5a554a',
   mountainBody2: '#6b6558',
   mountainSnow: '#f3efe6',
+  water: '#c5e4f0',
+  waterAlt: '#b3d9ea',
+  waterWave: 'rgba(255,255,255,0.55)',
+  waterLine: '#6ea9c4',
   token: '#b9bcb5',
   enemy: '#1c1e1b',
   text: '#1c1e1b',
@@ -101,7 +105,7 @@ function highlightSet() {
     kind = 'summon';
     for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
-        if (!isBlocked(r, c) && !mountainAt(r, c)) tiles.push({ row: r, col: c });
+        if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
       }
     }
   } else if (selectedWizard && !state.animating) {
@@ -132,12 +136,13 @@ function roundRect(ctx, x, y, w, h, r) {
 function tileFill(row, col, highlight, kind) {
   const isAlt = (row + col) % 2 === 1;
   if (mountainAt(row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
-  const trail = trailAt(row, col);
+  if (waterAt(row, col)) return isAlt ? BOARD_COLORS.waterAlt : BOARD_COLORS.water;
   if (highlight) {
     if (kind === 'melee') return BOARD_COLORS.melee;
     if (kind === 'cast') return BOARD_COLORS.cast;
     return BOARD_COLORS.move;
   }
+  const trail = trailAt(row, col);
   if (trail) {
     if (trail.element === 'fire') return isAlt ? '#f4ddd6' : BOARD_COLORS.fireBg;
     if (trail.element === 'ice') return isAlt ? '#d7e8f3' : BOARD_COLORS.iceBg;
@@ -229,11 +234,41 @@ function drawMountain(ctx, box, row, col) {
   ctx.restore();
 }
 
+function drawWater(ctx, box, row, col) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  ctx.save();
+  ctx.strokeStyle = BOARD_COLORS.waterLine;
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = Math.max(1.2, s * 0.045);
+  ctx.lineCap = 'round';
+  const shift = ((row * 3 + col * 5) % 3) * 0.03;
+  for (let i = 0; i < 3; i++) {
+    const wy = y + s * (0.32 + i * 0.2 + shift);
+    ctx.beginPath();
+    ctx.moveTo(x + s * 0.16, wy);
+    ctx.quadraticCurveTo(x + s * 0.34, wy - s * 0.07, x + s * 0.5, wy);
+    ctx.quadraticCurveTo(x + s * 0.66, wy + s * 0.07, x + s * 0.84, wy);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 0.4;
+  ctx.strokeStyle = BOARD_COLORS.waterWave;
+  ctx.lineWidth = Math.max(1, s * 0.03);
+  const wy2 = y + s * 0.5;
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.22, wy2);
+  ctx.quadraticCurveTo(x + s * 0.4, wy2 + s * 0.05, x + s * 0.78, wy2 - s * 0.02);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawNexus(ctx, box, hp, flash) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   const size = box.s * 0.32;
   ctx.save();
+  if (hp <= 0) ctx.globalAlpha = 0.35;
   ctx.translate(cx, cy);
   ctx.rotate(Math.PI / 4);
   ctx.lineWidth = Math.max(2, box.s * 0.06);
@@ -244,11 +279,14 @@ function drawNexus(ctx, box, hp, flash) {
   if (flash) ctx.fill();
   ctx.stroke();
   ctx.restore();
+  ctx.save();
+  if (hp <= 0) ctx.globalAlpha = 0.35;
   ctx.fillStyle = flash ? '#1c1e1b' : BOARD_COLORS.text;
   ctx.font = '700 ' + Math.max(10, box.s * 0.22) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(hp), cx, cy);
+  ctx.restore();
 }
 
 function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
@@ -460,6 +498,7 @@ function drawBoard() {
       ctx.fillStyle = fill;
       ctx.fill();
 
+      if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
       if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
 
       if (highlighted) {
