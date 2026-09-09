@@ -51,6 +51,10 @@ const BOARD_COLORS = {
   waterAlt: '#b3d9ea',
   waterWave: 'rgba(255,255,255,0.55)',
   waterLine: '#6ea9c4',
+  void: '#1c1d1a',
+  voidAlt: '#141512',
+  voidRim: '#3d4038',
+  voidHole: '#070806',
   magma: '#4a2214',
   magmaAlt: '#5c2c18',
   magmaCrack: '#ff8a3a',
@@ -156,6 +160,7 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function tileFill(row, col, highlight, kind, castKind) {
   const isAlt = (row + col) % 2 === 1;
+  if (voidAt(row, col)) return isAlt ? BOARD_COLORS.voidAlt : BOARD_COLORS.void;
   if (mountainAt(row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
   if (waterAt(row, col)) return isAlt ? BOARD_COLORS.waterAlt : BOARD_COLORS.water;
   if (highlight) {
@@ -333,6 +338,30 @@ function drawMountain(ctx, box, row, col) {
     peak(x + s * 0.72, s * 0.42, s * 0.54, '#615c52', '#ece8df');
     peak(x + s * 0.5, s * 0.52, s * 0.68, BOARD_COLORS.mountainBody, BOARD_COLORS.mountainSnow);
   }
+  ctx.restore();
+}
+
+function drawVoid(ctx, box) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  ctx.save();
+  roundRect(ctx, x, y, s, s, 2);
+  ctx.clip();
+  ctx.fillStyle = BOARD_COLORS.voidHole;
+  ctx.beginPath();
+  ctx.ellipse(x + s / 2, y + s / 2, s * 0.36, s * 0.32, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = BOARD_COLORS.voidRim;
+  ctx.lineWidth = Math.max(1.4, s * 0.05);
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.ellipse(x + s / 2, y + s * 0.48, s * 0.34, s * 0.22, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.ellipse(x + s / 2, y + s * 0.42, s * 0.22, s * 0.12, 0, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -1064,7 +1093,7 @@ function drawBoard() {
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const box = cellRect(layout, r, c);
-      const highlighted = !!highlightKey[r + ',' + c] && !mountainAt(r, c);
+      const highlighted = !!highlightKey[r + ',' + c] && (!mountainAt(r, c) || (marks.kind === 'cast' && marks.castKind === 'bolt'));
       const nex = nexusAt(r, c);
       const flashHere = boardFx.flash && boardFx.flash.row === r && boardFx.flash.col === c;
       let fill = tileFill(r, c, highlighted, marks.kind, marks.castKind);
@@ -1076,7 +1105,8 @@ function drawBoard() {
       ctx.fillStyle = fill;
       ctx.fill();
 
-      if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
+      if (voidAt(r, c) && !flashHere) drawVoid(ctx, box);
+      else if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
       else if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
       else if (!flashHere) {
         const trail = trailAt(r, c);

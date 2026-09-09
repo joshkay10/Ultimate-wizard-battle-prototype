@@ -133,6 +133,9 @@ async function playEvent(ev) {
   if (ev.type === 'raise') return playRaiseTerrain(ev);
   if (ev.type === 'swap') return playSwap(ev);
   if (ev.type === 'silence') return playSilence(ev);
+  if (ev.type === 'fizzle') return playFizzle(ev);
+  if (ev.type === 'jump') return playJump(ev);
+  if (ev.type === 'void') return playVoidOpen(ev);
   if (ev.type === 'death') return playDeath(ev);
   if (ev.type === 'gameOver') {
     boardFx.shake = 16;
@@ -604,6 +607,42 @@ async function playSilence(ev) {
   ensureFxLoop();
   await sleep(90);
   boardFx.flash = null;
+}
+
+async function playFizzle(ev) {
+  const layout = boardLayout();
+  if (layout) {
+    const b = cellRect(layout, ev.row, ev.col);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS.earth, 12, 3.2);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS.lightning, 8, 2.4);
+  }
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'fizzle', t: 0, element: 'lightning' });
+  boardFx.shake = Math.max(boardFx.shake, 5);
+  ensureFxLoop();
+  await sleep(110);
+}
+
+async function playJump(ev) {
+  (ev.tiles || []).forEach(function (t) {
+    boardFx.rings.push({ row: t.row, col: t.col, t: 0, element: 'lightning' });
+    boardFx.flash = { row: t.row, col: t.col };
+  });
+  boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.35);
+  ensureFxLoop();
+  await sleep(90);
+  boardFx.flash = null;
+}
+
+async function playVoidOpen(ev) {
+  const layout = boardLayout();
+  if (layout) {
+    const b = cellRect(layout, ev.row, ev.col);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS.voidRim, 16, 4.4);
+  }
+  boardFx.shake = Math.max(boardFx.shake, 10);
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'void', t: 0 });
+  ensureFxLoop();
+  await sleep(120);
 }
 
 async function playProjectile(ev) {

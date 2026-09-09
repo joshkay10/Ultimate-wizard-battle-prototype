@@ -27,7 +27,8 @@ function renderRulesPage() {
       '<ul>' +
         '<li>Each side has <strong>four nexuses</strong> (5 HP). Drop all four to win that way.</li>' +
         '<li><strong>Mountains</strong> block walk, summon, melee, cast, and push.</li>' +
-        '<li><strong>Water</strong> shows up on some maps. No walk, summon, or push — line spells fly over it.</li>' +
+        '<li><strong>Water</strong> shows up on some maps. Step, slide, blink, or get pushed on and you die. No summoning onto it. Line spells fly over. Lightning jumps the pool.</li>' +
+        '<li><strong>Voids</strong> open when a nexus hits 0. Same kill-on-enter as water. The crystal is gone.</li>' +
         '<li>Terrain is vertically mirrored so both camps get the same layout.</li>' +
         '<li>Same roster of six: Ember, Ice, Gale, Earth, Lightning, Temporal.</li>' +
         '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10.</li>' +
@@ -59,9 +60,9 @@ function renderRulesPage() {
 
       '<h2>Combat</h2>' +
       '<ul>' +
-        '<li>Melee is adjacent (cardinals). Mountains and water are not melee targets.</li>' +
+        '<li>Melee is adjacent (cardinals). Mountains, water, and voids are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
-        '<li><strong>Crash:</strong> into a wall (edge, mountain, water, nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1, allies included.</li>' +
+        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1, allies included. Water and voids are not walls — you slide on and die.</li>' +
         '<li>Friendly fire is on. Ice pulse hits everyone in the ring.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +
@@ -86,17 +87,9 @@ function renderTodoPage() {
       '<ul class="todo-list">' +
         item('<strong>Element icons</strong> (highest value): flame, ice/snowflake, wind, earth/mountain, bolt, clock. Transparent PNG, about 64×64, or one sheet. Replaces the doodles on cards and discs.', 'need') +
         item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
-        item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, later void. 64×64 tiles that can repeat. Magma and ice frost are painted in code now; sprites can replace them.', 'need') +
+        item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.', 'need') +
       '</ul>' +
       '<p class="need-note">Not blocking: the AI. That is code.</p>' +
-
-      '<h2>Terrain</h2>' +
-      '<ul class="todo-list">' +
-        item('<strong>Water and voids kill on enter</strong> — step, slide, blink, or get pushed on and you die.') +
-        item('<strong>A dead nexus becomes a void</strong> on that tile.') +
-        item('Lightning jumps along water, grounds on a raised earth wall.') +
-        item('Wind fans fire (spreads it along the gust).') +
-      '</ul>' +
 
       '<h2>AI</h2>' +
       '<ul class="todo-list">' +
@@ -120,19 +113,19 @@ function matrixRow(label, cells, kinds) {
 }
 
 function renderElementsPage() {
-  const tiles = ['Fire', 'Ice', 'Wind', 'Earth wall', 'Water', 'Mountain'];
+  const tiles = ['Fire', 'Ice', 'Wind', 'Earth wall', 'Water', 'Void'];
   return (
     '<article class="page">' +
       '<h1>Elements</h1>' +
-      '<p class="lede">No hidden type chart. What you paint is what the tile does. Last trail wins. Solid cells are live; faded cells are next.</p>' +
+      '<p class="lede">No hidden type chart. What you paint is what the tile does. Last trail wins.</p>' +
 
       '<h2>Kits</h2>' +
       '<div class="kit-grid">' +
         kitCard('fire', 'Ember', 'Stream', 'Line 4 · paints fire') +
         kitCard('ice', 'Ice', 'Pulse', '8 neighbors · paints ice') +
-        kitCard('wind', 'Gale', 'Gust', 'Line 3 · 3 push · paints wind') +
+        kitCard('wind', 'Gale', 'Gust', 'Line 3 · 3 push · paints wind · fans fire') +
         kitCard('earth', 'Earth', 'Raise', 'Temp mountain · no paint') +
-        kitCard('lightning', 'Lightning', 'Bolt', 'Silence · no paint') +
+        kitCard('lightning', 'Lightning', 'Bolt', 'Silence · jumps water · fizzles on raise') +
         kitCard('temporal', 'Temporal', 'Swap', 'Swap or blink · no paint') +
       '</div>' +
 
@@ -142,16 +135,16 @@ function renderElementsPage() {
         '<table class="matrix">' +
           matrixHead(tiles) +
           '<tbody>' +
-            matrixRow('Walk', ['1 dmg', 'normal', 'then carry', 'blocked', 'blocked', 'blocked']) +
-            matrixRow('Push onto', ['1 dmg', 'free pip', 'then carry', 'crash', 'crash', 'crash']) +
-            matrixRow('Line cast', ['open', 'open', 'open', 'blocked', 'flies over', 'blocked']) +
+            matrixRow('Walk', ['1 dmg', 'normal', 'then carry', 'blocked', 'die', 'die']) +
+            matrixRow('Push onto', ['1 dmg', 'free pip', 'then carry', 'crash', 'die', 'die']) +
+            matrixRow('Line cast', ['open', 'open', 'open', 'blocked / fizzle', 'flies over', 'flies over']) +
           '</tbody>' +
         '</table>' +
       '</div>' +
-      '<p class="note">Earth raise is a real wall: it clears a trail and blocks walk, summon, melee, cast, and push. Portals are walkable. Nexuses block walk and eat a cast. Bolt and swap do not paint a trail.</p>' +
+      '<p class="note">Earth raise is a real wall: it clears a trail and blocks walk, summon, melee, cast, and push. Bolt can aim at that wall and fizzles. Water and voids kill on enter. Portals are walkable. Living nexuses block walk and eat a cast. A dead nexus is a void. Bolt and swap do not paint a trail.</p>' +
 
       '<h2>Trail on trail</h2>' +
-      '<p>Painting a tile replaces whatever was there. You cannot paint a mountain, water, or nexus. Earth raise clears the trail and puts a wall there instead.</p>' +
+      '<p>Painting a tile replaces whatever was there. You cannot paint a mountain, water, void, or nexus. Earth raise clears the trail and puts a wall there instead. A gust that hits fire spreads fire along the rest of the gust.</p>' +
       '<div class="table-wrap">' +
         '<table class="matrix">' +
           matrixHead(['on Fire', 'on Ice', 'on Wind']) +
@@ -159,18 +152,7 @@ function renderElementsPage() {
             matrixRow('Paint fire', ['fire', 'fire', 'fire']) +
             matrixRow('Paint ice', ['ice', 'ice', 'ice']) +
             matrixRow('Paint wind', ['wind', 'wind', 'wind']) +
-          '</tbody>' +
-        '</table>' +
-      '</div>' +
-
-      '<h2>Soon</h2>' +
-      '<p>Not in the sim yet — these are the next matchups.</p>' +
-      '<div class="table-wrap">' +
-        '<table class="matrix">' +
-          matrixHead(['Water', 'Earth wall', 'Fire trail']) +
-          '<tbody>' +
-            matrixRow('Lightning', ['jumps', 'grounds / fizzles', '—'], ['soon', 'soon', 'none']) +
-            matrixRow('Gale wind', ['—', 'crash', 'fans / spreads fire'], ['none', 'live', 'soon']) +
+            matrixRow('Gust through fire', ['fire spreads', 'wind', 'wind']) +
           '</tbody>' +
         '</table>' +
       '</div>' +

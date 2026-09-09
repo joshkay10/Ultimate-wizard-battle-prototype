@@ -4,7 +4,7 @@ function paintsTrail(element) {
 
 function layTrail(row, col, element) {
   if (!paintsTrail(element)) return;
-  if (mountainAt(row, col) || waterAt(row, col) || nexusAt(row, col)) return;
+  if (mountainAt(row, col) || waterAt(row, col) || voidAt(row, col) || nexusAt(row, col)) return;
   state.trails[row + ',' + col] = { element, turnsLeft: TRAIL_TURNS };
 }
 
@@ -45,6 +45,22 @@ function waterAt(row, col) {
   return !!(state.water && state.water[row + ',' + col]);
 }
 
+function voidAt(row, col) {
+  return !!(state.voids && state.voids[row + ',' + col]);
+}
+
+function hazardAt(row, col) {
+  return waterAt(row, col) || voidAt(row, col);
+}
+
+function openVoid(row, col) {
+  if (!state.voids) state.voids = {};
+  const key = row + ',' + col;
+  state.voids[key] = true;
+  if (state.trails) delete state.trails[key];
+  if (state.tempMountains) delete state.tempMountains[key];
+}
+
 function terrainKey(row, col) {
   return row + ',' + col;
 }
@@ -73,7 +89,7 @@ function nearNexus(row, col) {
 function nexusAt(row, col) {
   let found = null;
   eachNexus(function (n) {
-    if (n.row === row && n.col === col) found = n;
+    if (n.hp > 0 && n.row === row && n.col === col) found = n;
   });
   return found;
 }
@@ -87,13 +103,14 @@ function portalAt(row, col) {
 }
 
 function canOpenPortalAt(row, col) {
-  return !isBlocked(row, col) && !portalAt(row, col);
+  return !isBlocked(row, col) && !portalAt(row, col) && !hazardAt(row, col);
 }
 
-// Walk/push blocked by wizard, nexus, mountain, or water.
+// Walk blocked by wizard, living nexus, or mountain.
+// Water and voids are enterable hazards — you can step on them, then you die.
 // Portals are walkable — standing on one contests the arrival.
 function isBlocked(row, col) {
-  return !!wizardAt(row, col) || !!nexusAt(row, col) || mountainAt(row, col) || waterAt(row, col);
+  return !!wizardAt(row, col) || !!nexusAt(row, col) || mountainAt(row, col);
 }
 
 function isSummonTile(row, col) {
@@ -164,16 +181,16 @@ function getMeleeTiles(wizard) {
   for (const [dr, dc] of dirs) {
     const nr = wizard.row + dr, nc = wizard.col + dc;
     if (!inBounds(nr, nc)) continue;
-    if (mountainAt(nr, nc) || waterAt(nr, nc)) continue;
+    if (mountainAt(nr, nc) || hazardAt(nr, nc)) continue;
     result.push({ row: nr, col: nc });
   }
   return result;
 }
 
 // Line in each of 4 cardinal directions out to `range`.
-// Stops on the first wizard or nexus (that tile is a valid hit).
-// Mountains are fully opaque: the line does not include them and does not continue past them.
-// Water is impassable to walk/push but spells fly over it.
+// Stops on the first wizard or living nexus (that tile is a valid hit).
+// Mountains are fully opaque for stream/gust: the line does not include them.
+// Water and voids are flown over.
 function getLineCastTiles(wizard, range) {
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   const result = [];
@@ -189,6 +206,25 @@ function getLineCastTiles(wizard, range) {
   return result;
 }
 
+// Bolt can aim at the first mountain in line (it grounds / fizzles there).
+function getBoltTiles(wizard) {
+  const range = wizard.castRange || 4;
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  const result = [];
+  for (let d = 0; d < dirs.length; d++) {
+    const dr = dirs[d][0];
+    const dc = dirs[d][1];
+    for (let dist = 1; dist <= range; dist++) {
+      const nr = wizard.row + dr * dist;
+      const nc = wizard.col + dc * dist;
+      if (!inBounds(nr, nc)) break;
+      result.push({ row: nr, col: nc });
+      if (mountainAt(nr, nc) || wizardAt(nr, nc) || nexusAt(nr, nc)) break;
+    }
+  }
+  return result;
+}
+
 function getPulseTiles(wizard) {
   const result = [];
   for (let dr = -1; dr <= 1; dr++) {
@@ -196,7 +232,7 @@ function getPulseTiles(wizard) {
       if (!dr && !dc) continue;
       const nr = wizard.row + dr, nc = wizard.col + dc;
       if (!inBounds(nr, nc)) continue;
-      if (mountainAt(nr, nc) || waterAt(nr, nc)) continue;
+      if (mountainAt(nr, nc) || hazardAt(nr, nc)) continue;
       result.push({ row: nr, col: nc });
     }
   }
@@ -211,7 +247,7 @@ function getRaiseTiles(wizard) {
       const dist = manhattan(wizard.row, wizard.col, r, c);
       if (dist < 1 || dist > range) continue;
       if (!inBounds(r, c)) continue;
-      if (isBlocked(r, c) || portalAt(r, c)) continue;
+      if (isBlocked(r, c) || portalAt(r, c) || hazardAt(r, c)) continue;
       result.push({ row: r, col: c });
     }
   }
@@ -244,7 +280,7 @@ function getCastTiles(wizard) {
   if (kind === 'pulse') return getPulseTiles(wizard);
   if (kind === 'gust') return getLineCastTiles(wizard, wizard.castRange || 3);
   if (kind === 'raise') return getRaiseTiles(wizard);
-  if (kind === 'bolt') return getLineCastTiles(wizard, wizard.castRange || 4);
+  if (kind === 'bolt') return getBoltTiles(wizard);
   if (kind === 'swap') return getSwapTiles(wizard);
   return getLineCastTiles(wizard, wizard.castRange || 4);
 }

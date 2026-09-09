@@ -24,6 +24,7 @@ const state = {
   mountains: {},
   tempMountains: {},
   water: {},
+  voids: {},
   portals: {},
 
   // Mana: starts at 2, max mana +1 each round (capped 10), refilled to max on turn start.

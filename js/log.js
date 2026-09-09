@@ -51,6 +51,7 @@ function describeEvent(ev) {
       if (ev.hit === 'nexus') return who + ' punches ' + nexusOwnerWord(ev);
       return who + ' punches' + toward;
     }
+    if (ev.hit === 'fizzle') return '';
     const spell = ev.castKind || 'cast';
     if (spell === 'pulse') return who + ' pulses';
     if (spell === 'bolt') {
@@ -69,7 +70,14 @@ function describeEvent(ev) {
   }
   if (ev.type === 'raise') return actorName(ev.attackerId) + ' raises a mountain';
   if (ev.type === 'silence') return actorName(ev.targetId) + ' is silenced';
-  if (ev.type === 'death') return actorName(ev.wizardId) + ' dies';
+  if (ev.type === 'fizzle') return actorName(ev.attackerId) + "'s bolt grounds";
+  if (ev.type === 'jump') return actorName(ev.attackerId) + "'s bolt jumps the water";
+  if (ev.type === 'void') return 'a nexus becomes a void';
+  if (ev.type === 'death') {
+    if (ev.cause === 'water') return actorName(ev.wizardId) + ' falls in the water';
+    if (ev.cause === 'void') return actorName(ev.wizardId) + ' falls into a void';
+    return actorName(ev.wizardId) + ' dies';
+  }
   if (ev.type === 'gameOver') {
     if (ev.result === 'draw') return 'draw';
     if (ev.result === 'player') return 'you win';

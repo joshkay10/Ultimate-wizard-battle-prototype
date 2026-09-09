@@ -278,7 +278,6 @@ async function runSimSelfTests() {
   if (mountainAt(scout.row, scout.col) || waterAt(scout.row, scout.col)) scout.col = 5;
   const scoutMoves = getMoveTiles(scout);
   assert(!scoutMoves.some(t => mountainAt(t.row, t.col)), 'cannot walk onto mountains');
-  assert(!scoutMoves.some(t => waterAt(t.row, t.col)), 'cannot walk onto water');
   const castsFromLane = getCastTiles(scout);
   assert(!castsFromLane.some(t => mountainAt(t.row, t.col)), 'cannot cast onto a mountain');
 
@@ -294,7 +293,10 @@ async function runSimSelfTests() {
   assert(waterCast.some(t => t.row === 7 && t.col === 5), 'cast can target water');
   assert(waterCast.some(t => t.row === 7 && t.col === 7), 'cast continues past water');
   assert(getMeleeTiles(flyer).every(t => !waterAt(t.row, t.col)), 'melee cannot target water');
-  assert(!getMoveTiles(flyer).some(t => waterAt(t.row, t.col)), 'cannot walk onto water');
+  assert(getMoveTiles(flyer).some(t => t.row === 7 && t.col === 5), 'can step onto water');
+  const drown = simMove(flyer, [{ row: 7, col: 5 }]);
+  assert(flyer.state === 'dead', 'water kills on enter');
+  assert(drown.some(e => e.type === 'death' && e.cause === 'water'), 'water death is logged');
 
   let waterMaps = 0;
   let dryMaps = 0;
@@ -542,6 +544,116 @@ async function runSimSelfTests() {
   layTrail(4, 5, 'wind');
   simMove(rider, [{ row: 4, col: 5 }]);
   assert(rider.row === 4 && rider.col === 6, 'wind carries you one more tile');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const pusher = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  const doomedPush = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  pusher.state = 'onboard';
+  pusher.row = 4;
+  pusher.col = 3;
+  doomedPush.state = 'onboard';
+  doomedPush.row = 4;
+  doomedPush.col = 4;
+  doomedPush.hp = 12;
+  state.water = { '4,5': true, '4,6': true };
+  simAttack(pusher, 4, 4, 'cast');
+  assert(doomedPush.state === 'dead', 'push onto water kills');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const drownBlink = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'temporal');
+  drownBlink.state = 'onboard';
+  drownBlink.row = 4;
+  drownBlink.col = 4;
+  state.water = { '4,6': true };
+  const blink = simAttack(drownBlink, 4, 6, 'cast');
+  assert(drownBlink.state === 'dead', 'blink onto water kills');
+  assert(blink.some(e => e.type === 'death' && e.cause === 'water'), 'blink water death is logged');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const crystal = NEXUS.enemy[0];
+  crystal.hp = 1;
+  const emberDrop = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  emberDrop.state = 'onboard';
+  emberDrop.row = crystal.row + 1;
+  emberDrop.col = crystal.col;
+  if (emberDrop.row > 8) emberDrop.row = crystal.row - 1;
+  simAttack(emberDrop, crystal.row, crystal.col, 'melee');
+  assert(crystal.hp === 0, 'last nexus hit drops it');
+  assert(voidAt(crystal.row, crystal.col), 'dead nexus becomes a void');
+  assert(!nexusAt(crystal.row, crystal.col), 'dead nexus no longer occupies the tile');
+  const holeWalker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  holeWalker.state = 'onboard';
+  holeWalker.row = crystal.row;
+  holeWalker.col = crystal.col === 0 ? 1 : crystal.col - 1;
+  if (wizardAt(holeWalker.row, holeWalker.col) && wizardAt(holeWalker.row, holeWalker.col).id !== holeWalker.id) {
+    holeWalker.col = crystal.col + 1;
+  }
+  holeWalker.hasMoved = false;
+  const fall = simMove(holeWalker, [{ row: crystal.row, col: crystal.col }]);
+  assert(holeWalker.state === 'dead', 'void kills on enter');
+  assert(fall.some(e => e.type === 'death' && e.cause === 'void'), 'void death is logged');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.tempMountains = {};
+  const boltWall = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'lightning');
+  const earthWall = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'earth');
+  earthWall.state = 'onboard';
+  earthWall.row = 5;
+  earthWall.col = 6;
+  simAttack(earthWall, 4, 6, 'cast');
+  boltWall.state = 'onboard';
+  boltWall.row = 4;
+  boltWall.col = 4;
+  const grounded = simAttack(boltWall, 4, 6, 'cast');
+  assert(grounded.some(e => e.type === 'fizzle'), 'bolt fizzles on a raised wall');
+  assert(grounded.every(e => e.type !== 'jump'), 'grounded bolt does not jump');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = { '4,5': true, '4,6': true };
+  const jumper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'lightning');
+  const soaked = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  jumper.state = 'onboard';
+  jumper.row = 4;
+  jumper.col = 4;
+  soaked.state = 'onboard';
+  soaked.row = 3;
+  soaked.col = 6;
+  soaked.hp = 12;
+  const jumped = simAttack(jumper, 4, 7, 'cast');
+  assert(jumped.some(e => e.type === 'jump'), 'bolt jumps along water');
+  assert(soaked.hp === 10, 'jump hits a wizard next to the water');
+  assert(soaked.silenced, 'jump silence applies');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const fanner = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  fanner.state = 'onboard';
+  fanner.row = 4;
+  fanner.col = 4;
+  layTrail(4, 5, 'fire');
+  simAttack(fanner, 4, 7, 'cast');
+  assert(trailAt(4, 5) && trailAt(4, 5).element === 'fire', 'gust keeps fire it fans through');
+  assert(trailAt(4, 6) && trailAt(4, 6).element === 'fire', 'gust spreads fire along the line');
+  assert(trailAt(4, 7) && trailAt(4, 7).element === 'fire', 'gust fire reaches the end of the gust');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
