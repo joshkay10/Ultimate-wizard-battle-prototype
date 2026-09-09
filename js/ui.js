@@ -1,4 +1,7 @@
 function iconSpan(name, color) {
+  if (ELEMENT_ICON_ORDER.indexOf(name) >= 0) {
+    return '<span class="el-icon el-icon-' + name + '" aria-hidden="true"></span>';
+  }
   return '<span style="color:' + color + '; display:flex; align-items:center; justify-content:center;">' + ICONS[name] + '</span>';
 }
 

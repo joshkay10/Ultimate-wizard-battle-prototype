@@ -207,9 +207,59 @@ function canvasArc(ctx, x, y, r) {
   ctx.arc(x, y, r, 0, Math.PI * 2);
 }
 
+let elementIconSheet = null;
+let elementIconSheetTried = false;
+const elementIconTintCache = {};
+
+function elementIconSrc() {
+  return 'img/elements.png' + (typeof ASSET_Q === 'string' ? ASSET_Q : '');
+}
+
+function ensureElementIconSheet() {
+  if (elementIconSheetTried) return;
+  elementIconSheetTried = true;
+  const img = new Image();
+  img.onload = function () {
+    elementIconSheet = img;
+    Object.keys(elementIconTintCache).forEach(function (key) { delete elementIconTintCache[key]; });
+    if (typeof drawBoard === 'function') drawBoard();
+  };
+  img.onerror = function () {
+    elementIconSheet = false;
+  };
+  img.src = elementIconSrc();
+}
+
+function tintedElementIcon(element, color, px) {
+  if (!elementIconSheet) return null;
+  const idx = ELEMENT_ICON_ORDER.indexOf(element);
+  if (idx < 0) return null;
+  px = Math.max(8, px | 0);
+  const key = element + '|' + color + '|' + px;
+  if (elementIconTintCache[key]) return elementIconTintCache[key];
+  const frame = elementIconSheet.height;
+  const c = document.createElement('canvas');
+  c.width = px;
+  c.height = px;
+  const x = c.getContext('2d');
+  x.drawImage(elementIconSheet, idx * frame, 0, frame, frame, 0, 0, px, px);
+  x.globalCompositeOperation = 'source-in';
+  x.fillStyle = color;
+  x.fillRect(0, 0, px, px);
+  elementIconTintCache[key] = c;
+  return c;
+}
+
 function drawElementIcon(ctx, element, cx, cy, size, color) {
+  ensureElementIconSheet();
   size = clampPositive(size, 0.5);
   color = color || BOARD_COLORS[element] || BOARD_COLORS.text;
+  const px = Math.max(8, Math.round(size * 2));
+  const sprite = tintedElementIcon(element, color, px);
+  if (sprite) {
+    ctx.drawImage(sprite, cx - px / 2, cy - px / 2);
+    return;
+  }
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
@@ -1069,6 +1119,7 @@ function ensureFxLoop() {
 }
 
 function drawBoard() {
+  ensureElementIconSheet();
   const layout = boardLayout();
   if (!layout) return;
   const { canvas, css, dpr } = layout;

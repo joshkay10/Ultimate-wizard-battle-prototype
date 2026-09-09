@@ -297,6 +297,22 @@ html, body {
 .wizard-card-icon.lightning { background: #8a6a12; color: #fff; }
 .wizard-card-icon.temporal { background: var(--temporal); color: #fff; }
 .wizard-card-icon svg { width: 22px; height: 22px; }
+.el-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex-shrink: 0;
+  background-image: var(--el-icons);
+  background-repeat: no-repeat;
+  background-size: 600% 100%;
+}
+.el-icon-fire { background-position: 0% 0; }
+.el-icon-ice { background-position: 20% 0; }
+.el-icon-wind { background-position: 40% 0; }
+.el-icon-earth { background-position: 60% 0; }
+.el-icon-lightning { background-position: 80% 0; }
+.el-icon-temporal { background-position: 100% 0; }
+.wizard-card-icon .el-icon { width: 24px; height: 24px; }
 .wizard-card-top {
   grid-row: 1;
   grid-column: 2;

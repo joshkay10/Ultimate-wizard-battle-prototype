@@ -31,7 +31,7 @@ function renderRulesPage() {
         '<li><strong>Voids</strong> open when a nexus hits 0. Same kill-on-enter as water. The crystal is gone.</li>' +
         '<li>Terrain is vertically mirrored so both camps get the same layout.</li>' +
         '<li>Same roster of six: Ember, Ice, Gale, Earth, Lightning, Temporal.</li>' +
-        '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10.</li>' +
+        '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Ice is the only 2-cost kit, so the first portal is one body, not a 2-drop pile-on.</li>' +
       '</ul>' +
 
       '<h2>Wizards</h2>' +
@@ -42,10 +42,10 @@ function renderRulesPage() {
           '<tbody>' +
             '<tr><td>Ember</td><td>3</td><td>3</td><td>10</td><td>5 / 2</td><td>Stream — line 4, 3 / 1, paints fire</td></tr>' +
             '<tr><td>Ice</td><td>2</td><td>3</td><td>12</td><td>4 / 2</td><td>Pulse — 8 neighbors, 2 / 1 out</td></tr>' +
-            '<tr><td>Gale</td><td>2</td><td>4</td><td>8</td><td>3 / 2</td><td>Gust — line 3, 1 / 3, paints wind</td></tr>' +
-            '<tr><td>Earth</td><td>3</td><td>2</td><td>14</td><td>4 / 1</td><td>Raise — temp mountain, range 1–2</td></tr>' +
-            '<tr><td>Lightning</td><td>2</td><td>3</td><td>9</td><td>3 / 1</td><td>Bolt — line 4, 2 dmg, silence</td></tr>' +
-            '<tr><td>Temporal</td><td>3</td><td>3</td><td>9</td><td>3 / 1</td><td>Swap or blink, range 1–3</td></tr>' +
+            '<tr><td>Gale</td><td>3</td><td>4</td><td>8</td><td>3 / 2</td><td>Gust — line 3, 1 / 3, paints wind</td></tr>' +
+            '<tr><td>Earth</td><td>4</td><td>2</td><td>14</td><td>4 / 1</td><td>Raise — temp mountain, range 1–2</td></tr>' +
+            '<tr><td>Lightning</td><td>3</td><td>3</td><td>9</td><td>3 / 1</td><td>Bolt — line 4, 2 dmg, silence</td></tr>' +
+            '<tr><td>Temporal</td><td>4</td><td>3</td><td>9</td><td>3 / 1</td><td>Swap or blink, range 1–3</td></tr>' +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -83,9 +83,8 @@ function renderTodoPage() {
       '<p class="lede">What still makes a fight mean more. Done work is gone from this list.</p>' +
 
       '<h2>Need from you</h2>' +
-      '<p class="need-note">Canvas drawings are placeholders. A sprite sheet is fine if that’s easier than separate files — say the frame size.</p>' +
+      '<p class="need-note">Element icons are in. Wizard poses and terrain tiles still help if you have them.</p>' +
       '<ul class="todo-list">' +
-        item('<strong>Element icons</strong> (highest value): flame, ice/snowflake, wind, earth/mountain, bolt, clock. Transparent PNG, about 64×64, or one sheet. Replaces the doodles on cards and discs.', 'need') +
         item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
         item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.', 'need') +
       '</ul>' +

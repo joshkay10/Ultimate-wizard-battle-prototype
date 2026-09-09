@@ -186,6 +186,12 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
   assert(playerHasLegalAction(), 'round 1 with 2 mana can open a 2-cost portal');
+  const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
+  assert(round1Kits.length === 1 && round1Kits[0] === 'ice', 'Ice is the only round-1 drop');
+  assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 3, 'Gale costs 3');
+  assert(WIZARD_TYPES.find(t => t.id === 'lightning').cost === 3, 'Lightning costs 3');
+  assert(WIZARD_TYPES.find(t => t.id === 'earth').cost === 4, 'Earth costs 4');
+  assert(WIZARD_TYPES.find(t => t.id === 'temporal').cost === 4, 'Temporal costs 4');
 
   resetMatch(1);
   state.fxEnabled = false;

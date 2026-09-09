@@ -10,7 +10,7 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
 - Each player has the same roster of **six unique wizards**: Ember, Ice, Gale, Earth, Lightning, Temporal. All start off the board.
-- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn.
+- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn. Ice is the only 2-cost kit, so round 1 is one portal.
 
 ## Wizards
 
@@ -20,12 +20,12 @@ Melee is a simple adjacent punch for everyone. Casts are unique.
 | --- | --- | --- | --- | --- | --- |
 | Ember (fire) | 3 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
 | Ice | 2 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
-| Gale (wind) | 2 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
-| Earth | 3 | 2 | 14 | 4 / 1 | **Raise** — drop a temporary mountain, manhattan 1–2 |
-| Lightning | 2 | 3 | 9 | 3 / 1 | **Bolt** — line 4, 2 dmg, no push, **silence** |
-| Temporal | 3 | 3 | 9 | 3 / 1 | **Swap / blink** — manhattan 1–3, no damage |
+| Gale (wind) | 3 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
+| Earth | 4 | 2 | 14 | 4 / 1 | **Raise** — drop a temporary mountain, manhattan 1–2 |
+| Lightning | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, 2 dmg, no push, **silence** |
+| Temporal | 4 | 3 | 9 | 3 / 1 | **Swap / blink** — manhattan 1–3, no damage |
 
-Ice’s extra step is so a back-row arrival can actually threaten midboard. Gale stays the skirmisher at 4. Earth is the slow wall.
+Ice’s extra step is so a back-row arrival can actually threaten midboard. Gale stays the skirmisher at 4. Earth is the slow wall. Gale and Lightning cost 3 so they are not round-1 openers. Earth and Temporal cost 4 so the wall and the blink wait a round.
 
 ## Unique casts
 

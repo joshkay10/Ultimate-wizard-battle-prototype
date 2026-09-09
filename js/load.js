@@ -1,5 +1,7 @@
 (function () {
   var t = Date.now();
+  window.ASSET_Q = '?t=' + t;
+  document.documentElement.style.setProperty('--el-icons', 'url("img/elements.png?t=' + t + '")');
   var files = [
     'index.css',
     'js/constants.js',
