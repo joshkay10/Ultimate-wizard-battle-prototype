@@ -163,7 +163,25 @@ function tileFill(row, col, highlight, kind) {
   return isAlt ? BOARD_COLORS.tileAlt : BOARD_COLORS.tile;
 }
 
+function clampPositive(n, fallback) {
+  n = Number(n);
+  if (!isFinite(n) || n <= 0) return fallback;
+  return n;
+}
+
+function tokenPopScale(scale) {
+  if (scale == null || !isFinite(scale)) return 1;
+  return Math.max(0.05, scale);
+}
+
+function canvasArc(ctx, x, y, r) {
+  r = clampPositive(r, 0);
+  if (r <= 0) return;
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+}
+
 function drawElementIcon(ctx, element, cx, cy, size) {
+  size = clampPositive(size, 0.5);
   const color = BOARD_COLORS[element] || BOARD_COLORS.text;
   ctx.save();
   ctx.strokeStyle = color;
@@ -211,7 +229,7 @@ function drawElementIcon(ctx, element, cx, cy, size) {
     ctx.fill();
   } else if (element === 'temporal') {
     ctx.beginPath();
-    ctx.arc(cx, cy, size * 0.85, 0, Math.PI * 2);
+    canvasArc(ctx, cx, cy, size * 0.85);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -313,12 +331,12 @@ function drawPortal(ctx, box, portal) {
   ctx.lineWidth = Math.max(1.6, box.s * 0.055);
   ctx.globalAlpha = 0.85;
   ctx.beginPath();
-  ctx.ellipse(0, 0, box.s * 0.28, box.s * 0.18, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, clampPositive(box.s * 0.28, 1), clampPositive(box.s * 0.18, 1), 0, 0, Math.PI * 2);
   ctx.stroke();
   ctx.rotate(t);
   ctx.globalAlpha = 0.55;
   ctx.beginPath();
-  ctx.ellipse(0, 0, box.s * 0.2, box.s * 0.12, 0.6, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, clampPositive(box.s * 0.2, 1), clampPositive(box.s * 0.12, 1), 0.6, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
   ctx.save();
@@ -326,7 +344,7 @@ function drawPortal(ctx, box, portal) {
   ctx.globalAlpha = 0.35;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(cx, cy, box.s * 0.32, 0, Math.PI * 2);
+  canvasArc(ctx, cx, cy, box.s * 0.32);
   ctx.stroke();
   ctx.restore();
 }
@@ -360,13 +378,14 @@ function drawNexus(ctx, box, hp, flash) {
 function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
-  const radius = box.s * 0.36 * (scale || 1);
+  scale = tokenPopScale(scale);
+  const radius = box.s * 0.36 * scale;
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.scale(scale || 1, scale || 1);
+  ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   ctx.beginPath();
-  ctx.arc(cx, cy, box.s * 0.36, 0, Math.PI * 2);
+  canvasArc(ctx, cx, cy, box.s * 0.36);
   ctx.fillStyle = flash ? '#ffffff' : (wizard.team === 'enemy' ? BOARD_COLORS.enemy : BOARD_COLORS.token);
   ctx.fill();
   if (selected && !flash) {
@@ -381,7 +400,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.strokeStyle = BOARD_COLORS.lightning;
     ctx.lineWidth = Math.max(1.6, box.s * 0.045);
     ctx.beginPath();
-    ctx.arc(cx, cy, box.s * 0.4, 0, Math.PI * 2);
+    canvasArc(ctx, cx, cy, box.s * 0.4);
     ctx.stroke();
     ctx.restore();
   }
@@ -444,11 +463,11 @@ function drawStream(ctx) {
   ctx.globalAlpha = fade;
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(x, y, 9, 0, Math.PI * 2);
+  canvasArc(ctx, x, y, 9);
   ctx.fill();
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+  canvasArc(ctx, x, y, 5.5);
   ctx.fill();
   ctx.restore();
 }
@@ -462,7 +481,7 @@ function drawChargeGlow(ctx, box, element, t) {
   ctx.globalAlpha = 0.45 + t * 0.55;
   ctx.lineWidth = 4.5;
   ctx.beginPath();
-  ctx.arc(cx, cy, box.s * (0.38 + t * 0.28), 0, Math.PI * 2);
+  canvasArc(ctx, cx, cy, box.s * (0.38 + t * 0.28));
   ctx.stroke();
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = t * 0.22;
@@ -520,7 +539,7 @@ function ensureFxLoop() {
     const dt = Math.min(40, now - fxLast);
     fxLast = now;
     tickFx(dt);
-    drawBoard();
+    try { drawBoard(); } catch (err) { console.error(err); }
     const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || !!(state.portals && Object.keys(state.portals).length);
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
@@ -629,7 +648,7 @@ function drawBoard() {
     ctx.globalAlpha = (1 - ring.t) * 0.9;
     ctx.lineWidth = 3.2 * (1 - ring.t * 0.4);
     ctx.beginPath();
-    ctx.arc(cx, cy, b.s * 0.18 + ring.t * b.s * 0.72, 0, Math.PI * 2);
+    canvasArc(ctx, cx, cy, b.s * 0.18 + ring.t * b.s * 0.72);
     ctx.stroke();
     ctx.restore();
   });
@@ -641,11 +660,11 @@ function drawBoard() {
     ctx.fillStyle = BOARD_COLORS[p.element] || BOARD_COLORS.text;
     ctx.globalAlpha = 0.95;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    canvasArc(ctx, p.x, p.y, 7);
     ctx.fill();
     ctx.globalAlpha = 0.35;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+    canvasArc(ctx, p.x, p.y, 14);
     ctx.fill();
     ctx.restore();
     drawElementIcon(ctx, p.element, p.x, p.y, 8);
@@ -682,7 +701,7 @@ function drawBoard() {
     ctx.globalAlpha = Math.max(0, p.life);
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    canvasArc(ctx, p.x, p.y, p.size);
     ctx.fill();
     ctx.restore();
   });

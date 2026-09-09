@@ -49,7 +49,9 @@ async function teamSummonPhase(team) {
     if (!tile) break;
 
     const wizard = pickSummonWizard(affordable, tile, team);
-    await present(simSummon(wizard, tile.row, tile.col, team));
+    const events = simSummon(wizard, tile.row, tile.col, team);
+    if (!events.length) break;
+    await present(events);
     await maybeWait(240);
   }
 }

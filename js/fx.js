@@ -10,9 +10,15 @@ function animate(duration, step) {
   return new Promise(function (resolve) {
     const t0 = performance.now();
     function frame(now) {
-      const t = Math.min(1, (now - t0) / duration);
-      step(t, now);
-      drawBoard();
+      const t = Math.max(0, Math.min(1, (now - t0) / duration));
+      try {
+        step(t, now);
+        drawBoard();
+      } catch (err) {
+        console.error(err);
+        resolve();
+        return;
+      }
       if (t < 1) requestAnimationFrame(frame);
       else resolve();
     }
@@ -26,36 +32,37 @@ async function playEvents(events) {
     return;
   }
   state.animating = true;
-  if (typeof render === 'function') render();
-
-  let i = 0;
-  while (i < events.length) {
-    const ev = events[i];
-    if (ev.type === 'attack') {
-      let j = i + 1;
-      while (j < events.length) {
-        const n = events[j].type;
-        if (n === 'attack' || n === 'move' || n === 'summon' || n === 'portal' || n === 'portalBlocked' || n === 'turnEnd' || n === 'turnStart' || n === 'gameOver') break;
-        j++;
+  try {
+    if (typeof render === 'function') render();
+    let i = 0;
+    while (i < events.length) {
+      const ev = events[i];
+      if (ev.type === 'attack') {
+        let j = i + 1;
+        while (j < events.length) {
+          const n = events[j].type;
+          if (n === 'attack' || n === 'move' || n === 'summon' || n === 'portal' || n === 'portalBlocked' || n === 'turnEnd' || n === 'turnStart' || n === 'gameOver') break;
+          j++;
+        }
+        await playAttackGroup(events, i, j);
+        i = j;
+      } else {
+        await playEvent(ev);
+        i++;
       }
-      await playAttackGroup(events, i, j);
-      i = j;
-    } else {
-      await playEvent(ev);
-      i++;
     }
+  } finally {
+    boardFx.flash = null;
+    boardFx.projectile = null;
+    boardFx.slash = null;
+    boardFx.stream = null;
+    boardFx.charge = null;
+    boardFx.override = {};
+    boardFx.ghosts = [];
+    boardFx.lungeReturn = null;
+    state.animating = false;
+    if (typeof render === 'function') render();
   }
-
-  boardFx.flash = null;
-  boardFx.projectile = null;
-  boardFx.slash = null;
-  boardFx.stream = null;
-  boardFx.charge = null;
-  boardFx.override = {};
-  boardFx.ghosts = [];
-  boardFx.lungeReturn = null;
-  state.animating = false;
-  if (typeof render === 'function') render();
 }
 
 async function playAttackGroup(events, start, end) {

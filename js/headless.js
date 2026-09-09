@@ -183,6 +183,20 @@ async function runSimSelfTests() {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
+  const chronoArrive = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'temporal');
+  const chronoPortal = simSummon(chronoArrive, 7, 4, 'player');
+  assert(chronoPortal.some(e => e.type === 'portal' && e.element === 'temporal'), 'temporal summon opens a portal');
+  simEndPlayerTurn();
+  simEndEnemyTurn();
+  assert(chronoArrive.state === 'onboard', 'temporal arrives at the start of the next turn');
+  assert(chronoArrive.row === 7 && chronoArrive.col === 4, 'temporal lands on the portal tile');
+  assert(getCastTiles(chronoArrive).length > 0, 'arrived temporal can blink or swap');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mana = 10;
+  state.mountains = {};
+  state.water = {};
   const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   simSummon(doomed, 7, 4, 'player');

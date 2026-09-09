@@ -86,7 +86,10 @@ function present(events) {
   if (state.fxEnabled && typeof playEvents === 'function') {
     if (!events.length) return Promise.resolve();
     state.animating = true;
-    return playEvents(events);
+    return playEvents(events).catch(function (err) {
+      console.error(err);
+      state.animating = false;
+    });
   }
   return Promise.resolve();
 }
