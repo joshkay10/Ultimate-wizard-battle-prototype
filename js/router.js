@@ -1,7 +1,8 @@
-const ROUTES = ['play', 'rules', 'elements', 'todo'];
+const ROUTES = ['play', 'team', 'rules', 'elements', 'todo'];
 
 function routeFromPathname() {
   const file = (location.pathname.split('/').pop() || '').toLowerCase();
+  if (file === 'team.html') return 'team';
   if (file === 'rules.html') return 'rules';
   if (file === 'todo.html') return 'todo';
   if (file === 'elements.html') return 'elements';
@@ -15,7 +16,7 @@ function currentRoute() {
   const fromFile = routeFromPathname();
   if (fromFile) return fromFile;
   const hash = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0];
-  if (hash === 'rules' || hash === 'todo' || hash === 'elements') return hash;
+  if (ROUTES.indexOf(hash) >= 0 && hash !== 'play') return hash;
   return 'play';
 }
 
@@ -25,6 +26,7 @@ function routeHref(route) {
 }
 
 function routeTitle(route) {
+  if (route === 'team') return 'Team — Wizard Battle';
   if (route === 'rules') return 'Rules — Wizard Battle';
   if (route === 'elements') return 'Elements — Wizard Battle';
   if (route === 'todo') return 'To-do — Wizard Battle';

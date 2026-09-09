@@ -5,7 +5,7 @@ function canAct() {
 async function maybeAutoEndTurn() {
   if (state.gameOverResult || state.animating) return;
   if (state.currentTurn !== 'player') return;
-  if (playerHasLegalAction()) return;
+  if (playerHasLegalAction(state)) return;
   await endTurn();
 }
 
@@ -18,7 +18,7 @@ function rematch() {
   endingTurn = false;
   state.animating = false;
   if (typeof resetBoardFx === 'function') resetBoardFx();
-  resetMatch((Date.now() >>> 0) || 1);
+  startBattle();
   render();
   maybeAutoEndTurn();
 }
@@ -31,7 +31,7 @@ async function endTurn() {
   endingTurn = true;
   const matchId = state.matchId;
   try {
-    await present(simEndPlayerTurn());
+    await present(simEndPlayerTurn(state));
     if (state.matchId !== matchId) return;
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
@@ -40,7 +40,7 @@ async function endTurn() {
     if (state.matchId !== matchId) return;
     await runTeamAi('enemy');
     if (state.matchId !== matchId) return;
-    await present(simEndEnemyTurn());
+    await present(simEndEnemyTurn(state));
     if (state.matchId !== matchId) return;
     if (typeof render === 'function') render();
   } finally {

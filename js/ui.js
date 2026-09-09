@@ -43,7 +43,7 @@ function ensurePlayShell() {
 }
 
 function ensureMatch() {
-  if (!state.rng) resetMatch((Date.now() >>> 0) || 1);
+  if (!state.rng) startBattle();
 }
 
 function renderPanel() {
@@ -158,6 +158,7 @@ function renderGameOverOverlay() {
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
         '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
+        '<a class="game-over-team" href="' + routeHref('team') + '">edit team</a>' +
       '</div>' +
     '</div>'
   );
@@ -209,6 +210,7 @@ function render() {
     app.classList.add('is-doc');
     app.classList.remove('is-animating', 'is-enemy-turn');
     document.getElementById('view-root').innerHTML = renderDocPage(route);
+    if (route === 'team') bindTeamPage();
     return;
   }
 
@@ -218,9 +220,10 @@ function render() {
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
+  const vs = kitsNamed(state.enemyTeam || []).join(' · ');
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
     '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();

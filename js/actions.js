@@ -13,7 +13,9 @@ function placeWizard(row, col) {
   if (!state.placingWizardId) return;
   const wizard = state.wizards[state.placingWizardId];
   if (!wizard) return;
-  present(simSummon(wizard, row, col, 'player')).then(afterPlayerAction);
+  const events = simSummon(state, wizard, row, col, 'player');
+  if (events.length) state.placingWizardId = null;
+  present(events).then(afterPlayerAction);
 }
 
 function selectWizard(id) {
@@ -50,7 +52,7 @@ function handleTileClick(row, col) {
   }
 
   if (!state.selectedWizardId) {
-    const occ = wizardAt(row, col);
+    const occ = wizardAt(state, row, col);
     if (occ) selectWizard(occ.id);
     return;
   }
@@ -58,26 +60,26 @@ function handleTileClick(row, col) {
   if (!wizard) return;
 
   const reselectOrBail = () => {
-    const occ = wizardAt(row, col);
+    const occ = wizardAt(state, row, col);
     if (occ && occ.id !== wizard.id) selectWizard(occ.id);
   };
 
   if (state.selectedAction === 'move') {
     if (!canMove(wizard)) { reselectOrBail(); return; }
-    const moveTiles = getMoveTiles(wizard);
+    const moveTiles = getMoveTiles(state, wizard);
     const isValid = moveTiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
-    const path = pathBFS(wizard, row, col);
-    if (path) present(simMove(wizard, path)).then(afterPlayerAction);
+    const path = pathBFS(state, wizard, row, col);
+    if (path) present(simMove(state, wizard, path)).then(afterPlayerAction);
   } else if (state.selectedAction === 'melee') {
     if (!canAttack(wizard)) { reselectOrBail(); return; }
-    const tiles = getMeleeTiles(wizard);
+    const tiles = getMeleeTiles(state, wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     resolveMeleeAttack(wizard, row, col);
   } else if (state.selectedAction === 'cast') {
     if (!canAttack(wizard)) { reselectOrBail(); return; }
-    const tiles = getCastTiles(wizard);
+    const tiles = getCastTiles(state, wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     resolveCastAttack(wizard, row, col);

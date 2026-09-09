@@ -9,8 +9,8 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 - **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
-- Each player has the same roster of **three unique wizards**: Pyre, Rime, Squall. All start off the board.
-- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn. Rime is the only 2-cost kit, so round 1 is one portal.
+- Six kits in the pool. You bring **three**. Pick them on the Team page; the choice is saved on this device. The enemy rolls three from the same pool each match.
+- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn. Rime is the only 2-cost kit, so round 1 is one portal if she is on the team.
 
 ## Wizards
 
@@ -21,6 +21,9 @@ Melee is a simple adjacent punch for everyone. Casts are unique.
 | Pyre (fire) | 3 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
 | Rime (ice) | 2 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
 | Squall (wind) | 3 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
+| Cairn (earth) | 4 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
+| Volt (lightning) | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
+| Chrono (temporal) | 4 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
 Rime’s extra step is so a back-row arrival can actually threaten midboard. Squall stays the skirmisher at 4. Pyre and Squall cost 3 so they are not round-1 openers.
 
@@ -28,6 +31,9 @@ Rime’s extra step is so a back-row arrival can actually threaten midboard. Squ
 
 - **Stream / gust** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not.
 - **Pulse** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Survivors are pushed away from Rime.
+- **Raise** — an empty tile in range becomes a temporary mountain.
+- **Bolt** — line, silences the hit wizard, jumps along water, grounds on a raised mountain.
+- **Swap** — trade places with a wizard, or blink to an empty tile.
 
 ## Turn
 

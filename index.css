@@ -85,6 +85,9 @@ html, body {
   text-align: center;
   max-width: 320px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .game-over-heading {
   font-size: 22px;
@@ -686,4 +689,81 @@ html, body {
   margin: 0 0 10px;
   line-height: 1.45;
 }
+
+.topbar-vs {
+  display: block;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-top: 2px;
+  white-space: normal;
+}
+.game-over-team {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ice);
+  text-decoration: none;
+}
+.game-over-team:hover { text-decoration: underline; }
+
+.team-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-faint);
+  margin: 0 0 14px;
+}
+.team-count.ready { color: var(--text); }
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+.team-kit {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.team-kit.fire { border-color: var(--fire); }
+.team-kit.ice { border-color: var(--ice); }
+.team-kit.wind { border-color: var(--wind); }
+.team-kit.earth { border-color: var(--earth); }
+.team-kit.lightning { border-color: var(--lightning); }
+.team-kit.temporal { border-color: var(--temporal); }
+.team-kit.selected {
+  background: var(--tile-selected);
+}
+.team-kit-copy { min-width: 0; }
+.team-kit-mark {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.team-kit.selected .team-kit-mark { color: var(--text); }
+.team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+.team-reset {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.team-reset:hover { color: var(--text); }
+
 

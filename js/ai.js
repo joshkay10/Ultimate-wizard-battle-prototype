@@ -61,7 +61,7 @@ function wizardActPriority(wizard, team) {
 async function teamSummonPhase(team) {
   while (true) {
     const affordable = Object.values(state.wizards).filter(
-      w => w.team === team && w.state === 'summoned' && teamMana(team) >= w.cost
+      w => w.team === team && w.state === 'summoned' && teamMana(state, team) >= w.cost
     );
     if (!affordable.length) break;
 
@@ -69,7 +69,7 @@ async function teamSummonPhase(team) {
     if (!tile) break;
 
     const wizard = pickSummonWizard(affordable, tile, team);
-    const events = simSummon(wizard, tile.row, tile.col, team);
+    const events = simSummon(state, wizard, tile.row, tile.col, team);
     if (!events.length) break;
     await present(events);
     await maybeWait(240);
@@ -81,6 +81,7 @@ function pickSummonWizard(affordable, tile, team) {
   const front = team === 'player' ? tile.row === SUMMON_ROW_START : tile.row === ENEMY_ROW_END - 1;
   if (threatened && manhattan(tile.row, tile.col, threatened.row, threatened.col) <= 2) {
     const tank = affordable.find(w => w.element === 'ice')
+      || affordable.find(w => w.element === 'earth')
       || affordable.find(w => w.element === 'fire')
       || affordable[0];
     return tank;
@@ -90,11 +91,11 @@ function pickSummonWizard(affordable, tile, team) {
       || affordable.find(w => w.element === 'fire')
       || affordable[0];
   }
-  return shuffle(affordable)[0];
+  return shuffledCopy(state.rng, affordable)[0];
 }
 
 function pickSummonTile(team) {
-  const candidates = getTeamSummonTiles(team);
+  const candidates = getTeamSummonTiles(state, team);
   if (!candidates.length) return null;
 
   const threatened = mostThreatenedNexus(team);
@@ -119,24 +120,24 @@ function pickSummonTile(team) {
       best.push(tile);
     }
   }
-  return best[randInt(best.length)];
+  return best[state.rng.int(best.length)];
 }
 
 function teamWizardAct(wizard, team) {
   if (canAttack(wizard)) {
     const atk = pickAttack(wizard, team);
-    if (atk && atk.score >= 180) return simAttack(wizard, atk.row, atk.col, atk.kind);
+    if (atk && atk.score >= 180) return simAttack(state, wizard, atk.row, atk.col, atk.kind);
   }
 
   if (canMove(wizard)) {
     const dest = pickMoveTile(wizard, team);
     if (dest) {
-      const path = pathBFS(wizard, dest.row, dest.col);
+      const path = pathBFS(state, wizard, dest.row, dest.col);
       if (path && path.length) {
-        const events = simMove(wizard, path);
+        const events = simMove(state, wizard, path);
         if (canAttack(wizard)) {
           const atk = pickAttack(wizard, team);
-          if (atk && atk.score >= 80) return events.concat(simAttack(wizard, atk.row, atk.col, atk.kind));
+          if (atk && atk.score >= 80) return events.concat(simAttack(state, wizard, atk.row, atk.col, atk.kind));
         }
         return events;
       }
@@ -145,7 +146,7 @@ function teamWizardAct(wizard, team) {
 
   if (canAttack(wizard)) {
     const atk = pickAttack(wizard, team);
-    if (atk) return simAttack(wizard, atk.row, atk.col, atk.kind);
+    if (atk) return simAttack(state, wizard, atk.row, atk.col, atk.kind);
   }
   return [];
 }
@@ -162,8 +163,8 @@ function pickAttack(wizard, team) {
       }
     });
   }
-  consider('melee', getMeleeTiles(wizard));
-  consider('cast', getCastTiles(wizard));
+  consider('melee', getMeleeTiles(state, wizard));
+  consider('cast', getCastTiles(state, wizard));
   return best;
 }
 
@@ -172,16 +173,16 @@ function attackScore(wizard, tile, kind, team) {
   if (kind === 'cast' && wizard.castKind === 'raise') return raiseScore(tile, team);
   if (kind === 'cast' && wizard.castKind === 'swap') return swapScore(wizard, tile, team);
 
-  if (kind === 'cast' && wizard.castKind === 'bolt' && mountainAt(tile.row, tile.col)) return 0;
+  if (kind === 'cast' && wizard.castKind === 'bolt' && mountainAt(state, tile.row, tile.col)) return 0;
 
   const dmg = kind === 'cast' ? wizard.castAttack : wizard.meleeAttack;
   let score = 0;
-  const n = nexusAt(tile.row, tile.col);
+  const n = nexusAt(state, tile.row, tile.col);
   if (n && n.team === opposingTeam(team) && n.hp > 0) {
     const lethal = dmg >= n.hp ? 400 : 0;
     score = 220 + lethal + (n.maxHp - n.hp) * 8 + dmg + (kind === 'melee' ? 2 : 0);
   }
-  const w2 = wizardAt(tile.row, tile.col);
+  const w2 = wizardAt(state, tile.row, tile.col);
   if (w2 && w2.team === opposingTeam(team)) {
     const lethal = dmg >= w2.hp ? 180 : 0;
     score = Math.max(score, 90 + lethal + dmg + (kind === 'melee' ? 3 : 0));
@@ -189,7 +190,7 @@ function attackScore(wizard, tile, kind, team) {
     if (kind === 'cast' && wizard.castKind === 'gust') {
       score += wizard.castDisplacement * 4;
       const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
-      if (hazardAt(tile.row + dir.dr, tile.col + dir.dc)) score += 95;
+      if (hazardAt(state, tile.row + dir.dr, tile.col + dir.dc)) score += 95;
     }
   }
   if (kind === 'cast' && wizard.castKind === 'bolt') {
@@ -214,7 +215,7 @@ function countBoltJumpFoes(wizard, tile, team) {
   const seen = {};
   const q = [];
   function seed(r, c) {
-    if (waterAt(r, c)) q.push({ row: r, col: c });
+    if (waterAt(state, r, c)) q.push({ row: r, col: c });
   }
   pathTiles.forEach(function (t) {
     seed(t.row, t.col);
@@ -224,7 +225,7 @@ function countBoltJumpFoes(wizard, tile, team) {
   while (q.length) {
     const t = q.pop();
     const key = t.row + ',' + t.col;
-    if (seen[key] || !waterAt(t.row, t.col)) continue;
+    if (seen[key] || !waterAt(state, t.row, t.col)) continue;
     seen[key] = true;
     waterTiles.push(t);
     [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
@@ -241,9 +242,9 @@ function countBoltJumpFoes(wizard, tile, team) {
     const key = r + ',' + c;
     if (hit[key]) return;
     hit[key] = true;
-    const w = wizardAt(r, c);
+    const w = wizardAt(state, r, c);
     if (w && w.team === opposingTeam(team)) foes += 1;
-    const n = nexusAt(r, c);
+    const n = nexusAt(state, r, c);
     if (n && n.team === opposingTeam(team)) foes += 1;
   }
   waterTiles.forEach(function (t) {
@@ -261,10 +262,10 @@ function gustFanScore(wizard, tile, team) {
   for (let i = 1; i <= dist; i++) {
     const r = wizard.row + dir.dr * i;
     const c = wizard.col + dir.dc * i;
-    const tr = trailAt(r, c);
+    const tr = trailAt(state, r, c);
     if (tr && tr.element === 'fire') spreading = true;
     if (!spreading) continue;
-    const w = wizardAt(r, c);
+    const w = wizardAt(state, r, c);
     if (w && w.team === opposingTeam(team)) score += 24;
   }
   return score;
@@ -272,9 +273,9 @@ function gustFanScore(wizard, tile, team) {
 
 function pulseScore(wizard, team) {
   let score = 0;
-  getPulseTiles(wizard).forEach(function (t) {
+  getPulseTiles(state, wizard).forEach(function (t) {
     const dmg = wizard.castAttack;
-    const n = nexusAt(t.row, t.col);
+    const n = nexusAt(state, t.row, t.col);
     if (n && n.hp > 0) {
       if (n.team === opposingTeam(team)) {
         const lethal = dmg >= n.hp ? 400 : 0;
@@ -283,7 +284,7 @@ function pulseScore(wizard, team) {
         score -= 120;
       }
     }
-    const w2 = wizardAt(t.row, t.col);
+    const w2 = wizardAt(state, t.row, t.col);
     if (w2) {
       if (w2.team === opposingTeam(team)) {
         const lethal = dmg >= w2.hp ? 180 : 0;
@@ -306,7 +307,7 @@ function raiseScore(tile, team) {
     if (d === 1) score += 48;
     else if (d === 2) score += 12;
   });
-  livingNexuses(team).forEach(function (n) {
+  livingNexuses(state, team).forEach(function (n) {
     if (manhattan(tile.row, tile.col, n.row, n.col) === 1) score += 28;
     foes.forEach(function (w) {
       const nw = manhattan(n.row, n.col, w.row, w.col);
@@ -319,11 +320,11 @@ function raiseScore(tile, team) {
 }
 
 function swapScore(wizard, tile, team) {
-  if (hazardAt(tile.row, tile.col)) return 0;
-  const other = wizardAt(tile.row, tile.col);
+  if (hazardAt(state, tile.row, tile.col)) return 0;
+  const other = wizardAt(state, tile.row, tile.col);
   if (other) {
     if (other.team === team) return 0;
-    if (hazardAt(wizard.row, wizard.col)) return 0;
+    if (hazardAt(state, wizard.row, wizard.col)) return 0;
     let score = 20;
     const foeN = nearestLivingNexusFrom(other.row, other.col, opposingTeam(team));
     if (foeN) {
@@ -359,7 +360,7 @@ function swapScore(wizard, tile, team) {
 }
 
 function pickMoveTile(wizard, team) {
-  const moveTiles = getMoveTiles(wizard);
+  const moveTiles = getMoveTiles(state, wizard);
   if (!moveTiles.length) return null;
   const target = nearestThreatTile(wizard, team);
   let best = null;
@@ -377,7 +378,7 @@ function pickMoveTile(wizard, team) {
 }
 
 function tileThreatScore(wizard, tile, team, target) {
-  if (hazardAt(tile.row, tile.col)) return -800;
+  if (hazardAt(state, tile.row, tile.col)) return -800;
   const saved = { row: wizard.row, col: wizard.col };
   wizard.row = tile.row;
   wizard.col = tile.col;
@@ -388,20 +389,20 @@ function tileThreatScore(wizard, tile, team, target) {
   if (target) {
     score += Math.max(0, 16 - manhattan(tile.row, tile.col, target.row, target.col));
   }
-  const p = portalAt(tile.row, tile.col);
+  const p = portalAt(state, tile.row, tile.col);
   if (p && p.team !== team) score += 110;
   if (p && p.team === team) score -= 120;
-  const trail = trailAt(tile.row, tile.col);
+  const trail = trailAt(state, tile.row, tile.col);
   if (trail && trail.element === 'fire') score -= 30;
   if (trail && trail.element === 'wind') score += 6;
   [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
-    if (hazardAt(tile.row + d[0], tile.col + d[1])) score -= 8;
+    if (hazardAt(state, tile.row + d[0], tile.col + d[1])) score -= 8;
   });
   return score;
 }
 
 function mostThreatenedNexus(team) {
-  const own = livingNexuses(team);
+  const own = livingNexuses(state, team);
   if (!own.length) return null;
   const foes = Object.values(state.wizards).filter(w => w.team === opposingTeam(team) && w.state === 'onboard');
   if (!foes.length) return own[0];
@@ -423,7 +424,7 @@ function mostThreatenedNexus(team) {
 }
 
 function nearestLivingNexusFrom(row, col, team) {
-  const living = livingNexuses(team);
+  const living = livingNexuses(state, team);
   if (!living.length) return null;
   let best = living[0];
   let bestD = manhattan(row, col, best.row, best.col);
@@ -468,7 +469,7 @@ function nearestThreatTile(fromWizard, team) {
     return { row: bestPortal.row, col: bestPortal.col };
   }
 
-  const damaged = livingNexuses(opposingTeam(team)).slice().sort((a, b) => {
+  const damaged = livingNexuses(state, opposingTeam(team)).slice().sort((a, b) => {
     if (a.hp !== b.hp) return a.hp - b.hp;
     const da = manhattan(fromWizard.row, fromWizard.col, a.row, a.col);
     const db = manhattan(fromWizard.row, fromWizard.col, b.row, b.col);

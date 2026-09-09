@@ -18,11 +18,3 @@ function createRng(seed) {
     }
   };
 }
-
-function rand() {
-  return (state.rng ? state.rng.next() : Math.random());
-}
-
-function randInt(n) {
-  return state.rng ? state.rng.int(n) : Math.floor(Math.random() * n);
-}

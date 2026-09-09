@@ -2,14 +2,15 @@
 
 Prototype. Open `index.html` over HTTP.
 
-Three unique wizards: Pyre, Rime, Squall. Each has its own cast.
+Six kits in the pool. You bring three. Pick them on [Team](team.html); the enemy rolls a different three each match.
 
 - [Battle](index.html)
+- [Team](team.html)
 - [Rules](rules.html)
 - [Elements](elements.html)
 - [To-do](todo.html)
 
-Rules live in `js/sim.js` and do not need the DOM. The canvas UI plays the event log. Headless check:
+Rules live in `js/domain/` and do not need the DOM. The canvas UI plays the event log. Headless check:
 
 ```
 node test/sim-node.js

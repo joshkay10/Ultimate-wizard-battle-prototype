@@ -20,8 +20,8 @@ function compassWord(fromRow, fromCol, toRow, toCol) {
 
 function nexusOwnerWord(ev) {
   const n = ev.targetId
-    ? NEXUS.player.concat(NEXUS.enemy).find(x => x.id === ev.targetId)
-    : nexusAt(ev.row, ev.col);
+    ? state.nexuses.player.concat(state.nexuses.enemy).find(x => x.id === ev.targetId)
+    : nexusAt(state, ev.row, ev.col);
   if (!n) return 'a nexus';
   return n.team === 'enemy' ? 'an enemy nexus' : 'your nexus';
 }

@@ -130,18 +130,18 @@ function highlightSet() {
     kind = 'summon';
     for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
-        if (canOpenPortalAt(r, c)) tiles.push({ row: r, col: c });
+        if (canOpenPortalAt(state, r, c)) tiles.push({ row: r, col: c });
       }
     }
   } else if (selectedWizard && !state.animating) {
     if (state.selectedAction === 'move' && canMove(selectedWizard)) {
-      return { tiles: getMoveTiles(selectedWizard), kind: 'move' };
+      return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
     }
     if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
-      return { tiles: getMeleeTiles(selectedWizard), kind: 'melee' };
+      return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
     }
     if (state.selectedAction === 'cast' && canAttack(selectedWizard)) {
-      return { tiles: getCastTiles(selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+      return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }
   return { tiles, kind };
@@ -160,9 +160,9 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function tileFill(row, col, highlight, kind, castKind) {
   const isAlt = (row + col) % 2 === 1;
-  if (voidAt(row, col)) return isAlt ? BOARD_COLORS.voidAlt : BOARD_COLORS.void;
-  if (mountainAt(row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
-  if (waterAt(row, col)) return isAlt ? BOARD_COLORS.waterAlt : BOARD_COLORS.water;
+  if (voidAt(state, row, col)) return isAlt ? BOARD_COLORS.voidAlt : BOARD_COLORS.void;
+  if (mountainAt(state, row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
+  if (waterAt(state, row, col)) return isAlt ? BOARD_COLORS.waterAlt : BOARD_COLORS.water;
   if (highlight) {
     if (kind === 'melee') return BOARD_COLORS.melee;
     if (kind === 'cast') {
@@ -176,7 +176,7 @@ function tileFill(row, col, highlight, kind, castKind) {
     }
     return BOARD_COLORS.move;
   }
-  const trail = trailAt(row, col);
+  const trail = trailAt(state, row, col);
   if (trail) {
     if (trail.element === 'fire') return isAlt ? BOARD_COLORS.magmaAlt : BOARD_COLORS.magma;
     if (trail.element === 'ice') return isAlt ? '#c5e6f6' : '#d7eef9';
@@ -1155,11 +1155,11 @@ function drawBoard() {
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const box = cellRect(layout, r, c);
-      const highlighted = !!highlightKey[r + ',' + c] && (!mountainAt(r, c) || (marks.kind === 'cast' && marks.castKind === 'bolt'));
-      const nex = nexusAt(r, c);
+      const highlighted = !!highlightKey[r + ',' + c] && (!mountainAt(state, r, c) || (marks.kind === 'cast' && marks.castKind === 'bolt'));
+      const nex = nexusAt(state, r, c);
       const flashHere = boardFx.flash && boardFx.flash.row === r && boardFx.flash.col === c;
       let fill = tileFill(r, c, highlighted, marks.kind, marks.castKind);
-      const occHere = wizardAt(r, c);
+      const occHere = wizardAt(state, r, c);
       if (occHere && occHere.id === state.selectedWizardId && !boardFx.override[occHere.id]) fill = BOARD_COLORS.selected;
       if (flashHere) fill = '#ffffff';
 
@@ -1167,14 +1167,14 @@ function drawBoard() {
       ctx.fillStyle = fill;
       ctx.fill();
 
-      if (voidAt(r, c) && !flashHere) drawVoid(ctx, box);
-      else if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
-      else if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
+      if (voidAt(state, r, c) && !flashHere) drawVoid(ctx, box);
+      else if (waterAt(state, r, c) && !flashHere) drawWater(ctx, box, r, c);
+      else if (mountainAt(state, r, c) && !flashHere) drawMountain(ctx, box, r, c);
       else if (!flashHere) {
-        const trail = trailAt(r, c);
+        const trail = trailAt(state, r, c);
         if (trail) drawTrail(ctx, box, r, c, trail.element);
       }
-      const portal = portalAt(r, c);
+      const portal = portalAt(state, r, c);
       if (portal && !flashHere) drawPortal(ctx, box, portal);
 
       if (highlighted) {

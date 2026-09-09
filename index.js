@@ -1,5 +1,5 @@
 if (currentRoute() === 'play') {
-  resetMatch((Date.now() >>> 0) || 1);
+  startBattle();
   render();
   maybeAutoEndTurn();
 } else {

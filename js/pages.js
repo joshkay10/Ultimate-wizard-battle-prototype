@@ -1,6 +1,7 @@
 function renderSiteNav(route) {
   const links = [
     { id: 'play', label: 'Battle' },
+    { id: 'team', label: 'Team' },
     { id: 'rules', label: 'Rules' },
     { id: 'elements', label: 'Elements' },
     { id: 'todo', label: 'To-do' }
@@ -30,8 +31,8 @@ function renderRulesPage() {
         '<li><strong>Water</strong> shows up on some maps. Step, slide, or get pushed on and you die. No summoning onto it. Line spells fly over.</li>' +
         '<li><strong>Voids</strong> open when a nexus hits 0. Same kill-on-enter as water. The crystal is gone.</li>' +
         '<li>Terrain is vertically mirrored so both camps get the same layout.</li>' +
-        '<li>Same roster of three: Pyre, Rime, Squall.</li>' +
-        '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Rime is the only 2-cost kit, so the first portal is one body.</li>' +
+        '<li>Six kits in the pool. You bring <strong>three</strong>. Pick them on <a href="' + routeHref('team') + '">Team</a>. The enemy rolls three from the same pool each match.</li>' +
+        '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Rime is the only 2-cost kit, so a Rime opener is still one body.</li>' +
       '</ul>' +
 
       '<h2>Wizards</h2>' +
@@ -43,6 +44,9 @@ function renderRulesPage() {
             '<tr><td>Pyre</td><td>3</td><td>3</td><td>10</td><td>5 / 2</td><td>Stream — line 4, 3 / 1, paints fire</td></tr>' +
             '<tr><td>Rime</td><td>2</td><td>3</td><td>12</td><td>4 / 2</td><td>Pulse — 8 neighbors, 2 / 1 out</td></tr>' +
             '<tr><td>Squall</td><td>3</td><td>4</td><td>8</td><td>3 / 2</td><td>Gust — line 3, 1 / 3, paints wind</td></tr>' +
+            '<tr><td>Cairn</td><td>4</td><td>2</td><td>14</td><td>4 / 1</td><td>Raise — empty tile becomes a mountain</td></tr>' +
+            '<tr><td>Volt</td><td>3</td><td>3</td><td>9</td><td>3 / 1</td><td>Bolt — line 4, silence, jumps water</td></tr>' +
+            '<tr><td>Chrono</td><td>4</td><td>3</td><td>9</td><td>3 / 1</td><td>Swap — swap with a wizard, or blink</td></tr>' +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -82,7 +86,7 @@ function renderTodoPage() {
       '<h2>Need from you</h2>' +
       '<p class="need-note">Element icons are in. Wizard poses and terrain tiles still help if you have them.</p>' +
       '<ul class="todo-list">' +
-        item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Pyre, Rime, Squall). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
+        item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Pyre, Rime, Squall, Cairn, Volt, Chrono). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
         item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.', 'need') +
       '</ul>' +
       '<p class="need-note">Not blocking: send sprites when you have them. Code items on this list are done.</p>' +
@@ -113,6 +117,9 @@ function renderElementsPage() {
         kitCard('fire', 'Pyre', 'Stream', 'Line 4 · paints fire') +
         kitCard('ice', 'Rime', 'Pulse', '8 neighbors · paints ice') +
         kitCard('wind', 'Squall', 'Gust', 'Line 3 · 3 push · paints wind · fans fire') +
+        kitCard('earth', 'Cairn', 'Raise', 'Empty tile becomes a mountain') +
+        kitCard('lightning', 'Volt', 'Bolt', 'Line 4 · silence · jumps water · fizzles on raise') +
+        kitCard('temporal', 'Chrono', 'Swap', 'Swap with a wizard, or blink to an empty tile') +
       '</div>' +
 
       '<h2>Tile reactions</h2>' +
@@ -160,6 +167,7 @@ function kitCard(element, name, cast, detail) {
 }
 
 function renderDocPage(route) {
+  if (route === 'team') return renderTeamPage();
   if (route === 'rules') return renderRulesPage();
   if (route === 'elements') return renderElementsPage();
   if (route === 'todo') return renderTodoPage();

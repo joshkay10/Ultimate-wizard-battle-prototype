@@ -24,13 +24,6 @@ const ELEMENT_COLOR = {
 
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
-// Three kits for now. Rime is the only 2-cost opener. Pyre and Squall wait for 3.
-const WIZARD_TYPES = [
-  { id: 'fire', name: 'Pyre', element: 'fire', castKind: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2, castAttack: 3, castDisplacement: 1, castRange: 4 },
-  { id: 'ice', name: 'Rime', element: 'ice', castKind: 'pulse', moveRange: 3, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1, castRange: 1 },
-  { id: 'wind', name: 'Squall', element: 'wind', castKind: 'gust', moveRange: 4, hp: 8, cost: 3, meleeAttack: 3, meleeDisplacement: 2, castAttack: 1, castDisplacement: 3, castRange: 3 }
-];
-
 const BOARD_SIZE = 9;
 const CENTER = 4; // 0-indexed center of 9x9
 const MANA_CAP = 10;

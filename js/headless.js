@@ -1,7 +1,7 @@
 function classifyMatchResult(match) {
   if (!match || match.result === 'draw' || !match.result) return 'draw';
   const loser = match.result === 'player' ? 'enemy' : 'player';
-  if (teamNexusesFallen(loser)) return 'nexus';
+  if (teamNexusesFallen(state, loser)) return 'nexus';
   const hazardDeath = (match.log || []).some(function (e) {
     return e.type === 'death' && e.team === loser && (e.cause === 'void' || e.cause === 'water');
   });
@@ -97,18 +97,18 @@ function spawnShelved(team, kind, extra) {
 async function runHeadlessMatch(seed, maxRounds) {
   const prev = state.fxEnabled;
   state.fxEnabled = false;
-  resetMatch(seed);
+  resetMatch(state, seed);
   maxRounds = maxRounds || 40;
   let guard = 0;
   while (!state.gameOverResult && state.turnCount <= maxRounds && guard++ < 90) {
     if (state.currentTurn === 'player') {
       await runTeamAi('player');
-      simEndPlayerTurn().forEach(function (e) { state.log.push(e); });
+      simEndPlayerTurn(state).forEach(function (e) { state.log.push(e); });
       if (state.gameOverResult) break;
     }
     if (state.currentTurn === 'enemy' && !state.gameOverResult) {
       await runTeamAi('enemy');
-      simEndEnemyTurn().forEach(function (e) { state.log.push(e); });
+      simEndEnemyTurn(state).forEach(function (e) { state.log.push(e); });
     }
   }
   state.fxEnabled = prev;
@@ -133,19 +133,19 @@ async function runSimSelfTests() {
   const prevFx = state.fxEnabled;
   state.fxEnabled = false;
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.mountains = {};
   state.water = {};
   const rime = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   rime.state = 'onboard';
   rime.row = 5;
   rime.col = 4;
-  const emptyHit = simAttack(rime, 4, 4, 'melee');
+  const emptyHit = simAttack(state, rime, 4, 4, 'melee');
   assert(emptyHit.some(e => e.type === 'ground'), 'empty melee should strike the ground');
-  assert(trailAt(4, 4) && trailAt(4, 4).element === 'ice', 'empty melee should ice the tile');
+  assert(trailAt(state, 4, 4) && trailAt(state, 4, 4).element === 'ice', 'empty melee should ice the tile');
   assert(rime.hasAttacked, 'empty melee still spends the attack');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -159,13 +159,13 @@ async function runSimSelfTests() {
   gale.col = 6;
   gale.hp = 12;
   const hp0 = gale.hp;
-  simAttack(ember, 0, 6, 'melee');
+  simAttack(state, ember, 0, 6, 'melee');
   assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
   assert(gale.hp === hp0 - ember.meleeAttack - CRASH_DAMAGE, 'blocked push should deal flat crash damage');
-  const slammed = nexusAt(0, 7);
+  const slammed = nexusAt(state, 0, 7);
   assert(slammed && slammed.hp === NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -183,12 +183,12 @@ async function runSimSelfTests() {
   wallWiz.row = 4;
   wallWiz.col = 4;
   wallWiz.hp = 8;
-  simAttack(batter, 4, 3, 'melee');
+  simAttack(state, batter, 4, 3, 'melee');
   assert(shoved.row === 4 && shoved.col === 3, 'crash into a wizard should stop the push');
   assert(shoved.hp === 12 - batter.meleeAttack - CRASH_DAMAGE, 'crashed wizard takes hit plus flat crash');
   assert(wallWiz.hp === 8 - CRASH_DAMAGE, 'the wizard they hit takes the same flat crash');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = { '4,4': true };
   state.water = {};
@@ -201,11 +201,11 @@ async function runSimSelfTests() {
   pinned.row = 4;
   pinned.col = 3;
   pinned.hp = 12;
-  simAttack(gustCrash, 4, 3, 'cast');
+  simAttack(state, gustCrash, 4, 3, 'cast');
   assert(pinned.row === 4 && pinned.col === 3, 'gust crash does not move the target');
   assert(pinned.hp === 12 - gustCrash.castAttack - CRASH_DAMAGE, 'crash is 1 even when three pips are leftover');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -218,20 +218,23 @@ async function runSimSelfTests() {
   allyHit.row = 4;
   allyHit.col = 4;
   allyHit.hp = 8;
-  simAttack(allyAtk, 4, 4, 'melee');
+  simAttack(state, allyAtk, 4, 4, 'melee');
   assert(allyHit.hp < 8, 'friendly fire is allowed');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
-  assert(playerHasLegalAction(), 'round 1 with 2 mana can open a 2-cost portal');
+  assert(playerHasLegalAction(state), 'round 1 with 2 mana can open a 2-cost portal');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.length === 1 && round1Kits[0] === 'ice', 'Rime is the only round-1 drop');
   assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 3, 'Squall costs 3');
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 3, 'Pyre costs 3');
-  assert(WIZARD_TYPES.length === 3, 'roster is three kits');
+  assert(WIZARD_TYPES.length === 6, 'kit pool is six');
+  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind', 'default team is Pyre Rime Squall');
+  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind', 'short teams fill from the default');
+  assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal', 'teams stay at three unique kits');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -239,15 +242,15 @@ async function runSimSelfTests() {
   walker.state = 'onboard';
   walker.row = 7;
   walker.col = 4;
-  const moves = getMoveTiles(walker);
+  const moves = getMoveTiles(state, walker);
   assert(moves.length > 0, 'move range should be open');
-  assert(!moves.some(t => nexusAt(t.row, t.col)), 'move range should not include a nexus');
-  assert(NEXUS.player.length === 3 && NEXUS.enemy.length === 3, 'each side has three nexuses');
-  assert(NEXUS.player.every(n => n.maxHp === 5), 'nexuses have 5 HP');
-  assert(NEXUS.enemy.some(n => n.row === 0 && n.col === 1), 'enemy back-west nexus');
-  assert(NEXUS.enemy.some(n => n.row === 2 && n.col === 4), 'enemy front-center nexus');
+  assert(!moves.some(t => nexusAt(state, t.row, t.col)), 'move range should not include a nexus');
+  assert(state.nexuses.player.length === 3 && state.nexuses.enemy.length === 3, 'each side has three nexuses');
+  assert(state.nexuses.player.every(n => n.maxHp === 5), 'nexuses have 5 HP');
+  assert(state.nexuses.enemy.some(n => n.row === 0 && n.col === 1), 'enemy back-west nexus');
+  assert(state.nexuses.enemy.some(n => n.row === 2 && n.col === 4), 'enemy front-center nexus');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -256,16 +259,16 @@ async function runSimSelfTests() {
   stepper.row = 7;
   stepper.col = 3;
   assert(stepper.moveRange === 3, 'rime should move 3');
-  assert(getMoveTiles(stepper).some(t => t.row === 4 && t.col === 3), 'rime move 3 reaches midboard from the back');
+  assert(getMoveTiles(state, stepper).some(t => t.row === 4 && t.col === 3), 'rime move 3 reaches midboard from the back');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
-  NEXUS.enemy.forEach((n, i) => { if (i < 2) n.hp = 0; });
-  assert(checkWinLoss() === null, 'one living enemy nexus should keep the game going');
-  NEXUS.enemy[2].hp = 0;
-  assert(checkWinLoss() === 'player', 'all enemy nexuses down is a win');
+  state.nexuses.enemy.forEach((n, i) => { if (i < 2) n.hp = 0; });
+  assert(checkWinLoss(state) === null, 'one living enemy nexus should keep the game going');
+  state.nexuses.enemy[2].hp = 0;
+  assert(checkWinLoss(state) === 'player', 'all enemy nexuses down is a win');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -273,72 +276,72 @@ async function runSimSelfTests() {
   hunter.state = 'onboard';
   hunter.row = 3;
   hunter.col = 4;
-  const wounded = NEXUS.enemy.find(n => n.row === 2 && n.col === 4);
-  const healthy = NEXUS.enemy.find(n => n.row === 0 && n.col === 7);
+  const wounded = state.nexuses.enemy.find(n => n.row === 2 && n.col === 4);
+  const healthy = state.nexuses.enemy.find(n => n.row === 0 && n.col === 7);
   wounded.hp = 1;
   healthy.hp = 5;
   const snipe = pickAttack(hunter, 'player');
   assert(snipe && snipe.row === 2 && snipe.col === 4, 'AI should snipe the wounded nexus');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mana = 10;
   state.mountains = {};
   state.water = {};
   const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  const opened = simSummon(arriving, 7, 3, 'player');
+  const opened = simSummon(state, arriving, 7, 3, 'player');
   assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
   assert(arriving.state === 'portaling', 'wizard waits in the portal');
-  assert(!!portalAt(7, 3), 'portal occupies the tile');
-  assert(simMove(arriving, [{ row: 6, col: 3 }]).length === 0, 'portaling wizard cannot move');
-  simEndPlayerTurn();
+  assert(!!portalAt(state, 7, 3), 'portal occupies the tile');
+  assert(simMove(state, arriving, [{ row: 6, col: 3 }]).length === 0, 'portaling wizard cannot move');
+  simEndPlayerTurn(state);
   assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
-  simEndEnemyTurn();
+  simEndEnemyTurn(state);
   assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
-  assert(!portalAt(7, 3), 'portal closes on arrival');
+  assert(!portalAt(state, 7, 3), 'portal closes on arrival');
   assert(canMove(arriving) && canAttack(arriving), 'arrived wizard has no sickness');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mana = 10;
   state.mountains = {};
   state.water = {};
   const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
-  simSummon(doomed, 7, 4, 'player');
+  simSummon(state, doomed, 7, 4, 'player');
   blocker.state = 'onboard';
   blocker.row = 7;
   blocker.col = 4;
   blocker.hp = 8;
-  const blocked = simResolvePortals('player');
+  const blocked = simResolvePortals(state, 'player');
   assert(doomed.state === 'dead', 'blocked summon dies');
   assert(blocker.state === 'dead', 'enemy standing on the portal dies');
   assert(blocked.some(e => e.type === 'portalBlocked'), 'blocked portal emits an event');
   assert(blocked.filter(e => e.type === 'death' && e.cause === 'portal').length === 2, 'both deaths are portal kills');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mana = 10;
   state.mountains = {};
   state.water = {};
   const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  simSummon(allyIn, 7, 3, 'player');
+  simSummon(state, allyIn, 7, 3, 'player');
   allyOn.state = 'onboard';
   allyOn.row = 7;
   allyOn.col = 3;
-  const allyBlock = simResolvePortals('player');
+  const allyBlock = simResolvePortals(state, 'player');
   assert(allyIn.state === 'dead', 'incoming dies if an ally stands on the portal');
   assert(allyOn.state === 'dead', 'ally standing on the portal dies too');
   assert(allyBlock.some(e => e.type === 'portalBlocked'), 'ally contest still emits portalBlocked');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   const mountainKeys = Object.keys(state.mountains);
   assert(mountainKeys.length >= 4, 'mountains should generate in groups');
-  NEXUS.player.concat(NEXUS.enemy).forEach(function (n) {
-    assert(!mountainAt(n.row, n.col), 'no mountain on a nexus');
-    assert(!waterAt(n.row, n.col), 'no water on a nexus');
+  state.nexuses.player.concat(state.nexuses.enemy).forEach(function (n) {
+    assert(!mountainAt(state, n.row, n.col), 'no mountain on a nexus');
+    assert(!waterAt(state, n.row, n.col), 'no water on a nexus');
   });
   function assertVerticalMirror(map, label) {
     Object.keys(map).forEach(function (k) {
@@ -363,7 +366,7 @@ async function runSimSelfTests() {
     const r = parseInt(p[0], 10);
     const c = parseInt(p[1], 10);
     const n = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(function (d) {
-      return mountainAt(r + d[0], c + d[1]);
+      return mountainAt(state, r + d[0], c + d[1]);
     }).length;
     assert(n > 0, 'mountains should not be loners (' + k + ')');
   });
@@ -372,7 +375,7 @@ async function runSimSelfTests() {
     const r = parseInt(p[0], 10);
     const c = parseInt(p[1], 10);
     const n = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(function (d) {
-      return waterAt(r + d[0], c + d[1]);
+      return waterAt(state, r + d[0], c + d[1]);
     }).length;
     assert(n > 0, 'water should not be loners (' + k + ')');
   });
@@ -380,14 +383,14 @@ async function runSimSelfTests() {
   scout.state = 'onboard';
   scout.row = 7;
   scout.col = 4;
-  if (mountainAt(scout.row, scout.col) || waterAt(scout.row, scout.col)) scout.col = 3;
-  if (mountainAt(scout.row, scout.col) || waterAt(scout.row, scout.col)) scout.col = 5;
-  const scoutMoves = getMoveTiles(scout);
-  assert(!scoutMoves.some(t => mountainAt(t.row, t.col)), 'cannot walk onto mountains');
-  const castsFromLane = getCastTiles(scout);
-  assert(!castsFromLane.some(t => mountainAt(t.row, t.col)), 'cannot cast onto a mountain');
+  if (mountainAt(state, scout.row, scout.col) || waterAt(state, scout.row, scout.col)) scout.col = 3;
+  if (mountainAt(state, scout.row, scout.col) || waterAt(state, scout.row, scout.col)) scout.col = 5;
+  const scoutMoves = getMoveTiles(state, scout);
+  assert(!scoutMoves.some(t => mountainAt(state, t.row, t.col)), 'cannot walk onto mountains');
+  const castsFromLane = getCastTiles(state, scout);
+  assert(!castsFromLane.some(t => mountainAt(state, t.row, t.col)), 'cannot cast onto a mountain');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = { '7,5': true, '7,6': true };
@@ -395,41 +398,63 @@ async function runSimSelfTests() {
   flyer.state = 'onboard';
   flyer.row = 7;
   flyer.col = 4;
-  const waterCast = getCastTiles(flyer);
+  const waterCast = getCastTiles(state, flyer);
   assert(waterCast.some(t => t.row === 7 && t.col === 5), 'cast can target water');
   assert(waterCast.some(t => t.row === 7 && t.col === 7), 'cast continues past water');
-  assert(getMeleeTiles(flyer).every(t => !waterAt(t.row, t.col)), 'melee cannot target water');
-  assert(getMoveTiles(flyer).some(t => t.row === 7 && t.col === 5), 'can step onto water');
-  const drown = simMove(flyer, [{ row: 7, col: 5 }]);
+  assert(getMeleeTiles(state, flyer).every(t => !waterAt(state, t.row, t.col)), 'melee cannot target water');
+  assert(getMoveTiles(state, flyer).some(t => t.row === 7 && t.col === 5), 'can step onto water');
+  const drown = simMove(state, flyer, [{ row: 7, col: 5 }]);
   assert(flyer.state === 'dead', 'water kills on enter');
   assert(drown.some(e => e.type === 'death' && e.cause === 'water'), 'water death is logged');
 
   let waterMaps = 0;
   let dryMaps = 0;
   for (let s = 1; s <= 40; s++) {
-    resetMatch(s);
+    resetMatch(state, s);
     assertVerticalMirror(state.mountains, 'mountain seed ' + s);
     assertVerticalMirror(state.water, 'water seed ' + s);
     if (Object.keys(state.water).length) waterMaps++;
     else dryMaps++;
-    assert(campsConnected(state.mountains, state.water), 'camps should stay connected on seed ' + s);
+    assert(campsConnected(state, state.mountains, state.water), 'camps should stay connected on seed ' + s);
   }
   assert(waterMaps > 0, 'some maps should have water');
   assert(dryMaps > 0, 'some maps should be dry');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   const mtnA = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
-  resetMatch(1);
+  resetMatch(state, 1);
   const mtnB = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
   assert(mtnA === mtnB, 'same seed should place the same terrain');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
   assert(playerEls.join(',') === 'fire,ice,wind', 'roster is fire ice wind');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 3, 'enemy has three wizards');
 
-  resetMatch(1);
+  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal'], enemyTeam: ['fire', 'ice', 'wind'] });
+  state.fxEnabled = false;
+  const customEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
+  assert(customEls.join(',') === 'earth,lightning,temporal', 'resetMatch honors a custom player team');
+  const rolledA = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
+  const rolledB = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
+  assert(rolledA.join(',') === rolledB.join(','), 'enemy team roll is seeded');
+  assert(rolledA.length === TEAM_SIZE, 'enemy team is three kits');
+  resetMatch(state, 4, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
+  assert(state.enemyTeam.length === 3, 'rolling an enemy team still fields three kits');
+  const seenEnemy = {};
+  let variety = 0;
+  for (let s = 1; s <= 12; s++) {
+    resetMatch(state, s, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
+    const key = state.enemyTeam.slice().sort().join(',');
+    if (!seenEnemy[key]) {
+      seenEnemy[key] = true;
+      variety += 1;
+    }
+  }
+  assert(variety >= 3, 'enemy teams vary across seeds');
+
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -448,14 +473,14 @@ async function runSimSelfTests() {
   n2.row = 4;
   n2.col = 4;
   n2.hp = 8;
-  const pulse = simAttack(pulseMage, 3, 3, 'cast');
+  const pulse = simAttack(state, pulseMage, 3, 3, 'cast');
   assert(pulse.some(e => e.type === 'attack' && e.castKind === 'pulse'), 'ice cast is a pulse');
   assert(n1.hp === 10, 'pulse hits the north neighbor');
   assert(n2.hp === 6, 'pulse hits every neighbor, not just the clicked tile');
   assert(n1.row === 2 && n1.col === 3, 'pulse pushes outward');
   assert(n2.row === 4 && n2.col === 5, 'pulse pushes the east neighbor east');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -465,17 +490,17 @@ async function runSimSelfTests() {
   walker2.state = 'onboard';
   walker2.row = 4;
   walker2.col = 5;
-  const raised = simAttack(earth, 4, 6, 'cast');
+  const raised = simAttack(state, earth, 4, 6, 'cast');
   assert(raised.some(e => e.type === 'raise'), 'earth cast raises a mountain');
-  assert(mountainAt(4, 6), 'raised tile is a mountain');
-  assert(!getMoveTiles(walker2).some(t => t.row === 4 && t.col === 6), 'cannot walk onto a raised mountain');
-  assert(!getCastTiles(walker2).some(t => t.row === 4 && t.col === 6), 'gust cannot shoot into a raised mountain');
-  tickTempMountains();
-  assert(mountainAt(4, 6), 'raised mountain lasts through the next tick');
-  tickTempMountains();
-  assert(!mountainAt(4, 6), 'raised mountain crumbles after a turn');
+  assert(mountainAt(state, 4, 6), 'raised tile is a mountain');
+  assert(!getMoveTiles(state, walker2).some(t => t.row === 4 && t.col === 6), 'cannot walk onto a raised mountain');
+  assert(!getCastTiles(state, walker2).some(t => t.row === 4 && t.col === 6), 'gust cannot shoot into a raised mountain');
+  tickTempMountains(state);
+  assert(mountainAt(state, 4, 6), 'raised mountain lasts through the next tick');
+  tickTempMountains(state);
+  assert(!mountainAt(state, 4, 6), 'raised mountain crumbles after a turn');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -488,38 +513,38 @@ async function runSimSelfTests() {
   victim.row = 4;
   victim.col = 6;
   victim.hp = 12;
-  const zapped = simAttack(bolt, 4, 6, 'cast');
+  const zapped = simAttack(state, bolt, 4, 6, 'cast');
   assert(zapped.some(e => e.type === 'silence'), 'bolt silences');
   assert(victim.hp === 10, 'bolt deals 2');
   assert(victim.row === 4 && victim.col === 6, 'bolt does not push');
   assert(victim.silenced, 'victim is silenced until their next attack phase');
-  resetActionFlagsFor('enemy');
+  resetActionFlagsFor(state, 'enemy');
   assert(!canAttack(victim), 'silenced wizard skips their next attack');
   assert(!victim.silenced, 'silence is consumed after that skip');
-  resetActionFlagsFor('enemy');
+  resetActionFlagsFor(state, 'enemy');
   assert(canAttack(victim), 'the attack after that is free');
   assert(!zapped.some(e => e.type === 'trail'), 'bolt does not paint a trail');
-  assert(!trailAt(4, 5) && !trailAt(4, 6), 'bolt path has no trail');
+  assert(!trailAt(state, 4, 5) && !trailAt(state, 4, 6), 'bolt path has no trail');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   const boltMelee = spawnShelved('player', 'lightning', { row: 5, col: 4 });
-  simAttack(boltMelee, 4, 4, 'melee');
-  assert(!trailAt(4, 4), 'lightning melee does not paint');
+  simAttack(state, boltMelee, 4, 4, 'melee');
+  assert(!trailAt(state, 4, 4), 'lightning melee does not paint');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   const chronoMelee = spawnShelved('player', 'temporal', { row: 5, col: 4 });
-  simAttack(chronoMelee, 4, 4, 'melee');
-  assert(!trailAt(4, 4), 'temporal melee does not paint');
+  simAttack(state, chronoMelee, 4, 4, 'melee');
+  assert(!trailAt(state, 4, 4), 'temporal melee does not paint');
   assert(paintsTrail('fire') && paintsTrail('ice') && paintsTrail('wind'), 'fire ice wind paint');
   assert(!paintsTrail('lightning') && !paintsTrail('temporal') && !paintsTrail('earth'), 'bolt swap raise do not paint');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   const iceLog = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const portalLine = describeEvent({ type: 'portal', wizardId: iceLog.id, row: 8, col: 4 });
@@ -544,11 +569,11 @@ async function runSimSelfTests() {
   assert(blinkLine.indexOf('blinks') !== -1, 'empty swap log is a blink');
   assert(CAST_HINT.stream && CAST_HINT.swap && CAST_HINT.bolt, 'cast hints exist');
   const beforeId = state.matchId;
-  resetMatch(2);
+  resetMatch(state, 2);
   assert(state.matchId === beforeId + 1, 'resetMatch bumps matchId');
   assert(!state.gameOverResult && state.turnCount === 1, 'resetMatch starts a fresh fight');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -560,11 +585,11 @@ async function runSimSelfTests() {
   swapped.state = 'onboard';
   swapped.row = 4;
   swapped.col = 6;
-  simAttack(chrono, 4, 6, 'cast');
+  simAttack(state, chrono, 4, 6, 'cast');
   assert(chrono.row === 4 && chrono.col === 6, 'temporal swaps onto the target');
   assert(swapped.row === 4 && swapped.col === 4, 'the other wizard takes the old tile');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -572,11 +597,11 @@ async function runSimSelfTests() {
   blinker.state = 'onboard';
   blinker.row = 4;
   blinker.col = 4;
-  const blinked = simAttack(blinker, 4, 7, 'cast');
+  const blinked = simAttack(state, blinker, 4, 7, 'cast');
   assert(blinked.some(e => e.type === 'swap' && !e.bId), 'empty temporal cast is a blink');
   assert(blinker.row === 4 && blinker.col === 7, 'blink lands on the empty tile');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -584,22 +609,22 @@ async function runSimSelfTests() {
   gust.state = 'onboard';
   gust.row = 7;
   gust.col = 4;
-  const gustTiles = getCastTiles(gust);
+  const gustTiles = getCastTiles(state, gust);
   assert(gustTiles.some(t => t.row === 7 && t.col === 7), 'gust reaches range 3');
   assert(!gustTiles.some(t => t.row === 7 && t.col === 0), 'gust does not reach range 4');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   state.tempMountains = {};
-  layTrail(4, 4, 'fire');
-  tickTrails();
-  assert(trailAt(4, 4) && trailAt(4, 4).element === 'fire', 'trails last through the opponent turn');
-  tickTrails();
-  assert(!trailAt(4, 4), 'trails crumble after a round');
+  layTrail(state, 4, 4, 'fire');
+  tickTrails(state);
+  assert(trailAt(state, 4, 4) && trailAt(state, 4, 4).element === 'fire', 'trails last through the opponent turn');
+  tickTrails(state);
+  assert(!trailAt(state, 4, 4), 'trails crumble after a round');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -608,12 +633,12 @@ async function runSimSelfTests() {
   burned.row = 4;
   burned.col = 3;
   burned.hp = 12;
-  layTrail(4, 4, 'fire');
-  simMove(burned, [{ row: 4, col: 4 }]);
+  layTrail(state, 4, 4, 'fire');
+  simMove(state, burned, [{ row: 4, col: 4 }]);
   assert(burned.hp === 11, 'walking onto fire costs 1');
   assert(burned.row === 4 && burned.col === 4, 'fire does not block the step');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -626,11 +651,11 @@ async function runSimSelfTests() {
   slider.row = 4;
   slider.col = 4;
   slider.hp = 12;
-  layTrail(4, 5, 'ice');
-  simAttack(batterIce, 4, 4, 'melee');
+  layTrail(state, 4, 5, 'ice');
+  simAttack(state, batterIce, 4, 4, 'melee');
   assert(slider.row === 4 && slider.col === 7, 'push over ice does not spend a pip');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -638,11 +663,11 @@ async function runSimSelfTests() {
   rider.state = 'onboard';
   rider.row = 4;
   rider.col = 4;
-  layTrail(4, 5, 'wind');
-  simMove(rider, [{ row: 4, col: 5 }]);
+  layTrail(state, 4, 5, 'wind');
+  simMove(state, rider, [{ row: 4, col: 5 }]);
   assert(rider.row === 4 && rider.col === 6, 'wind carries you one more tile');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = { '4,5': true };
@@ -650,11 +675,11 @@ async function runSimSelfTests() {
   lane.state = 'onboard';
   lane.row = 4;
   lane.col = 4;
-  const laneMoves = getMoveTiles(lane);
+  const laneMoves = getMoveTiles(state, lane);
   assert(laneMoves.some(t => t.row === 4 && t.col === 5), 'water is a legal last step');
   assert(!laneMoves.some(t => t.row === 4 && t.col === 6), 'cannot path through water');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -669,7 +694,7 @@ async function runSimSelfTests() {
   assert(AI_BRAINS.hunter && AI_BRAINS.noop, 'AI brains can be swapped by name');
   const prevBrain = state.aiBrain;
   state.aiBrain = 'noop';
-  resetMatch(3);
+  resetMatch(state, 3);
   state.fxEnabled = false;
   await runTeamAi('player');
   const portaled = Object.values(state.wizards).some(w => w.team === 'player' && w.state === 'portaling');
@@ -683,7 +708,7 @@ async function runSimSelfTests() {
   assert(batch.nexus + batch.wipe + batch.void + batch.draw === 8, 'batch classifies each game');
   assert(typeof batch.playerWinRate === 'number', 'batch reports a win rate');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -698,11 +723,11 @@ async function runSimSelfTests() {
   doomedPush.col = 4;
   doomedPush.hp = 12;
   state.water = { '4,5': true, '4,6': true };
-  simAttack(pusher, 4, 4, 'cast');
+  simAttack(state, pusher, 4, 4, 'cast');
   assert(doomedPush.state === 'dead', 'push onto water kills');
   assert(doomedPush.row == null, 'pushed wizard leaves the water tile');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -716,63 +741,63 @@ async function runSimSelfTests() {
   voidVictim.row = 4;
   voidVictim.col = 4;
   voidVictim.hp = 12;
-  openVoid(4, 5);
-  simAttack(voidShove, 4, 4, 'melee');
+  openVoid(state, 4, 5);
+  simAttack(state, voidShove, 4, 4, 'melee');
   assert(voidVictim.state === 'dead', 'push onto a void kills');
-  assert(voidAt(4, 5), 'void is still there after the fall');
+  assert(voidAt(state, 4, 5), 'void is still there after the fall');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   state.voids = {};
   const drownBlink = spawnShelved('player', 'temporal', { row: 4, col: 4 });
   state.water = { '4,6': true };
-  const blink = simAttack(drownBlink, 4, 6, 'cast');
+  const blink = simAttack(state, drownBlink, 4, 6, 'cast');
   assert(drownBlink.state === 'dead', 'blink onto water kills');
   assert(blink.some(e => e.type === 'death' && e.cause === 'water'), 'blink water death is logged');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   state.voids = {};
-  const crystal = NEXUS.enemy[0];
+  const crystal = state.nexuses.enemy[0];
   crystal.hp = 1;
   const emberDrop = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   emberDrop.state = 'onboard';
   emberDrop.row = crystal.row + 1;
   emberDrop.col = crystal.col;
   if (emberDrop.row > 8) emberDrop.row = crystal.row - 1;
-  simAttack(emberDrop, crystal.row, crystal.col, 'melee');
+  simAttack(state, emberDrop, crystal.row, crystal.col, 'melee');
   assert(crystal.hp === 0, 'last nexus hit drops it');
-  assert(voidAt(crystal.row, crystal.col), 'dead nexus becomes a void');
-  assert(!nexusAt(crystal.row, crystal.col), 'dead nexus no longer occupies the tile');
+  assert(voidAt(state, crystal.row, crystal.col), 'dead nexus becomes a void');
+  assert(!nexusAt(state, crystal.row, crystal.col), 'dead nexus no longer occupies the tile');
   const holeWalker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   holeWalker.state = 'onboard';
   holeWalker.row = crystal.row;
   holeWalker.col = crystal.col === 0 ? 1 : crystal.col - 1;
-  if (wizardAt(holeWalker.row, holeWalker.col) && wizardAt(holeWalker.row, holeWalker.col).id !== holeWalker.id) {
+  if (wizardAt(state, holeWalker.row, holeWalker.col) && wizardAt(state, holeWalker.row, holeWalker.col).id !== holeWalker.id) {
     holeWalker.col = crystal.col + 1;
   }
   holeWalker.hasMoved = false;
-  const fall = simMove(holeWalker, [{ row: crystal.row, col: crystal.col }]);
+  const fall = simMove(state, holeWalker, [{ row: crystal.row, col: crystal.col }]);
   assert(holeWalker.state === 'dead', 'void kills on enter');
   assert(fall.some(e => e.type === 'death' && e.cause === 'void'), 'void death is logged');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   state.tempMountains = {};
   const boltWall = spawnShelved('player', 'lightning', { row: 4, col: 4 });
   const earthWall = spawnShelved('player', 'earth', { row: 5, col: 6 });
-  simAttack(earthWall, 4, 6, 'cast');
-  const grounded = simAttack(boltWall, 4, 6, 'cast');
+  simAttack(state, earthWall, 4, 6, 'cast');
+  const grounded = simAttack(state, boltWall, 4, 6, 'cast');
   assert(grounded.some(e => e.type === 'fizzle'), 'bolt fizzles on a raised wall');
   assert(grounded.every(e => e.type !== 'jump'), 'grounded bolt does not jump');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = { '4,5': true, '4,6': true };
@@ -785,12 +810,12 @@ async function runSimSelfTests() {
   soaked.row = 3;
   soaked.col = 6;
   soaked.hp = 12;
-  const jumped = simAttack(jumper, 4, 7, 'cast');
+  const jumped = simAttack(state, jumper, 4, 7, 'cast');
   assert(jumped.some(e => e.type === 'jump'), 'bolt jumps along water');
   assert(soaked.hp === 10, 'jump hits a wizard next to the water');
   assert(soaked.silenced, 'jump silence applies');
 
-  resetMatch(1);
+  resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
@@ -798,11 +823,11 @@ async function runSimSelfTests() {
   fanner.state = 'onboard';
   fanner.row = 4;
   fanner.col = 4;
-  layTrail(4, 5, 'fire');
-  simAttack(fanner, 4, 7, 'cast');
-  assert(trailAt(4, 5) && trailAt(4, 5).element === 'fire', 'gust keeps fire it fans through');
-  assert(trailAt(4, 6) && trailAt(4, 6).element === 'fire', 'gust spreads fire along the line');
-  assert(trailAt(4, 7) && trailAt(4, 7).element === 'fire', 'gust fire reaches the end of the gust');
+  layTrail(state, 4, 5, 'fire');
+  simAttack(state, fanner, 4, 7, 'cast');
+  assert(trailAt(state, 4, 5) && trailAt(state, 4, 5).element === 'fire', 'gust keeps fire it fans through');
+  assert(trailAt(state, 4, 6) && trailAt(state, 4, 6).element === 'fire', 'gust spreads fire along the line');
+  assert(trailAt(state, 4, 7) && trailAt(state, 4, 7).element === 'fire', 'gust fire reaches the end of the gust');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
