@@ -32,11 +32,12 @@ function renderPanel() {
     const isPicked = wiz.id === state.placingWizardId;
     const isBoardSelected = wiz.id === state.selectedWizardId;
     const isSummoned = wiz.state === 'summoned';
+    const isPortaling = wiz.state === 'portaling';
     const affordable = state.mana >= wiz.cost;
-    const clickable = isSummoned ? affordable : true;
+    const clickable = isSummoned ? affordable : (!isPortaling);
     const sick = !isSummoned && !!wiz.summoningSickness;
 
-    const stateLabel = isSummoned ? 'summoned' : (sick ? 'summoning sickness' : 'on board');
+    const stateLabel = isSummoned ? 'summoned' : (isPortaling ? 'portal' : (sick ? 'summoning sickness' : 'on board'));
     const cardClasses = 'wizard-card'
       + (isSummoned ? ' summoned ' + wiz.element : '')
       + (sick ? ' sick' : '')
@@ -65,7 +66,7 @@ function renderPanel() {
   }).filter(Boolean).join('');
 
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows to place ' + state.wizards[state.placingWizardId].name + '</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows to open a portal for ' + state.wizards[state.placingWizardId].name + '</div>'
     : '';
 
   return (

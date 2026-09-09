@@ -19,13 +19,13 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 | Rime (ice) | 2 | 3 | 12 | 4 / 2 | 2 / 1 |
 | Gale (wind) | 2 | 4 | 8 | 3 / 2 | 2 / 1 |
 
-Rime’s extra step is so a back-row summon can actually threaten midboard after summoning sickness. Gale stays the skirmisher at 4.
+Rime’s extra step is so a back-row arrival can actually threaten midboard. Gale stays the skirmisher at 4.
 
 ## Turn
 
 On your turn you may, in any order:
 
-1. **Summon** — pay a wizard’s cost, place it in your back 3 rows (not on a nexus, mountain, water, or occupied tile). **Summoning sickness:** it cannot move or attack the turn it is placed.
+1. **Summon** — pay a wizard’s cost and open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If an enemy is standing on the portal when it resolves, the summoning wizard dies and the blocker takes 2 damage. Same rules for the enemy.
 2. **Move** — each onboard wizard that is not sick and has not moved may move once, up to its move range. Other wizards, nexuses, mountains, and water block the path.
 3. **Attack** — each onboard wizard that is not sick and has not attacked may attack once, melee or cast.
 4. **End turn** — the other player takes their turn.

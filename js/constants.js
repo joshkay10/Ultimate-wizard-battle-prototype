@@ -28,6 +28,7 @@ const MANA_CAP = 10;
 const SUMMON_ROW_START = BOARD_SIZE - 3;
 const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
 const NEXUS_HP = 5;
+const PORTAL_BLOCK_DAMAGE = 2;
 // Four crystals per camp, spread through the back 3 rows and vertically mirrored.
 const NEXUS_LAYOUT = {
   enemy: [

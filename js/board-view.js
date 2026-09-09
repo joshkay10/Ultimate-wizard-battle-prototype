@@ -47,7 +47,8 @@ const BOARD_COLORS = {
   selectedBorder: '#d9b527',
   moveBorder: '#7fb0e8',
   meleeBorder: '#e2685f',
-  castBorder: '#d99a2b'
+  castBorder: '#d99a2b',
+  portalRing: '#7a5cff',
 };
 
 function getBoardCanvas() {
@@ -105,7 +106,7 @@ function highlightSet() {
     kind = 'summon';
     for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
-        if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+        if (canOpenPortalAt(r, c)) tiles.push({ row: r, col: c });
       }
     }
   } else if (selectedWizard && !state.animating) {
@@ -259,6 +260,35 @@ function drawWater(ctx, box, row, col) {
   ctx.beginPath();
   ctx.moveTo(x + s * 0.22, wy2);
   ctx.quadraticCurveTo(x + s * 0.4, wy2 + s * 0.05, x + s * 0.78, wy2 - s * 0.02);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawPortal(ctx, box, portal) {
+  const cx = box.x + box.s / 2;
+  const cy = box.y + box.s / 2;
+  const color = BOARD_COLORS[portal.element] || BOARD_COLORS.portalRing;
+  const t = performance.now() / 420;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1.6, box.s * 0.055);
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, box.s * 0.28, box.s * 0.18, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.rotate(t);
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, box.s * 0.2, box.s * 0.12, 0.6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.strokeStyle = portal.team === 'enemy' ? BOARD_COLORS.enemy : color;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, box.s * 0.32, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 }
@@ -444,7 +474,7 @@ function ensureFxLoop() {
     fxLast = now;
     tickFx(dt);
     drawBoard();
-    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length;
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || !!(state.portals && Object.keys(state.portals).length);
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
   }
@@ -479,7 +509,7 @@ function drawBoard() {
     );
   }
 
-  const marks = highlightSet();
+  if (state.portals && Object.keys(state.portals).length) ensureFxLoop();
   const highlightKey = {};
   marks.tiles.forEach(t => { highlightKey[t.row + ',' + t.col] = true; });
 
@@ -500,6 +530,8 @@ function drawBoard() {
 
       if (waterAt(r, c) && !flashHere) drawWater(ctx, box, r, c);
       if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
+      const portal = portalAt(r, c);
+      if (portal && !flashHere) drawPortal(ctx, box, portal);
 
       if (highlighted) {
         ctx.save();

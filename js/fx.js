@@ -35,7 +35,7 @@ async function playEvents(events) {
       let j = i + 1;
       while (j < events.length) {
         const n = events[j].type;
-        if (n === 'attack' || n === 'move' || n === 'summon' || n === 'turnEnd' || n === 'turnStart' || n === 'gameOver') break;
+        if (n === 'attack' || n === 'move' || n === 'summon' || n === 'portal' || n === 'portalBlocked' || n === 'turnEnd' || n === 'turnStart' || n === 'gameOver') break;
         j++;
       }
       await playAttackGroup(events, i, j);
@@ -101,6 +101,8 @@ async function playAttackGroup(events, start, end) {
 async function playEvent(ev) {
   if (ev.type === 'trail') return;
   if (ev.type === 'summon') return playSummon(ev);
+  if (ev.type === 'portal') return playPortal(ev);
+  if (ev.type === 'portalBlocked') return playPortalBlocked(ev);
   if (ev.type === 'move') return playMove(ev);
   if (ev.type === 'attack') return playAttack(ev);
   if (ev.type === 'damage') return playDamage(ev);
@@ -340,6 +342,26 @@ async function playPush(ev) {
     c = step.col;
   }
   delete boardFx.override[ev.wizardId];
+}
+
+async function playPortal(ev) {
+  const layout = boardLayout();
+  if (layout) {
+    const b = cellRect(layout, ev.row, ev.col);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS[ev.element] || '#fff', 14, 3.4);
+  }
+  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
+  ensureFxLoop();
+  await animate(200, function () {});
+}
+
+async function playPortalBlocked(ev) {
+  boardFx.flash = { row: ev.row, col: ev.col };
+  boardFx.shake = Math.max(boardFx.shake, 11);
+  boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.42);
+  ensureFxLoop();
+  await sleep(120);
+  boardFx.flash = null;
 }
 
 async function playSummon(ev) {

@@ -59,8 +59,16 @@ function wizardAt(row, col) {
   return Object.values(state.wizards).find(w => w.state === 'onboard' && w.row === row && w.col === col);
 }
 
-// A tile is blocked (can't summon onto it, can't move through/onto it)
-// if it holds a wizard, a nexus, a mountain, or water.
+function portalAt(row, col) {
+  return (state.portals && state.portals[row + ',' + col]) || null;
+}
+
+function canOpenPortalAt(row, col) {
+  return !isBlocked(row, col) && !portalAt(row, col);
+}
+
+// Walk/push blocked by wizard, nexus, mountain, or water.
+// Portals are walkable — standing on one contests the arrival.
 function isBlocked(row, col) {
   return !!wizardAt(row, col) || !!nexusAt(row, col) || mountainAt(row, col) || waterAt(row, col);
 }
@@ -77,7 +85,7 @@ function getPlayerSummonTiles() {
   const tiles = [];
   for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
-      if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+      if (canOpenPortalAt(r, c)) tiles.push({ row: r, col: c });
     }
   }
   return tiles;
@@ -87,7 +95,7 @@ function getEnemySummonTiles() {
   const tiles = [];
   for (let r = 0; r < ENEMY_ROW_END; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
-      if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+      if (canOpenPortalAt(r, c)) tiles.push({ row: r, col: c });
     }
   }
   return tiles;

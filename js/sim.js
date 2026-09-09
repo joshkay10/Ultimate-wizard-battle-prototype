@@ -67,12 +67,13 @@ function resetMatch(seed) {
   state.placingWizardId = null;
   state.trails = {};
   state.mountains = {};
+  state.water = {};
+  state.portals = {};
   state.mana = 1;
   state.maxMana = 1;
   state.enemyMana = 1;
   state.enemyMaxMana = 1;
   state.log = [];
-  state.water = {};
   resetNexuses();
   generateTerrain();
   seedRosters();
@@ -96,7 +97,7 @@ function maybeWait(ms) {
 
 function teamHasPresence(team) {
   return Object.values(state.wizards).some(w =>
-    w.team === team && (w.state === 'onboard' || w.state === 'summoned')
+    w.team === team && (w.state === 'onboard' || w.state === 'summoned' || w.state === 'portaling')
   );
 }
 
@@ -125,11 +126,11 @@ function resetActionFlagsFor(team) {
 }
 
 function canMove(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved);
 }
 
 function canAttack(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked);
 }
 
 function directionBetween(fromRow, fromCol, toRow, toCol) {
@@ -204,25 +205,89 @@ function simPush(target, dr, dc, amount) {
 function simSummon(wizard, row, col, team) {
   if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return [];
   if (teamMana(team) < wizard.cost) return [];
-  if (isBlocked(row, col)) return [];
+  if (!canOpenPortalAt(row, col)) return [];
   if (team === 'player' && !isSummonTile(row, col)) return [];
   if (team === 'enemy' && !isEnemySummonTile(row, col)) return [];
   spendMana(team, wizard.cost);
-  wizard.state = 'onboard';
+  wizard.state = 'portaling';
   wizard.row = row;
   wizard.col = col;
-  wizard.hasMoved = true;
-  wizard.hasAttacked = true;
-  wizard.summoningSickness = true;
+  wizard.hasMoved = false;
+  wizard.hasAttacked = false;
+  wizard.summoningSickness = false;
+  state.portals[row + ',' + col] = {
+    row: row,
+    col: col,
+    wizardId: wizard.id,
+    team: team,
+    element: wizard.element
+  };
   if (team === 'player') state.placingWizardId = null;
   return [{
-    type: 'summon',
+    type: 'portal',
     wizardId: wizard.id,
     row: row,
     col: col,
     team: team,
     element: wizard.element
   }];
+}
+
+function simResolvePortals(team) {
+  const events = [];
+  Object.keys(state.portals || {}).forEach(function (k) {
+    const p = state.portals[k];
+    if (!p || p.team !== team) return;
+    const wizard = state.wizards[p.wizardId];
+    delete state.portals[k];
+    if (!wizard || wizard.state !== 'portaling') return;
+    const blocker = wizardAt(p.row, p.col);
+    if (blocker) {
+      events.push({
+        type: 'portalBlocked',
+        wizardId: wizard.id,
+        blockerId: blocker.id,
+        row: p.row,
+        col: p.col,
+        team: team,
+        element: wizard.element
+      });
+      wizard.hp = 0;
+      const death = simKill(wizard);
+      if (death) {
+        death.cause = 'portal';
+        events.push(death);
+      }
+      blocker.hp -= PORTAL_BLOCK_DAMAGE;
+      events.push({
+        type: 'damage',
+        targetKind: 'wizard',
+        targetId: blocker.id,
+        amount: PORTAL_BLOCK_DAMAGE,
+        row: p.row,
+        col: p.col,
+        cause: 'portal'
+      });
+      const bDeath = simKill(blocker);
+      if (bDeath) events.push(bDeath);
+      return;
+    }
+    wizard.state = 'onboard';
+    wizard.row = p.row;
+    wizard.col = p.col;
+    wizard.hasMoved = false;
+    wizard.hasAttacked = false;
+    wizard.summoningSickness = false;
+    events.push({
+      type: 'summon',
+      wizardId: wizard.id,
+      row: p.row,
+      col: p.col,
+      team: team,
+      element: wizard.element
+    });
+  });
+  return events;
 }
 
 function simMove(wizard, path) {
@@ -332,6 +397,13 @@ function simEndPlayerTurn() {
     }
   }
   state.currentTurn = 'enemy';
+  events.push.apply(events, simResolvePortals('enemy'));
+  const afterPortals = checkWinLoss();
+  if (afterPortals) {
+    state.gameOverResult = afterPortals;
+    events.push({ type: 'gameOver', result: afterPortals });
+    return events;
+  }
   events.push({ type: 'turnStart', team: 'enemy', round: state.turnCount });
   return events;
 }
@@ -357,6 +429,13 @@ function simEndEnemyTurn() {
   state.enemyMaxMana = Math.min(MANA_CAP, state.enemyMaxMana + 1);
   state.enemyMana = state.enemyMaxMana;
   resetActionFlagsFor('player');
+  events.push.apply(events, simResolvePortals('player'));
+  const afterPortals = checkWinLoss();
+  if (afterPortals) {
+    state.gameOverResult = afterPortals;
+    events.push({ type: 'gameOver', result: afterPortals });
+    return events;
+  }
   events.push({ type: 'turnStart', team: 'player', round: state.turnCount });
   return events;
 }

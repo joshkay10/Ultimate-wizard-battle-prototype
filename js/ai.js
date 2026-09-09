@@ -185,6 +185,9 @@ function tileThreatScore(wizard, tile, team, target) {
   if (target) {
     score += Math.max(0, 16 - manhattan(tile.row, tile.col, target.row, target.col));
   }
+  const p = portalAt(tile.row, tile.col);
+  if (p && p.team !== team) score += 80;
+  if (p && p.team === team) score -= 120;
   return score;
 }
 
@@ -239,6 +242,21 @@ function nearestThreatTile(fromWizard, team) {
       }
     });
     if (raider) return { row: raider.row, col: raider.col };
+  }
+
+  let bestPortal = null;
+  let bestPD = Infinity;
+  Object.keys(state.portals || {}).forEach(function (k) {
+    const p = state.portals[k];
+    if (!p || p.team === team) return;
+    const d = manhattan(fromWizard.row, fromWizard.col, p.row, p.col);
+    if (d < bestPD) {
+      bestPD = d;
+      bestPortal = p;
+    }
+  });
+  if (bestPortal && bestPD <= fromWizard.moveRange + 1) {
+    return { row: bestPortal.row, col: bestPortal.col };
   }
 
   const damaged = livingNexuses(opposingTeam(team)).slice().sort((a, b) => {
