@@ -393,3 +393,197 @@ html, body {
   opacity: 0.4;
   cursor: default;
 }
+
+/* ---------- Site nav + doc pages ---------- */
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+.site-brand {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.site-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.site-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+.site-link:hover { color: var(--text); background: var(--tile-alt); }
+.site-link.active {
+  color: var(--text);
+  background: var(--tile-selected);
+}
+
+#view-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#app.is-doc {
+  height: auto;
+  min-height: 100vh;
+}
+#app.is-doc #view-root {
+  display: block;
+  overflow: auto;
+}
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 22px 18px 48px;
+}
+.page h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  margin: 0 0 8px;
+}
+.page h2 {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 28px 0 10px;
+}
+.page .lede {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin: 0 0 8px;
+}
+.page p, .page li {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.page ul, .page ol { padding-left: 1.2em; }
+.page a { color: var(--ice); }
+.page .note {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.rules-table, .matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 560px;
+}
+.rules-table th, .rules-table td,
+.matrix th, .matrix td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.rules-table th, .matrix th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+  background: #fafaf8;
+}
+.matrix thead th { text-align: center; }
+.matrix td {
+  text-align: center;
+  font-weight: 600;
+}
+.matrix tbody th {
+  text-align: left;
+  color: var(--text);
+  background: #fafaf8;
+  white-space: nowrap;
+}
+.matrix td.none { color: var(--text-faint); font-weight: 500; }
+.matrix td.soon {
+  color: var(--text-dim);
+  font-weight: 600;
+  background: repeating-linear-gradient(-45deg, #fff, #fff 6px, #f4f5f3 6px, #f4f5f3 12px);
+}
+.matrix td.live { color: var(--text); }
+.matrix tr:last-child td, .matrix tr:last-child th,
+.rules-table tr:last-child td { border-bottom: 0; }
+
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+.kit-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.kit-card.fire { border-color: var(--fire); }
+.kit-card.ice { border-color: var(--ice); }
+.kit-card.wind { border-color: var(--wind); }
+.kit-card.earth { border-color: var(--earth); }
+.kit-card.lightning { border-color: var(--lightning); }
+.kit-card.temporal { border-color: var(--temporal); }
+.kit-name { font-size: 14px; font-weight: 800; }
+.kit-cast { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.kit-detail { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+
+.todo-list { list-style: none; padding: 0; margin: 0; }
+.todo-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.todo-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--line-strong);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 1px;
+}
+.todo-list .done .todo-mark {
+  background: var(--wind);
+  border-color: var(--wind);
+  color: #fff;
+}
+.todo-list .done { color: var(--text-dim); }
+.todo-list .open .todo-mark { background: #fff; }
+

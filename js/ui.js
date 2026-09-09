@@ -11,8 +11,24 @@ function castStatText(wiz) {
 
 function ensureShell() {
   const app = document.getElementById('app');
+  const route = currentRoute();
+  const nav = renderSiteNav(route);
+  if (!document.getElementById('site-nav')) {
+    app.innerHTML = nav + '<div id="view-root"></div>';
+  } else {
+    document.getElementById('site-nav').outerHTML = nav;
+    if (!document.getElementById('view-root')) {
+      const view = document.createElement('div');
+      view.id = 'view-root';
+      app.appendChild(view);
+    }
+  }
+}
+
+function ensurePlayShell() {
+  const view = document.getElementById('view-root');
   if (document.getElementById('board-canvas')) return;
-  app.innerHTML =
+  view.innerHTML =
     '<div class="topbar" id="topbar"></div>' +
     '<div class="board-wrap"><canvas id="board-canvas" class="board-canvas" width="640" height="640"></canvas></div>' +
     '<div id="panel-root"></div>' +
@@ -21,6 +37,10 @@ function ensureShell() {
     const cell = boardCanvasCellFromEvent(ev);
     if (cell) handleTileClick(cell.row, cell.col);
   });
+}
+
+function ensureMatch() {
+  if (!state.rng) resetMatch((Date.now() >>> 0) || 1);
 }
 
 function renderPanel() {
@@ -146,7 +166,20 @@ function attachHandlers() {
 
 function render() {
   ensureShell();
+  const route = currentRoute();
+  document.title = routeTitle(route);
   const app = document.getElementById('app');
+
+  if (route !== 'play') {
+    app.classList.add('is-doc');
+    app.classList.remove('is-animating', 'is-enemy-turn');
+    document.getElementById('view-root').innerHTML = renderDocPage(route);
+    return;
+  }
+
+  app.classList.remove('is-doc');
+  ensureMatch();
+  ensurePlayShell();
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
