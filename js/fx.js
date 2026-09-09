@@ -166,11 +166,12 @@ async function playMeleeLunge(ev) {
   if (!layout) return;
   const from = cellRect(layout, ev.from.row, ev.from.col);
   const to = cellRect(layout, ev.row, ev.col);
-  const dx = (to.x - from.x) * 0.46;
-  const dy = (to.y - from.y) * 0.46;
-  await animate(95, function (t) {
+  const dx = (to.x - from.x) * 0.52;
+  const dy = (to.y - from.y) * 0.52;
+  await animate(110, function (t) {
     const k = easeOut(t);
     boardFx.override[ev.attackerId] = { x: from.x + dx * k, y: from.y + dy * k, s: from.s };
+    boardFx.popScale[ev.attackerId] = 1 + k * 0.08;
   });
   boardFx.slash = {
     x0: from.x + from.s / 2,
@@ -182,9 +183,12 @@ async function playMeleeLunge(ev) {
   };
   const cx = to.x + to.s / 2;
   const cy = to.y + to.s / 2;
-  spawnBurst(cx, cy, BOARD_COLORS[ev.element] || '#fff', 10, 3.2);
+  spawnBurst(cx, cy, BOARD_COLORS[ev.element] || '#fff', 14, 4.2);
+  spawnBurst(cx, cy, '#ffffff', 6, 2.6);
+  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
+  boardFx.shake = Math.max(boardFx.shake, 5);
   ensureFxLoop();
-  await animate(85, function (t) { boardFx.slash.t = t; });
+  await animate(110, function (t) { boardFx.slash.t = t; });
   boardFx.slash = null;
   boardFx.lungeReturn = {
     id: ev.attackerId,
@@ -629,32 +633,49 @@ async function playDamage(ev) {
   boardFx.flash = { row: ev.row, col: ev.col };
   boardFx.screenFlash = ev.targetKind === 'nexus' ? 0.55 : (killish ? 0.48 : 0.38);
   boardFx.shake = ev.targetKind === 'nexus' ? 12 : (ev.cause === 'collision' || ev.cause === 'crash' ? 11 : 8);
+  if (ev.targetKind === 'wizard' && ev.targetId) {
+    boardFx.popScale[ev.targetId] = 1.24;
+  }
   const layout = boardLayout();
   if (layout) {
     const b = cellRect(layout, ev.row, ev.col);
-    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, '#ffffff', 14, 4.8);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, '#ffffff', 16, 5.2);
   }
   ensureFxLoop();
   drawBoard();
-  const stop = ev.cause === 'collision' || ev.cause === 'crash' ? 110 : (ev.targetKind === 'nexus' ? 100 : 85);
+  const stop = ev.cause === 'collision' || ev.cause === 'crash' ? 120 : (ev.targetKind === 'nexus' ? 110 : 95);
   await sleep(stop);
+  if (ev.targetId) delete boardFx.popScale[ev.targetId];
   boardFx.flash = null;
   drawBoard();
 }
 
-async function lerpOverride(id, r0, c0, r1, c1, duration) {
+async function lerpOverride(id, r0, c0, r1, c1, duration, opts) {
+  opts = opts || {};
   const layout = boardLayout();
   if (!layout) return;
   const a = cellRect(layout, r0, c0);
   const b = cellRect(layout, r1, c1);
+  const wiz = state.wizards[id];
   await animate(duration, function (t) {
     const k = easeInOut(t);
-    boardFx.override[id] = {
+    const hop = opts.bounce ? Math.sin(Math.PI * t) * a.s * 0.28 : 0;
+    const box = {
       x: a.x + (b.x - a.x) * k,
-      y: a.y + (b.y - a.y) * k,
+      y: a.y + (b.y - a.y) * k - hop,
       s: a.s
     };
+    boardFx.override[id] = box;
+    if (opts.bounce) boardFx.popScale[id] = 1 + Math.sin(Math.PI * t) * 0.08;
+    if (opts.trail && wiz) {
+      boardFx.ghosts = [
+        { box: { x: a.x + (b.x - a.x) * Math.max(0, k - 0.22), y: a.y + (b.y - a.y) * Math.max(0, k - 0.22), s: a.s }, wizard: wiz, alpha: 0.32, scale: 0.94 },
+        { box: { x: a.x + (b.x - a.x) * Math.max(0, k - 0.4), y: a.y + (b.y - a.y) * Math.max(0, k - 0.4), s: a.s }, wizard: wiz, alpha: 0.16, scale: 0.88 }
+      ];
+    }
   });
+  if (opts.bounce) delete boardFx.popScale[id];
+  if (opts.trail) boardFx.ghosts = [];
 }
 
 async function playMove(ev) {
@@ -665,7 +686,7 @@ async function playMove(ev) {
   boardFx.override[ev.wizardId] = boxToOv(cellRect(layout, r, c));
   for (let i = 0; i < ev.path.length; i++) {
     const step = ev.path[i];
-    await lerpOverride(ev.wizardId, r, c, step.row, step.col, 115);
+    await lerpOverride(ev.wizardId, r, c, step.row, step.col, 130, { bounce: true });
     r = step.row;
     c = step.col;
   }
@@ -685,10 +706,11 @@ async function playPush(ev) {
   boardFx.override[ev.wizardId] = boxToOv(cellRect(layout, r, c));
   for (let i = 0; i < ev.path.length; i++) {
     const step = ev.path[i];
-    await lerpOverride(ev.wizardId, r, c, step.row, step.col, 80);
+    await lerpOverride(ev.wizardId, r, c, step.row, step.col, 70, { trail: true });
     r = step.row;
     c = step.col;
   }
+  boardFx.ghosts = [];
   delete boardFx.override[ev.wizardId];
 }
 

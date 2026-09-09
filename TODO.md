@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: six unique kits, real fire/ice/wind trails (lightning and temporal do not paint), portals, mountains, water-as-wall, flat crash (1, not leftover push), friendly fire, 2 starting mana, named casts, action log, rematch, portal arrival copy, clearer discs, magma/ice/wind trail paint, unique stream/pulse/gust/raise/bolt/swap animations. This list is only what is next.
+Shipped: six unique kits, real fire/ice/wind trails (lightning and temporal do not paint), portals, mountains, water-as-wall, flat crash (1, not leftover push), friendly fire, 2 starting mana, named casts, action log, rematch, portal arrival copy, clearer discs, magma/ice/wind trail paint, unique stream/pulse/gust/raise/bolt/swap animations, hop walks, ghosted pushes, punchier hits. This list is only what is next.
 
 ## Need from you
 
@@ -11,11 +11,6 @@ Canvas drawings are placeholders. If you have any of this, send it — a sprite 
 - [ ] **Terrain tiles** (optional, would read better than canvas): magma, ice frost, wind, water, mountain, and later void. 64×64 tiles that can repeat. Magma and ice frost are painted in code now; sprites can replace them.
 
 Not blocking: the AI. That is code.
-
-## Look
-
-- [ ] Swap in element icons / wizard sprites once they exist (see Need from you).
-- [ ] Movement and combat animations: walks, pushes, blinks, and hits need to read at a glance.
 
 ## Terrain
 

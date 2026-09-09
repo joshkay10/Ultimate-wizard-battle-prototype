@@ -208,63 +208,86 @@ function drawElementIcon(ctx, element, cx, cy, size, color) {
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
-  ctx.lineWidth = Math.max(1.5, size * 0.12);
+  ctx.lineWidth = Math.max(1.6, size * 0.14);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   if (element === 'ice') {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - size);
-    ctx.lineTo(cx, cy + size);
-    ctx.moveTo(cx - size, cy);
-    ctx.lineTo(cx + size, cy);
-    ctx.moveTo(cx - size * 0.7, cy - size * 0.7);
-    ctx.lineTo(cx + size * 0.7, cy + size * 0.7);
-    ctx.moveTo(cx + size * 0.7, cy - size * 0.7);
-    ctx.lineTo(cx - size * 0.7, cy + size * 0.7);
-    ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI * 2 * i) / 6;
+      const x2 = cx + Math.cos(a) * size;
+      const y2 = cy + Math.sin(a) * size;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const tx = Math.cos(a) * size * 0.28;
+      const ty = Math.sin(a) * size * 0.28;
+      const px = -Math.sin(a) * size * 0.22;
+      const py = Math.cos(a) * size * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(x2 - tx + px, y2 - ty + py);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x2 - tx - px, y2 - ty - py);
+      ctx.stroke();
+    }
   } else if (element === 'wind') {
-    ctx.beginPath();
-    ctx.moveTo(cx - size, cy - size * 0.45);
-    ctx.lineTo(cx + size * 0.2, cy - size * 0.45);
-    ctx.moveTo(cx - size, cy);
-    ctx.lineTo(cx + size * 0.55, cy);
-    ctx.moveTo(cx - size, cy + size * 0.45);
-    ctx.lineTo(cx + size * 0.15, cy + size * 0.45);
-    ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const y = cy + (i - 1) * size * 0.44;
+      ctx.beginPath();
+      ctx.moveTo(cx - size, y);
+      ctx.quadraticCurveTo(cx - size * 0.1, y - size * 0.38, cx + size * 0.45, y);
+      ctx.quadraticCurveTo(cx + size * 0.82, y + size * 0.16, cx + size, y - size * 0.1);
+      ctx.stroke();
+    }
   } else if (element === 'earth') {
     ctx.beginPath();
-    ctx.moveTo(cx - size, cy + size * 0.75);
-    ctx.lineTo(cx - size * 0.15, cy - size * 0.35);
-    ctx.lineTo(cx + size * 0.2, cy + size * 0.15);
-    ctx.lineTo(cx + size, cy + size * 0.75);
+    ctx.moveTo(cx - size, cy + size * 0.78);
+    ctx.lineTo(cx - size * 0.28, cy - size * 0.05);
+    ctx.lineTo(cx + size * 0.05, cy + size * 0.38);
+    ctx.lineTo(cx + size * 0.28, cy - size * 0.42);
+    ctx.lineTo(cx + size, cy + size * 0.78);
     ctx.closePath();
     ctx.fill();
   } else if (element === 'lightning') {
     ctx.beginPath();
-    ctx.moveTo(cx + size * 0.15, cy - size);
-    ctx.lineTo(cx - size * 0.45, cy + size * 0.05);
-    ctx.lineTo(cx + size * 0.05, cy + size * 0.05);
-    ctx.lineTo(cx - size * 0.15, cy + size);
-    ctx.lineTo(cx + size * 0.5, cy - size * 0.05);
-    ctx.lineTo(cx - size * 0.05, cy - size * 0.05);
+    ctx.moveTo(cx + size * 0.18, cy - size);
+    ctx.lineTo(cx - size * 0.5, cy + size * 0.08);
+    ctx.lineTo(cx + size * 0.08, cy + size * 0.08);
+    ctx.lineTo(cx - size * 0.18, cy + size);
+    ctx.lineTo(cx + size * 0.52, cy - size * 0.08);
+    ctx.lineTo(cx - size * 0.08, cy - size * 0.08);
     ctx.closePath();
     ctx.fill();
   } else if (element === 'temporal') {
     ctx.beginPath();
-    canvasArc(ctx, cx, cy, size * 0.85);
+    canvasArc(ctx, cx, cy, size * 0.9);
     ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      const a = (Math.PI / 2) * i;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * size * 0.7, cy + Math.sin(a) * size * 0.7);
+      ctx.lineTo(cx + Math.cos(a) * size * 0.9, cy + Math.sin(a) * size * 0.9);
+      ctx.stroke();
+    }
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx, cy - size * 0.45);
+    ctx.lineTo(cx, cy - size * 0.48);
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + size * 0.4, cy + size * 0.2);
+    ctx.lineTo(cx + size * 0.42, cy + size * 0.18);
     ctx.stroke();
   } else {
     ctx.beginPath();
-    ctx.moveTo(cx, cy + size * 0.85);
-    ctx.quadraticCurveTo(cx - size, cy + size * 0.1, cx - size * 0.15, cy - size * 0.55);
-    ctx.quadraticCurveTo(cx, cy - size * 0.05, cx + size * 0.35, cy - size * 0.2);
-    ctx.quadraticCurveTo(cx + size * 0.15, cy + size * 0.35, cx, cy + size * 0.85);
+    ctx.moveTo(cx, cy + size * 0.9);
+    ctx.quadraticCurveTo(cx - size * 1.05, cy + size * 0.15, cx - size * 0.2, cy - size * 0.7);
+    ctx.quadraticCurveTo(cx + size * 0.05, cy - size * 0.05, cx + size * 0.42, cy - size * 0.28);
+    ctx.quadraticCurveTo(cx + size * 0.18, cy + size * 0.4, cx, cy + size * 0.9);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(cx - size * 0.08, cy + size * 0.55);
+    ctx.quadraticCurveTo(cx - size * 0.45, cy + size * 0.1, cx - size * 0.12, cy - size * 0.15);
+    ctx.quadraticCurveTo(cx - size * 0.02, cy + size * 0.2, cx - size * 0.08, cy + size * 0.55);
     ctx.fill();
   }
   ctx.restore();
@@ -1150,12 +1173,12 @@ function drawBoard() {
     const dx = s.x1 - s.x0;
     const dy = s.y1 - s.y0;
     const len = Math.hypot(dx, dy) || 1;
-    const px = -dy / len * 26;
-    const py = dx / len * 26;
-    const grow = 0.25 + t * 1.05;
+    const px = -dy / len * 32;
+    const py = dx / len * 32;
+    const grow = 0.3 + t * 1.15;
     ctx.save();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 8 * (1 - t * 0.55);
+    ctx.lineWidth = 10 * (1 - t * 0.55);
     ctx.globalAlpha = 0.85 * (1 - t);
     ctx.lineCap = 'round';
     ctx.beginPath();

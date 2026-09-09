@@ -90,12 +90,6 @@ function renderTodoPage() {
       '</ul>' +
       '<p class="need-note">Not blocking: the AI. That is code.</p>' +
 
-      '<h2>Look</h2>' +
-      '<ul class="todo-list">' +
-        item('Swap in element icons / wizard sprites once they exist (see Need from you).') +
-        item('Better walks, pushes, blinks, and hit animations.') +
-      '</ul>' +
-
       '<h2>Terrain</h2>' +
       '<ul class="todo-list">' +
         item('<strong>Water and voids kill on enter</strong> — step, slide, blink, or get pushed on and you die.') +
