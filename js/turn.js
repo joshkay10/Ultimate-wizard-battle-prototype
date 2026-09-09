@@ -9,6 +9,11 @@ async function maybeAutoEndTurn() {
   await endTurn();
 }
 
+async function afterPlayerAction() {
+  if (typeof render === 'function') render();
+  await maybeAutoEndTurn();
+}
+
 function rematch() {
   endingTurn = false;
   state.animating = false;
