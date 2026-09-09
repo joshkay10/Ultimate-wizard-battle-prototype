@@ -101,7 +101,7 @@ function highlightSet() {
     kind = 'summon';
     for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
-        if (!isBlocked(r, c)) tiles.push({ row: r, col: c });
+        if (!isBlocked(r, c) && !mountainAt(r, c)) tiles.push({ row: r, col: c });
       }
     }
   } else if (selectedWizard && !state.animating) {
@@ -448,7 +448,7 @@ function drawBoard() {
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       const box = cellRect(layout, r, c);
-      const highlighted = !!highlightKey[r + ',' + c];
+      const highlighted = !!highlightKey[r + ',' + c] && !mountainAt(r, c);
       const nex = nexusAt(r, c);
       const flashHere = boardFx.flash && boardFx.flash.row === r && boardFx.flash.col === c;
       let fill = tileFill(r, c, highlighted, marks.kind);
