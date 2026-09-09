@@ -504,29 +504,56 @@ function drawPortal(ctx, box, portal) {
   ctx.restore();
 }
 
+function drawDiamond(ctx, x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - s);
+  ctx.lineTo(x + s, y);
+  ctx.lineTo(x, y + s);
+  ctx.lineTo(x - s, y);
+  ctx.closePath();
+}
+
 function drawNexus(ctx, box, hp, flash) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   const size = box.s * 0.32;
+  const frame = flash ? '#ffffff' : BOARD_COLORS.text;
+  const pip = flash ? '#1c1e1b' : BOARD_COLORS.text;
+
   ctx.save();
   if (hp <= 0) ctx.globalAlpha = 0.35;
   ctx.translate(cx, cy);
   ctx.rotate(Math.PI / 4);
-  ctx.lineWidth = Math.max(2, box.s * 0.06);
-  ctx.strokeStyle = flash ? '#ffffff' : BOARD_COLORS.text;
+  ctx.lineWidth = Math.max(2, box.s * 0.055);
+  ctx.strokeStyle = frame;
   ctx.fillStyle = flash ? '#ffffff' : 'transparent';
   ctx.beginPath();
   ctx.rect(-size, -size, size * 2, size * 2);
   if (flash) ctx.fill();
   ctx.stroke();
   ctx.restore();
+
+  if (hp <= 0) return;
+
   ctx.save();
-  if (hp <= 0) ctx.globalAlpha = 0.35;
-  ctx.fillStyle = flash ? '#1c1e1b' : BOARD_COLORS.text;
-  ctx.font = '700 ' + Math.max(10, box.s * 0.22) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(String(hp), cx, cy);
+  ctx.fillStyle = pip;
+  ctx.strokeStyle = pip;
+  const pipSize = box.s * 0.065;
+  const reach = box.s * 0.155;
+  const slots = [
+    { x: cx, y: cy - reach },
+    { x: cx + reach, y: cy },
+    { x: cx, y: cy + reach },
+    { x: cx - reach, y: cy }
+  ];
+  const diamondsLeft = Math.max(0, Math.min(4, hp - 1));
+  for (let i = 0; i < diamondsLeft; i++) {
+    drawDiamond(ctx, slots[i].x, slots[i].y, pipSize);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  canvasArc(ctx, cx, cy, Math.max(2.6, box.s * 0.058));
+  ctx.fill();
   ctx.restore();
 }
 
