@@ -32,10 +32,12 @@ async function playEvents(events) {
     return;
   }
   state.animating = true;
+  const matchId = state.matchId;
   try {
     if (typeof render === 'function') render();
     let i = 0;
     while (i < events.length) {
+      if (state.matchId !== matchId) return;
       const ev = events[i];
       if (ev.type === 'attack') {
         let j = i + 1;
@@ -44,7 +46,7 @@ async function playEvents(events) {
           if (n === 'attack' || n === 'move' || n === 'summon' || n === 'portal' || n === 'portalBlocked' || n === 'turnEnd' || n === 'turnStart' || n === 'gameOver') break;
           j++;
         }
-        await playAttackGroup(events, i, j);
+        await playAttackGroup(events, i, j, matchId);
         i = j;
       } else {
         await playEvent(ev);
@@ -65,7 +67,7 @@ async function playEvents(events) {
   }
 }
 
-async function playAttackGroup(events, start, end) {
+async function playAttackGroup(events, start, end, matchId) {
   const layout = boardLayout();
   let restored = null;
   for (let k = start; k < end; k++) {
@@ -102,6 +104,7 @@ async function playAttackGroup(events, start, end) {
   }
 
   for (let k = start; k < end; k++) {
+    if (matchId != null && state.matchId !== matchId) return;
     await playEvent(events[k]);
   }
   await returnLunge();
@@ -135,7 +138,16 @@ async function playEvent(ev) {
   }
 }
 
+function banner(ev, text) {
+  if (ev.row == null && !(ev.from && ev.from.row != null)) return;
+  const row = ev.from ? ev.from.row : ev.row;
+  const col = ev.from ? ev.from.col : ev.col;
+  boardFx.popups.push({ row: row, col: col, text: text, t: 0, element: ev.element });
+  ensureFxLoop();
+}
+
 async function playAttack(ev) {
+  if (ev.kind === 'cast' && ev.castKind) banner(ev, ev.castKind);
   if (ev.kind !== 'cast') return playMeleeLunge(ev);
   if (ev.castKind === 'pulse') return playPulseCast(ev);
   if (ev.castKind === 'raise') return playRaiseCast(ev);
@@ -485,6 +497,7 @@ async function playPortal(ev) {
     spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS[ev.element] || '#fff', 14, 3.4);
   }
   boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'next turn', t: 0, element: ev.element });
   ensureFxLoop();
   await animate(200, function () {});
 }
@@ -505,6 +518,7 @@ async function playSummon(ev) {
     spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS[ev.element] || '#fff', 18, 4);
   }
   boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'arrives', t: 0, element: ev.element });
   boardFx.popScale[ev.wizardId] = 0.2;
   ensureFxLoop();
   await animate(220, function (t) {

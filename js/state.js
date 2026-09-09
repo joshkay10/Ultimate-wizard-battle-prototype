@@ -36,7 +36,8 @@ const state = {
   seed: 1,
   rng: null,
   log: [],
-  fxEnabled: true
+  fxEnabled: true,
+  matchId: 0
 };
 
 function makeNexus(spec, team) {

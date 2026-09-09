@@ -9,6 +9,7 @@
     'js/board.js',
     'js/units.js',
     'js/sim.js',
+    'js/log.js',
     'js/combat.js',
     'js/actions.js',
     'js/turn.js',

@@ -123,7 +123,7 @@ function highlightSet() {
       return { tiles: getMeleeTiles(selectedWizard), kind: 'melee' };
     }
     if (state.selectedAction === 'cast' && canAttack(selectedWizard)) {
-      return { tiles: getCastTiles(selectedWizard), kind: 'cast' };
+      return { tiles: getCastTiles(selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }
   return { tiles, kind };
@@ -140,13 +140,21 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function tileFill(row, col, highlight, kind) {
+function tileFill(row, col, highlight, kind, castKind) {
   const isAlt = (row + col) % 2 === 1;
   if (mountainAt(row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
   if (waterAt(row, col)) return isAlt ? BOARD_COLORS.waterAlt : BOARD_COLORS.water;
   if (highlight) {
     if (kind === 'melee') return BOARD_COLORS.melee;
-    if (kind === 'cast') return BOARD_COLORS.cast;
+    if (kind === 'cast') {
+      if (castKind === 'pulse') return '#d7e8f3';
+      if (castKind === 'gust') return '#d8ebe1';
+      if (castKind === 'raise') return '#e8ddc8';
+      if (castKind === 'bolt') return '#f3e9c4';
+      if (castKind === 'swap') return '#eadff3';
+      if (castKind === 'stream') return '#f4ddd6';
+      return BOARD_COLORS.cast;
+    }
     return BOARD_COLORS.move;
   }
   const trail = trailAt(row, col);
@@ -347,6 +355,14 @@ function drawPortal(ctx, box, portal) {
   canvasArc(ctx, cx, cy, box.s * 0.32);
   ctx.stroke();
   ctx.restore();
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.9;
+  ctx.font = '700 ' + Math.max(8, box.s * 0.16) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('next', cx, cy + box.s * 0.38);
+  ctx.restore();
 }
 
 function drawNexus(ctx, box, hp, flash) {
@@ -379,28 +395,34 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   scale = tokenPopScale(scale);
-  const radius = box.s * 0.36 * scale;
+  const radius = box.s * 0.38 * scale;
+  const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   ctx.beginPath();
-  canvasArc(ctx, cx, cy, box.s * 0.36);
-  ctx.fillStyle = flash ? '#ffffff' : (wizard.team === 'enemy' ? BOARD_COLORS.enemy : BOARD_COLORS.token);
+  canvasArc(ctx, cx, cy, box.s * 0.38);
+  ctx.fillStyle = flash ? '#ffffff' : (wizard.team === 'enemy' ? BOARD_COLORS.enemy : '#f7f4ee');
   ctx.fill();
+  ctx.lineWidth = Math.max(2.6, box.s * 0.06);
+  ctx.strokeStyle = flash ? '#ffffff' : elColor;
+  ctx.stroke();
   if (selected && !flash) {
-    ctx.lineWidth = Math.max(2, box.s * 0.05);
+    ctx.lineWidth = Math.max(2, box.s * 0.045);
     ctx.strokeStyle = BOARD_COLORS.selectedBorder;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, box.s * 0.46);
     ctx.stroke();
   }
   ctx.restore();
-  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.08, radius * 0.42);
+  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.12, radius * 0.5);
   if (wizard.silenced && !flash) {
     ctx.save();
     ctx.strokeStyle = BOARD_COLORS.lightning;
     ctx.lineWidth = Math.max(1.6, box.s * 0.045);
     ctx.beginPath();
-    canvasArc(ctx, cx, cy, box.s * 0.4);
+    canvasArc(ctx, cx, cy, box.s * 0.44);
     ctx.stroke();
     ctx.restore();
   }
@@ -531,6 +553,24 @@ function tickFx(dt) {
 let fxLooping = false;
 let fxLast = 0;
 
+function resetBoardFx() {
+  boardFx.flash = null;
+  boardFx.projectile = null;
+  boardFx.popups = [];
+  boardFx.override = {};
+  boardFx.ghosts = [];
+  boardFx.slash = null;
+  boardFx.rings = [];
+  boardFx.particles = [];
+  boardFx.shake = 0;
+  boardFx.screenFlash = 0;
+  boardFx.popScale = {};
+  boardFx.fade = {};
+  boardFx.lungeReturn = null;
+  boardFx.stream = null;
+  boardFx.charge = null;
+}
+
 function ensureFxLoop() {
   if (fxLooping) return;
   fxLooping = true;
@@ -586,7 +626,7 @@ function drawBoard() {
       const highlighted = !!highlightKey[r + ',' + c] && !mountainAt(r, c);
       const nex = nexusAt(r, c);
       const flashHere = boardFx.flash && boardFx.flash.row === r && boardFx.flash.col === c;
-      let fill = tileFill(r, c, highlighted, marks.kind);
+      let fill = tileFill(r, c, highlighted, marks.kind, marks.castKind);
       const occHere = wizardAt(r, c);
       if (occHere && occHere.id === state.selectedWizardId && !boardFx.override[occHere.id]) fill = BOARD_COLORS.selected;
       if (flashHere) fill = '#ffffff';
@@ -603,6 +643,12 @@ function drawBoard() {
       if (highlighted) {
         ctx.save();
         ctx.strokeStyle = marks.kind === 'melee' ? BOARD_COLORS.meleeBorder
+          : marks.kind === 'cast' && marks.castKind === 'swap' ? BOARD_COLORS.temporal
+          : marks.kind === 'cast' && marks.castKind === 'raise' ? BOARD_COLORS.earth
+          : marks.kind === 'cast' && marks.castKind === 'bolt' ? BOARD_COLORS.lightning
+          : marks.kind === 'cast' && marks.castKind === 'pulse' ? BOARD_COLORS.ice
+          : marks.kind === 'cast' && marks.castKind === 'gust' ? BOARD_COLORS.wind
+          : marks.kind === 'cast' && marks.castKind === 'stream' ? BOARD_COLORS.fire
           : marks.kind === 'cast' ? BOARD_COLORS.castBorder
           : BOARD_COLORS.moveBorder;
         ctx.setLineDash([4, 3]);
@@ -711,7 +757,7 @@ function drawBoard() {
     const punch = 1 + (1 - p.t) * 0.28;
     ctx.save();
     ctx.globalAlpha = 1 - p.t;
-    ctx.fillStyle = BOARD_COLORS.fire;
+    ctx.fillStyle = BOARD_COLORS[p.element] || BOARD_COLORS.text;
     ctx.font = '800 ' + Math.max(14, b.s * 0.32 * punch) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

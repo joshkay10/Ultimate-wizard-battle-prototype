@@ -75,6 +75,7 @@ function resetMatch(seed) {
   state.enemyMana = STARTING_MANA;
   state.enemyMaxMana = STARTING_MANA;
   state.log = [];
+  state.matchId = (state.matchId || 0) + 1;
   resetNexuses();
   generateTerrain();
   seedRosters();
@@ -473,6 +474,7 @@ function simStrike(attacker, row, col, kind) {
 
   const trails = [];
   pathTiles.forEach(t => {
+    if (!paintsTrail(attacker.element)) return;
     layTrail(t.row, t.col, attacker.element);
     trails.push({ row: t.row, col: t.col, element: attacker.element });
   });
@@ -546,8 +548,10 @@ function simPulse(attacker, clickRow, clickCol) {
   const hits = [];
 
   tiles.forEach(function (t) {
-    layTrail(t.row, t.col, attacker.element);
-    trails.push({ row: t.row, col: t.col, element: attacker.element });
+    if (paintsTrail(attacker.element)) {
+      layTrail(t.row, t.col, attacker.element);
+      trails.push({ row: t.row, col: t.col, element: attacker.element });
+    }
     const w = wizardAt(t.row, t.col);
     const n = nexusAt(t.row, t.col);
     if (w) hits.push({ kind: 'wizard', wizard: w, row: t.row, col: t.col });

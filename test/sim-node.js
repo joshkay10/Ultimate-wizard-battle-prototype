@@ -11,6 +11,7 @@ const files = [
   'js/board.js',
   'js/units.js',
   'js/sim.js',
+  'js/log.js',
   'js/ai.js',
   'js/headless.js'
 ];

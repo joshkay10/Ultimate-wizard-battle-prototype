@@ -376,6 +376,61 @@ async function runSimSelfTests() {
   assert(!victim.silenced, 'silence is consumed after that skip');
   resetActionFlagsFor('enemy');
   assert(canAttack(victim), 'the attack after that is free');
+  assert(!zapped.some(e => e.type === 'trail'), 'bolt does not paint a trail');
+  assert(!trailAt(4, 5) && !trailAt(4, 6), 'bolt path has no trail');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const boltMelee = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'lightning');
+  boltMelee.state = 'onboard';
+  boltMelee.row = 5;
+  boltMelee.col = 4;
+  simAttack(boltMelee, 4, 4, 'melee');
+  assert(!trailAt(4, 4), 'lightning melee does not paint');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const chronoMelee = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'temporal');
+  chronoMelee.state = 'onboard';
+  chronoMelee.row = 5;
+  chronoMelee.col = 4;
+  simAttack(chronoMelee, 4, 4, 'melee');
+  assert(!trailAt(4, 4), 'temporal melee does not paint');
+  assert(paintsTrail('fire') && paintsTrail('ice') && paintsTrail('wind'), 'fire ice wind paint');
+  assert(!paintsTrail('lightning') && !paintsTrail('temporal') && !paintsTrail('earth'), 'bolt swap raise do not paint');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  const iceLog = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const portalLine = describeEvent({ type: 'portal', wizardId: iceLog.id, row: 8, col: 4 });
+  assert(portalLine.indexOf('Ice opens a portal') !== -1 && portalLine.indexOf('arrives next turn') !== -1, 'portal log names the wizard and next turn');
+  assert(describeEvent({ type: 'summon', wizardId: iceLog.id, row: 8, col: 4 }) === 'Ice arrives', 'summon log says arrives');
+  const streamLine = describeEvent({
+    type: 'attack',
+    kind: 'cast',
+    castKind: 'stream',
+    attackerId: Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire').id,
+    from: { row: 8, col: 4 },
+    row: 5,
+    col: 4
+  });
+  assert(streamLine.indexOf('streams') !== -1 && streamLine.indexOf('north') !== -1, 'stream log names direction');
+  const blinkLine = describeEvent({
+    type: 'swap',
+    aId: Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'temporal').id,
+    fromA: { row: 4, col: 4 },
+    toA: { row: 4, col: 7 }
+  });
+  assert(blinkLine.indexOf('blinks') !== -1, 'empty swap log is a blink');
+  assert(CAST_HINT.stream && CAST_HINT.swap && CAST_HINT.bolt, 'cast hints exist');
+  const beforeId = state.matchId;
+  resetMatch(2);
+  assert(state.matchId === beforeId + 1, 'resetMatch bumps matchId');
+  assert(!state.gameOverResult && state.turnCount === 1, 'resetMatch starts a fresh fight');
 
   resetMatch(1);
   state.fxEnabled = false;

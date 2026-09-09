@@ -83,16 +83,12 @@ function renderTodoPage() {
 
       '<h2>Play</h2>' +
       '<ul class="todo-list">' +
-        item('<strong>Casts are not readable.</strong> Name the spell, show the shape, and make stream / pulse / gust / raise / bolt / swap look different.') +
-        item('Plain-English action log. “Gale gusts Ice three tiles east.”') +
-        item('Portal arrival is easy to miss — say so when you place it, and when it lands.') +
-        item('Restart / rematch without a refresh.') +
+        item('<strong>Casts still look too similar in motion.</strong> The button, hint, and tile tint name the spell. Stream / pulse / gust / raise / bolt / swap still need obviously different animations.') +
       '</ul>' +
 
       '<h2>Look</h2>' +
       '<ul class="todo-list">' +
         item('Sprite icons for the six elements (card badge and board).') +
-        item('Wizard discs should look like units, not gray coins with a doodle.') +
         item('Better walks, pushes, blinks, and hit animations.') +
       '</ul>' +
 
@@ -102,7 +98,6 @@ function renderTodoPage() {
         item('<strong>A dead nexus becomes a void</strong> on that tile.') +
         item('Lightning jumps along water, grounds on a raised earth wall.') +
         item('Wind fans fire (spreads it along the gust).') +
-        item('Lightning and Temporal trails are still visual-only. Give them a rule or stop painting them.') +
       '</ul>' +
 
       '<h2>AI</h2>' +
@@ -127,7 +122,7 @@ function matrixRow(label, cells, kinds) {
 }
 
 function renderElementsPage() {
-  const tiles = ['Fire', 'Ice', 'Wind', 'Bolt trail', 'Earth wall', 'Water', 'Mountain'];
+  const tiles = ['Fire', 'Ice', 'Wind', 'Earth wall', 'Water', 'Mountain'];
   return (
     '<article class="page">' +
       '<h1>Elements</h1>' +
@@ -139,7 +134,7 @@ function renderElementsPage() {
         kitCard('ice', 'Ice', 'Pulse', '8 neighbors · paints ice') +
         kitCard('wind', 'Gale', 'Gust', 'Line 3 · 3 push · paints wind') +
         kitCard('earth', 'Earth', 'Raise', 'Temp mountain · no paint') +
-        kitCard('lightning', 'Lightning', 'Bolt', 'Silence · trail is visual') +
+        kitCard('lightning', 'Lightning', 'Bolt', 'Silence · no paint') +
         kitCard('temporal', 'Temporal', 'Swap', 'Swap or blink · no paint') +
       '</div>' +
 
@@ -149,23 +144,23 @@ function renderElementsPage() {
         '<table class="matrix">' +
           matrixHead(tiles) +
           '<tbody>' +
-            matrixRow('Walk', ['1 dmg', 'normal', 'then carry', 'normal', 'blocked', 'blocked', 'blocked']) +
-            matrixRow('Push onto', ['1 dmg', 'free pip', 'then carry', 'spend pip', 'crash', 'crash', 'crash']) +
-            matrixRow('Line cast', ['open', 'open', 'open', 'open', 'blocked', 'flies over', 'blocked']) +
+            matrixRow('Walk', ['1 dmg', 'normal', 'then carry', 'blocked', 'blocked', 'blocked']) +
+            matrixRow('Push onto', ['1 dmg', 'free pip', 'then carry', 'crash', 'crash', 'crash']) +
+            matrixRow('Line cast', ['open', 'open', 'open', 'blocked', 'flies over', 'blocked']) +
           '</tbody>' +
         '</table>' +
       '</div>' +
-      '<p class="note">Earth raise is a real wall: it clears a trail and blocks walk, summon, melee, cast, and push. Portals are walkable. Nexuses block walk and eat a cast.</p>' +
+      '<p class="note">Earth raise is a real wall: it clears a trail and blocks walk, summon, melee, cast, and push. Portals are walkable. Nexuses block walk and eat a cast. Bolt and swap do not paint a trail.</p>' +
 
       '<h2>Trail on trail</h2>' +
       '<p>Painting a tile replaces whatever was there. You cannot paint a mountain, water, or nexus. Earth raise clears the trail and puts a wall there instead.</p>' +
       '<div class="table-wrap">' +
         '<table class="matrix">' +
-          matrixHead(['on Fire', 'on Ice', 'on Wind', 'on Bolt trail']) +
+          matrixHead(['on Fire', 'on Ice', 'on Wind']) +
           '<tbody>' +
-            matrixRow('Paint fire', ['fire', 'fire', 'fire', 'fire']) +
-            matrixRow('Paint ice', ['ice', 'ice', 'ice', 'ice']) +
-            matrixRow('Paint wind', ['wind', 'wind', 'wind', 'wind']) +
+            matrixRow('Paint fire', ['fire', 'fire', 'fire']) +
+            matrixRow('Paint ice', ['ice', 'ice', 'ice']) +
+            matrixRow('Paint wind', ['wind', 'wind', 'wind']) +
           '</tbody>' +
         '</table>' +
       '</div>' +

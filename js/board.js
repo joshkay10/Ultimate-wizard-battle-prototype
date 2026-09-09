@@ -1,4 +1,9 @@
+function paintsTrail(element) {
+  return element === 'fire' || element === 'ice' || element === 'wind';
+}
+
 function layTrail(row, col, element) {
+  if (!paintsTrail(element)) return;
   if (mountainAt(row, col) || waterAt(row, col) || nexusAt(row, col)) return;
   state.trails[row + ',' + col] = { element, turnsLeft: TRAIL_TURNS };
 }

@@ -54,11 +54,13 @@ function renderPanel() {
     })
     .map(wiz => {
       const inHand = wiz.state === 'summoned';
+      const arriving = wiz.state === 'portaling';
       const isPicked = wiz.id === state.placingWizardId;
       const isBoardSelected = wiz.id === state.selectedWizardId;
       const clickable = inHand ? state.mana >= wiz.cost : wiz.state === 'onboard';
       const cardClasses = 'wizard-card ' + wiz.element
         + (inHand ? ' in-hand' : ' summoned')
+        + (arriving ? ' arriving' : '')
         + (isPicked ? ' placing' : '')
         + (isBoardSelected ? ' board-selected' : '');
 
@@ -67,7 +69,7 @@ function renderPanel() {
           '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
             '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, ELEMENT_COLOR[wiz.element]) + '</div>' +
             '<div class="wizard-card-top">' +
-              '<div class="wizard-card-name">' + wiz.name + '</div>' +
+              '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
               '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
             '</div>' +
             '<div class="wizard-stats">' +
@@ -82,7 +84,16 @@ function renderPanel() {
     .join('');
 
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows to open a portal for ' + state.wizards[state.placingWizardId].name + '</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows. ' + state.wizards[state.placingWizardId].name + ' arrives at the start of your next turn.</div>'
+    : (state.selectedWizardId && state.wizards[state.selectedWizardId] && state.selectedAction === 'cast'
+      ? '<div class="no-selection-hint"><strong>' + (state.wizards[state.selectedWizardId].castKind || 'cast') + '</strong> — ' + (CAST_HINT[state.wizards[state.selectedWizardId].castKind] || 'tap a highlighted tile') + '</div>'
+      : '');
+
+  const logLines = recentLogLines(5);
+  const logHtml = logLines.length
+    ? '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
+      return '<li>' + line + '</li>';
+    }).join('') + '</ul>'
     : '';
 
   return (
@@ -91,6 +102,7 @@ function renderPanel() {
       '<div>' +
         renderActionRow() +
         (wizardCards ? '<p class="panel-section-label">wizards</p><div class="wizard-grid">' + wizardCards + '</div>' : '') +
+        logHtml +
       '</div>' +
     '</div>'
   );
@@ -109,11 +121,13 @@ function renderActionRow() {
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
 
+  const castLabel = (selected && selected.castKind) ? selected.castKind : 'cast';
+
   return (
     '<div class="action-row">' +
       '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
       '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
-      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' cast</button>' +
+      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' ' + castLabel + '</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
   );
@@ -137,6 +151,7 @@ function renderGameOverOverlay() {
       '<div class="game-over-card">' +
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
+        '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
       '</div>' +
     '</div>'
   );
@@ -162,6 +177,20 @@ function attachHandlers() {
 
   const endTurnBtn = document.getElementById('end-turn-btn');
   if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);
+  const rematchBtn = document.getElementById('rematch-btn');
+  if (rematchBtn) {
+    rematchBtn.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      rematch();
+    });
+  }
+  const newMatchBtn = document.getElementById('new-match-btn');
+  if (newMatchBtn) {
+    newMatchBtn.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      rematch();
+    });
+  }
 }
 
 function render() {
@@ -185,7 +214,8 @@ function render() {
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>';
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>' +
+    '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();
   drawBoard();

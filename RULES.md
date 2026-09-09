@@ -50,11 +50,11 @@ On your turn you may, in any order:
 - **Crash:** if the push hits a wall (edge, mountain, water, or nexus), the pushed wizard takes 1 damage per tile they could not travel (max 3).
 - If they crash into **another wizard**, both take that crash damage. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse hits everyone in the ring.
 - HP 0 = dead, token leaves the board.
-- Stream, gust, bolt, and pulse also leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
+- Stream, gust, and pulse leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
   - **Fire:** walking, sliding, blinking, or arriving onto it costs 1 damage.
   - **Ice:** a push that enters ice does not spend a knockback pip, so you keep sliding.
   - **Wind:** if you finish a move or push on wind, it carries you one more tile in that direction (and chains if you land on wind again).
-  - Lightning and temporal trails are still visual only. Raise does not paint; it builds a wall.
+  - Bolt, swap, and raise do not paint. Raise builds a wall instead.
 
 ## Winning
 
