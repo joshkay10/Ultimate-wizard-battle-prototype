@@ -54,22 +54,10 @@ const BOARD_COLORS = {
   iceRim: 'rgba(255,255,255,0.92)',
   iceInner: 'rgba(130, 190, 220, 0.7)',
   token: '#b9bcb5',
-  tokenFillPlayer: {
-    fire: '#d1481f',
-    ice: '#1f7fb8',
-    wind: '#2f9e6b',
-    earth: '#7a6238',
-    lightning: '#8a6a12',
-    temporal: '#6b4c9a'
-  },
-  tokenFillEnemy: {
-    fire: '#4a160c',
-    ice: '#0a3048',
-    wind: '#0f3d28',
-    earth: '#2e2514',
-    lightning: '#3a2e08',
-    temporal: '#2a1c3e'
-  },
+  puckPlayer: '#2e302c',
+  puckPlayerSide: '#161815',
+  puckEnemy: '#d6d8d2',
+  puckEnemySide: '#9a9d96',
   enemy: '#1c1e1b',
   text: '#1c1e1b',
   selectedBorder: '#d9b527',
@@ -542,59 +530,88 @@ function drawNexus(ctx, box, hp, flash) {
   ctx.restore();
 }
 
-function tokenFillFor(wizard) {
-  const map = wizard.team === 'enemy' ? BOARD_COLORS.tokenFillEnemy : BOARD_COLORS.tokenFillPlayer;
-  return (map && map[wizard.element]) || BOARD_COLORS.token;
+function drawPuckBody(ctx, cx, cy, r, yours, flash) {
+  const depth = Math.max(3.2, r * 0.3);
+  const face = flash ? '#ffffff' : (yours ? BOARD_COLORS.puckPlayer : BOARD_COLORS.puckEnemy);
+  const side = flash ? '#d0d2cc' : (yours ? BOARD_COLORS.puckPlayerSide : BOARD_COLORS.puckEnemySide);
+
+  if (!flash) {
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + depth + r * 0.1, r * 0.9, r * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = side;
+  ctx.beginPath();
+  canvasArc(ctx, cx, cy + depth, r);
+  ctx.fill();
+  ctx.fillRect(cx - r, cy, r * 2, depth);
+
+  ctx.beginPath();
+  canvasArc(ctx, cx, cy, r);
+  ctx.fillStyle = face;
+  ctx.fill();
+
+  if (!flash) {
+    ctx.save();
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.clip();
+    ctx.fillStyle = yours ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.62)';
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.2, cy - r * 0.32, r * 0.7, r * 0.4, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = yours ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.1)';
+    ctx.beginPath();
+    ctx.ellipse(cx + r * 0.08, cy + r * 0.46, r * 0.78, r * 0.3, 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   scale = tokenPopScale(scale);
-  const radius = box.s * 0.38 * scale;
+  const r = box.s * 0.36;
   const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
   const yours = wizard.team !== 'enemy';
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
-  ctx.beginPath();
-  canvasArc(ctx, cx, cy, box.s * 0.38);
-  ctx.fillStyle = flash ? '#ffffff' : tokenFillFor(wizard);
-  ctx.fill();
-  ctx.lineWidth = Math.max(2.8, box.s * 0.065);
-  ctx.strokeStyle = flash ? '#ffffff' : (yours ? '#ffffff' : elColor);
-  ctx.stroke();
-  if (yours && !flash) {
-    ctx.lineWidth = Math.max(1.4, box.s * 0.03);
+  drawPuckBody(ctx, cx, cy, r, yours, flash);
+  if (!flash) {
+    ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = elColor;
     ctx.beginPath();
-    canvasArc(ctx, cx, cy, box.s * 0.32);
+    canvasArc(ctx, cx, cy, r * 0.86);
     ctx.stroke();
   }
   if (selected && !flash) {
     ctx.lineWidth = Math.max(2, box.s * 0.045);
     ctx.strokeStyle = BOARD_COLORS.selectedBorder;
     ctx.beginPath();
-    canvasArc(ctx, cx, cy, box.s * 0.46);
+    canvasArc(ctx, cx, cy, r + box.s * 0.08);
     ctx.stroke();
   }
   ctx.restore();
-  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - radius * 0.12, radius * 0.52, '#ffffff');
+  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - r * 0.14, r * 0.48, elColor);
   if (wizard.silenced && !flash) {
     ctx.save();
     ctx.strokeStyle = BOARD_COLORS.lightning;
     ctx.lineWidth = Math.max(1.6, box.s * 0.045);
     ctx.beginPath();
-    canvasArc(ctx, cx, cy, box.s * 0.44);
+    canvasArc(ctx, cx, cy, r * 1.08);
     ctx.stroke();
     ctx.restore();
   }
-  ctx.fillStyle = flash ? '#1c1e1b' : '#ffffff';
+  ctx.fillStyle = flash ? '#1c1e1b' : (yours ? '#f4f5f2' : BOARD_COLORS.text);
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(String(wizard.hp), cx, cy + radius * 0.52);
+  ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
 }
 
 function drawStream(ctx) {
