@@ -1,10 +1,7 @@
 const ROSTER = [
   { typeId: 'fire' },
   { typeId: 'ice' },
-  { typeId: 'wind' },
-  { typeId: 'earth' },
-  { typeId: 'lightning' },
-  { typeId: 'temporal' }
+  { typeId: 'wind' }
 ];
 
 function createWizard(typeId, team) {

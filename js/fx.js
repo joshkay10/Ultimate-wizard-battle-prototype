@@ -769,6 +769,7 @@ async function playPortalBlocked(ev) {
   boardFx.flash = { row: ev.row, col: ev.col };
   boardFx.shake = Math.max(boardFx.shake, 11);
   boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.42);
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'both die', t: 0, element: ev.element });
   ensureFxLoop();
   await sleep(120);
   boardFx.flash = null;

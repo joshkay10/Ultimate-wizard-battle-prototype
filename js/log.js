@@ -34,7 +34,9 @@ function describeEvent(ev) {
 
   if (ev.type === 'portal') return actorName(ev.wizardId) + ' opens a portal — arrives next turn';
   if (ev.type === 'summon') return actorName(ev.wizardId) + ' arrives';
-  if (ev.type === 'portalBlocked') return actorName(ev.wizardId) + "'s portal is blocked";
+  if (ev.type === 'portalBlocked') {
+    return actorName(ev.wizardId) + ' and ' + actorName(ev.blockerId) + ' die in the portal';
+  }
 
   if (ev.type === 'move') {
     const last = ev.path && ev.path.length ? ev.path[ev.path.length - 1] : null;

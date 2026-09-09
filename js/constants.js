@@ -24,15 +24,11 @@ const ELEMENT_COLOR = {
 
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
-// Ice is the only 2-cost kit so round 1 is one portal, not a 2-drop lottery.
-// Gale / Lightning wait for 3. Earth / Temporal wait for 4.
+// Three kits for now. Rime is the only 2-cost opener. Pyre and Squall wait for 3.
 const WIZARD_TYPES = [
-  { id: 'fire', name: 'Ember', element: 'fire', castKind: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2, castAttack: 3, castDisplacement: 1, castRange: 4 },
-  { id: 'ice', name: 'Ice', element: 'ice', castKind: 'pulse', moveRange: 3, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1, castRange: 1 },
-  { id: 'wind', name: 'Gale', element: 'wind', castKind: 'gust', moveRange: 4, hp: 8, cost: 3, meleeAttack: 3, meleeDisplacement: 2, castAttack: 1, castDisplacement: 3, castRange: 3 },
-  { id: 'earth', name: 'Earth', element: 'earth', castKind: 'raise', moveRange: 2, hp: 14, cost: 4, meleeAttack: 4, meleeDisplacement: 1, castAttack: 0, castDisplacement: 0, castRange: 2 },
-  { id: 'lightning', name: 'Lightning', element: 'lightning', castKind: 'bolt', moveRange: 3, hp: 9, cost: 3, meleeAttack: 3, meleeDisplacement: 1, castAttack: 2, castDisplacement: 0, castRange: 4 },
-  { id: 'temporal', name: 'Temporal', element: 'temporal', castKind: 'swap', moveRange: 3, hp: 9, cost: 4, meleeAttack: 3, meleeDisplacement: 1, castAttack: 0, castDisplacement: 0, castRange: 3 }
+  { id: 'fire', name: 'Pyre', element: 'fire', castKind: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2, castAttack: 3, castDisplacement: 1, castRange: 4 },
+  { id: 'ice', name: 'Rime', element: 'ice', castKind: 'pulse', moveRange: 3, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2, castAttack: 2, castDisplacement: 1, castRange: 1 },
+  { id: 'wind', name: 'Squall', element: 'wind', castKind: 'gust', moveRange: 4, hp: 8, cost: 3, meleeAttack: 3, meleeDisplacement: 2, castAttack: 1, castDisplacement: 3, castRange: 3 }
 ];
 
 const BOARD_SIZE = 9;
@@ -41,7 +37,6 @@ const MANA_CAP = 10;
 const SUMMON_ROW_START = BOARD_SIZE - 3;
 const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
 const NEXUS_HP = 5;
-const PORTAL_BLOCK_DAMAGE = 2;
 const CRASH_DAMAGE = 1;
 const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;
@@ -55,18 +50,16 @@ const CAST_HINT = {
   bolt: 'line of 4 — silences',
   swap: 'swap with a wizard, or blink to an empty tile'
 };
-// Four crystals per camp, spread through the back 3 rows and vertically mirrored.
+// Three crystals per camp: two back wings and one forward center, vertically mirrored.
 const NEXUS_LAYOUT = {
   enemy: [
     { id: 'enemy-back-west', row: 0, col: 1 },
     { id: 'enemy-back-east', row: 0, col: 7 },
-    { id: 'enemy-front-west', row: 2, col: 3 },
-    { id: 'enemy-front-east', row: 2, col: 5 }
+    { id: 'enemy-front', row: 2, col: 4 }
   ],
   player: [
     { id: 'player-back-west', row: 8, col: 1 },
     { id: 'player-back-east', row: 8, col: 7 },
-    { id: 'player-front-west', row: 6, col: 3 },
-    { id: 'player-front-east', row: 6, col: 5 }
+    { id: 'player-front', row: 6, col: 4 }
   ]
 };

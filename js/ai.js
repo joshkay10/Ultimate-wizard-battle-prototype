@@ -80,14 +80,13 @@ function pickSummonWizard(affordable, tile, team) {
   const threatened = mostThreatenedNexus(team);
   const front = team === 'player' ? tile.row === SUMMON_ROW_START : tile.row === ENEMY_ROW_END - 1;
   if (threatened && manhattan(tile.row, tile.col, threatened.row, threatened.col) <= 2) {
-    const tank = affordable.find(w => w.element === 'earth')
-      || affordable.find(w => w.element === 'ice')
+    const tank = affordable.find(w => w.element === 'ice')
+      || affordable.find(w => w.element === 'fire')
       || affordable[0];
     return tank;
   }
   if (front) {
     return affordable.find(w => w.element === 'wind')
-      || affordable.find(w => w.element === 'lightning')
       || affordable.find(w => w.element === 'fire')
       || affordable[0];
   }

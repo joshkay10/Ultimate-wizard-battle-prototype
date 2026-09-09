@@ -451,18 +451,12 @@ function simResolvePortals(team) {
         death.cause = 'portal';
         events.push(death);
       }
-      blocker.hp -= PORTAL_BLOCK_DAMAGE;
-      events.push({
-        type: 'damage',
-        targetKind: 'wizard',
-        targetId: blocker.id,
-        amount: PORTAL_BLOCK_DAMAGE,
-        row: p.row,
-        col: p.col,
-        cause: 'portal'
-      });
+      blocker.hp = 0;
       const bDeath = simKill(blocker);
-      if (bDeath) events.push(bDeath);
+      if (bDeath) {
+        bDeath.cause = 'portal';
+        events.push(bDeath);
+      }
       return;
     }
     wizard.state = 'onboard';

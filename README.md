@@ -2,7 +2,7 @@
 
 Prototype. Open `index.html` over HTTP.
 
-Six unique wizards: Ember, Ice, Gale, Earth, Lightning, Temporal. Each has its own cast.
+Three unique wizards: Pyre, Rime, Squall. Each has its own cast.
 
 - [Battle](index.html)
 - [Rules](rules.html)
