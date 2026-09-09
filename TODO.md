@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: six unique kits, real fire/ice/wind trails, portals, mountains, lethal water and voids, dead nexus becomes a void, lightning jumps water and fizzles on raise, wind fans fire, flat crash, unique casts, hop walks. This list is only what is next.
+Shipped: six unique kits, real fire/ice/wind trails, portals, mountains, lethal water and voids, dead nexus becomes a void, lightning jumps water and fizzles on raise, wind fans fire, unique casts, hop walks, hunter AI with a brain hook and vs-AI batch. This list is only what is next.
 
 ## Need from you
 
@@ -10,10 +10,4 @@ Canvas drawings are placeholders. If you have any of this, send it — a sprite 
 - [ ] **Wizard sprites** if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.
 - [ ] **Terrain tiles** (optional, would read better than canvas): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.
 
-Not blocking: the AI. That is code.
-
-## AI
-
-- [ ] **Overhaul.** Hunt portals, respect voids/water, use raise as a wall, stop Temporal from teleporting into a nexus every fight, and play each kit like itself.
-- [ ] Hook so we can swap AI brains without rewriting the rules.
-- [ ] AI vs AI batch once the new brain is in: win rate, rounds, nexus vs wipe vs void.
+Not blocking: send sprites when you have them. Code items on this list are done.

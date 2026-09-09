@@ -1,3 +1,60 @@
+function classifyMatchResult(match) {
+  if (!match || match.result === 'draw' || !match.result) return 'draw';
+  const loser = match.result === 'player' ? 'enemy' : 'player';
+  if (teamNexusesFallen(loser)) return 'nexus';
+  const hazardDeath = (match.log || []).some(function (e) {
+    return e.type === 'death' && e.team === loser && (e.cause === 'void' || e.cause === 'water');
+  });
+  if (hazardDeath) return 'void';
+  return 'wipe';
+}
+
+async function runAiVsAiBatch(opts) {
+  opts = opts || {};
+  const games = opts.games || 20;
+  const startSeed = opts.startSeed || 1;
+  const maxRounds = opts.maxRounds || 30;
+  const brain = opts.brain || 'hunter';
+  const prevBrain = state.aiBrain;
+  const prevFx = state.fxEnabled;
+  state.aiBrain = brain;
+  state.fxEnabled = false;
+  const stats = {
+    games: 0,
+    player: 0,
+    enemy: 0,
+    draw: 0,
+    nexus: 0,
+    wipe: 0,
+    void: 0,
+    rounds: 0,
+    waterDeaths: 0,
+    voidDeaths: 0,
+    brain: brain
+  };
+  for (let i = 0; i < games; i++) {
+    const m = await runHeadlessMatch(startSeed + i, maxRounds);
+    stats.games += 1;
+    stats.rounds += m.rounds;
+    if (m.result === 'player') stats.player += 1;
+    else if (m.result === 'enemy') stats.enemy += 1;
+    else stats.draw += 1;
+    const kind = classifyMatchResult(m);
+    if (kind === 'nexus') stats.nexus += 1;
+    else if (kind === 'wipe') stats.wipe += 1;
+    else if (kind === 'void') stats.void += 1;
+    (m.log || []).forEach(function (e) {
+      if (e.type === 'death' && e.cause === 'water') stats.waterDeaths += 1;
+      if (e.type === 'death' && e.cause === 'void') stats.voidDeaths += 1;
+    });
+  }
+  stats.avgRounds = stats.games ? Math.round((stats.rounds / stats.games) * 10) / 10 : 0;
+  stats.playerWinRate = stats.games ? Math.round((stats.player / stats.games) * 1000) / 1000 : 0;
+  state.aiBrain = prevBrain;
+  state.fxEnabled = prevFx;
+  return stats;
+}
+
 async function runHeadlessMatch(seed, maxRounds) {
   const prev = state.fxEnabled;
   state.fxEnabled = false;
@@ -544,6 +601,49 @@ async function runSimSelfTests() {
   layTrail(4, 5, 'wind');
   simMove(rider, [{ row: 4, col: 5 }]);
   assert(rider.row === 4 && rider.col === 6, 'wind carries you one more tile');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = { '4,5': true };
+  const lane = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  lane.state = 'onboard';
+  lane.row = 4;
+  lane.col = 4;
+  const laneMoves = getMoveTiles(lane);
+  assert(laneMoves.some(t => t.row === 4 && t.col === 5), 'water is a legal last step');
+  assert(!laneMoves.some(t => t.row === 4 && t.col === 6), 'cannot path through water');
+
+  resetMatch(1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const chronoAi = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'temporal');
+  chronoAi.state = 'onboard';
+  chronoAi.row = 5;
+  chronoAi.col = 4;
+  const nexBlink = swapScore(chronoAi, { row: 2, col: 3 }, 'player');
+  assert(nexBlink < 80, 'temporal does not greed a nexus-adjacent blink (' + nexBlink + ')');
+  state.water = { '4,4': true };
+  chronoAi.row = 5;
+  chronoAi.col = 4;
+  assert(swapScore(chronoAi, { row: 4, col: 4 }, 'player') === 0, 'temporal will not blink onto water');
+
+  assert(AI_BRAINS.hunter && AI_BRAINS.noop, 'AI brains can be swapped by name');
+  const prevBrain = state.aiBrain;
+  state.aiBrain = 'noop';
+  resetMatch(3);
+  state.fxEnabled = false;
+  await runTeamAi('player');
+  const portaled = Object.values(state.wizards).some(w => w.team === 'player' && w.state === 'portaling');
+  assert(!portaled, 'noop brain does not summon');
+  state.aiBrain = prevBrain;
+
+  const batch = await runAiVsAiBatch({ games: 8, startSeed: 20, maxRounds: 20, brain: 'hunter' });
+  assert(batch.games === 8, 'batch runs the asked number of games');
+  assert(batch.player + batch.enemy + batch.draw === 8, 'batch results add up');
+  assert(batch.nexus + batch.wipe + batch.void + batch.draw === 8, 'batch classifies each game');
+  assert(typeof batch.playerWinRate === 'number', 'batch reports a win rate');
 
   resetMatch(1);
   state.fxEnabled = false;

@@ -89,14 +89,7 @@ function renderTodoPage() {
         item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
         item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.', 'need') +
       '</ul>' +
-      '<p class="need-note">Not blocking: the AI. That is code.</p>' +
-
-      '<h2>AI</h2>' +
-      '<ul class="todo-list">' +
-        item('<strong>Overhaul.</strong> Hunt portals, respect voids and water, use raise as a wall, stop Temporal from teleporting onto a nexus every fight, play each kit like itself.') +
-        item('Hook so we can swap AI brains without rewriting the rules.') +
-        item('AI vs AI batch once the new brain is in: win rate, rounds, nexus vs wipe vs void.') +
-      '</ul>' +
+      '<p class="need-note">Not blocking: send sprites when you have them. Code items on this list are done.</p>' +
     '</article>'
   );
 }

@@ -1,8 +1,25 @@
+const AI_BRAINS = {};
+
+function registerAiBrain(name, brain) {
+  AI_BRAINS[name] = brain;
+}
+
+function currentAiBrain() {
+  const name = (state && state.aiBrain) || 'hunter';
+  return AI_BRAINS[name] || AI_BRAINS.hunter;
+}
+
 function runEnemyTurn() {
   return runTeamAi('enemy');
 }
 
 async function runTeamAi(team) {
+  const brain = currentAiBrain();
+  if (brain && typeof brain.runTurn === 'function') return brain.runTurn(team);
+  return hunterRunTurn(team);
+}
+
+async function hunterRunTurn(team) {
   await teamSummonPhase(team);
 
   const wizards = Object.values(state.wizards)
@@ -14,6 +31,9 @@ async function runTeamAi(team) {
     await maybeWait(280);
   }
 }
+
+registerAiBrain('hunter', { runTurn: hunterRunTurn });
+registerAiBrain('noop', { runTurn: async function () {} });
 
 function compareWizardActOrder(a, b, team) {
   const sa = wizardActPriority(a, team);
@@ -153,21 +173,102 @@ function attackScore(wizard, tile, kind, team) {
   if (kind === 'cast' && wizard.castKind === 'raise') return raiseScore(tile, team);
   if (kind === 'cast' && wizard.castKind === 'swap') return swapScore(wizard, tile, team);
 
+  if (kind === 'cast' && wizard.castKind === 'bolt' && mountainAt(tile.row, tile.col)) return 0;
+
   const dmg = kind === 'cast' ? wizard.castAttack : wizard.meleeAttack;
+  let score = 0;
   const n = nexusAt(tile.row, tile.col);
   if (n && n.team === opposingTeam(team) && n.hp > 0) {
     const lethal = dmg >= n.hp ? 400 : 0;
-    return 220 + lethal + (n.maxHp - n.hp) * 8 + dmg + (kind === 'melee' ? 2 : 0);
+    score = 220 + lethal + (n.maxHp - n.hp) * 8 + dmg + (kind === 'melee' ? 2 : 0);
   }
   const w2 = wizardAt(tile.row, tile.col);
   if (w2 && w2.team === opposingTeam(team)) {
     const lethal = dmg >= w2.hp ? 180 : 0;
-    let score = 90 + lethal + dmg + (kind === 'melee' ? 3 : 0);
+    score = Math.max(score, 90 + lethal + dmg + (kind === 'melee' ? 3 : 0));
     if (kind === 'cast' && wizard.castKind === 'bolt') score += 35;
-    if (kind === 'cast' && wizard.castKind === 'gust') score += wizard.castDisplacement * 4;
-    return score;
+    if (kind === 'cast' && wizard.castKind === 'gust') {
+      score += wizard.castDisplacement * 4;
+      const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
+      if (hazardAt(tile.row + dir.dr, tile.col + dir.dc)) score += 95;
+    }
   }
-  return 0;
+  if (kind === 'cast' && wizard.castKind === 'bolt') {
+    score += countBoltJumpFoes(wizard, tile, team) * 70;
+  }
+  if (kind === 'cast' && wizard.castKind === 'gust') {
+    score += gustFanScore(wizard, tile, team);
+  }
+  if (kind === 'cast' && wizard.castKind === 'stream' && !w2 && !n) {
+    score += 8;
+  }
+  return score;
+}
+
+function countBoltJumpFoes(wizard, tile, team) {
+  const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
+  const dist = Math.max(Math.abs(tile.row - wizard.row), Math.abs(tile.col - wizard.col));
+  const pathTiles = [];
+  for (let i = 1; i <= dist; i++) {
+    pathTiles.push({ row: wizard.row + dir.dr * i, col: wizard.col + dir.dc * i });
+  }
+  const seen = {};
+  const q = [];
+  function seed(r, c) {
+    if (waterAt(r, c)) q.push({ row: r, col: c });
+  }
+  pathTiles.forEach(function (t) {
+    seed(t.row, t.col);
+    [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) { seed(t.row + d[0], t.col + d[1]); });
+  });
+  const waterTiles = [];
+  while (q.length) {
+    const t = q.pop();
+    const key = t.row + ',' + t.col;
+    if (seen[key] || !waterAt(t.row, t.col)) continue;
+    seen[key] = true;
+    waterTiles.push(t);
+    [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
+      const nr = t.row + d[0];
+      const nc = t.col + d[1];
+      if (inBounds(nr, nc)) q.push({ row: nr, col: nc });
+    });
+  }
+  if (!waterTiles.length) return 0;
+  const hit = {};
+  hit[tile.row + ',' + tile.col] = true;
+  let foes = 0;
+  function consider(r, c) {
+    const key = r + ',' + c;
+    if (hit[key]) return;
+    hit[key] = true;
+    const w = wizardAt(r, c);
+    if (w && w.team === opposingTeam(team)) foes += 1;
+    const n = nexusAt(r, c);
+    if (n && n.team === opposingTeam(team)) foes += 1;
+  }
+  waterTiles.forEach(function (t) {
+    consider(t.row, t.col);
+    [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) { consider(t.row + d[0], t.col + d[1]); });
+  });
+  return foes;
+}
+
+function gustFanScore(wizard, tile, team) {
+  const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
+  const dist = Math.max(Math.abs(tile.row - wizard.row), Math.abs(tile.col - wizard.col));
+  let spreading = false;
+  let score = 0;
+  for (let i = 1; i <= dist; i++) {
+    const r = wizard.row + dir.dr * i;
+    const c = wizard.col + dir.dc * i;
+    const tr = trailAt(r, c);
+    if (tr && tr.element === 'fire') spreading = true;
+    if (!spreading) continue;
+    const w = wizardAt(r, c);
+    if (w && w.team === opposingTeam(team)) score += 24;
+  }
+  return score;
 }
 
 function pulseScore(wizard, team) {
@@ -198,37 +299,50 @@ function pulseScore(wizard, team) {
 
 function raiseScore(tile, team) {
   let score = 0;
-  Object.values(state.wizards).forEach(function (w) {
-    if (w.state !== 'onboard' || w.team === team) return;
+  const foes = Object.values(state.wizards).filter(function (w) {
+    return w.state === 'onboard' && w.team === opposingTeam(team);
+  });
+  foes.forEach(function (w) {
     const d = manhattan(tile.row, tile.col, w.row, w.col);
     if (d === 1) score += 48;
     else if (d === 2) score += 12;
   });
   livingNexuses(team).forEach(function (n) {
-    if (manhattan(tile.row, tile.col, n.row, n.col) === 1) score += 22;
+    if (manhattan(tile.row, tile.col, n.row, n.col) === 1) score += 28;
+    foes.forEach(function (w) {
+      const nw = manhattan(n.row, n.col, w.row, w.col);
+      const nt = manhattan(n.row, n.col, tile.row, tile.col);
+      const tw = manhattan(tile.row, tile.col, w.row, w.col);
+      if (nw > 1 && nt + tw === nw && nt > 0 && tw > 0) score += 36;
+    });
   });
   return score;
 }
 
 function swapScore(wizard, tile, team) {
+  if (hazardAt(tile.row, tile.col)) return 0;
   const other = wizardAt(tile.row, tile.col);
   if (other) {
     if (other.team === team) return 0;
+    if (hazardAt(wizard.row, wizard.col)) return 0;
     let score = 20;
     const foeN = nearestLivingNexusFrom(other.row, other.col, opposingTeam(team));
     if (foeN) {
       const before = manhattan(wizard.row, wizard.col, foeN.row, foeN.col);
       const after = manhattan(other.row, other.col, foeN.row, foeN.col);
-      score += (before - after) * 18;
-      if (after <= 1) score += 140;
+      score += (before - after) * 8;
+      if (after <= 1) {
+        const canPunch = wizard.meleeAttack >= foeN.hp;
+        score += canPunch ? 50 : -40;
+      }
     }
     const ownN = nearestLivingNexusFrom(wizard.row, wizard.col, team);
     if (ownN) {
       const theyBefore = manhattan(other.row, other.col, ownN.row, ownN.col);
       const theyAfter = manhattan(wizard.row, wizard.col, ownN.row, ownN.col);
-      if (theyAfter < theyBefore) score -= 70;
+      if (theyAfter < theyBefore) score -= 90;
       else score += 16;
-      if (theyBefore <= 2 && theyAfter > theyBefore) score += 80;
+      if (theyBefore <= 2 && theyAfter > theyBefore) score += 90;
     }
     return Math.max(0, score);
   }
@@ -238,9 +352,11 @@ function swapScore(wizard, tile, team) {
   const before = manhattan(wizard.row, wizard.col, foeN.row, foeN.col);
   const after = manhattan(tile.row, tile.col, foeN.row, foeN.col);
   if (after >= before) return 0;
-  let score = 24 + (before - after) * 14;
-  if (after <= 1) score += 140;
-  return score;
+  if (after <= 1) {
+    if (wizard.meleeAttack < foeN.hp) return 0;
+    return 40 + (before - after) * 6;
+  }
+  return 18 + (before - after) * 10;
 }
 
 function pickMoveTile(wizard, team) {
@@ -262,6 +378,7 @@ function pickMoveTile(wizard, team) {
 }
 
 function tileThreatScore(wizard, tile, team, target) {
+  if (hazardAt(tile.row, tile.col)) return -800;
   const saved = { row: wizard.row, col: wizard.col };
   wizard.row = tile.row;
   wizard.col = tile.col;
@@ -273,11 +390,14 @@ function tileThreatScore(wizard, tile, team, target) {
     score += Math.max(0, 16 - manhattan(tile.row, tile.col, target.row, target.col));
   }
   const p = portalAt(tile.row, tile.col);
-  if (p && p.team !== team) score += 80;
+  if (p && p.team !== team) score += 110;
   if (p && p.team === team) score -= 120;
   const trail = trailAt(tile.row, tile.col);
   if (trail && trail.element === 'fire') score -= 30;
   if (trail && trail.element === 'wind') score += 6;
+  [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) {
+    if (hazardAt(tile.row + d[0], tile.col + d[1])) score -= 8;
+  });
   return score;
 }
 
@@ -345,7 +465,7 @@ function nearestThreatTile(fromWizard, team) {
       bestPortal = p;
     }
   });
-  if (bestPortal && bestPD <= fromWizard.moveRange + 1) {
+  if (bestPortal) {
     return { row: bestPortal.row, col: bestPortal.col };
   }
 

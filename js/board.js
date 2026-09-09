@@ -164,9 +164,10 @@ function getMoveTiles(wizard) {
         if (!inBounds(nr, nc)) continue;
         const key = nr + ',' + nc;
         if (visited.has(key)) continue;
-        if (isBlocked(nr, nc)) continue; // blocked by wizard or nexus
+        if (isBlocked(nr, nc)) continue; // blocked by wizard, nexus, or mountain
         visited.add(key);
         result.push({ row: nr, col: nc });
+        if (hazardAt(nr, nc)) continue; // can step on and die; cannot path through
         next.push({ row: nr, col: nc, dist: cell.dist + 1 });
       }
     }
@@ -305,8 +306,9 @@ function pathBFS(wizard, targetRow, targetCol) {
         if (isBlocked(nr, nc)) continue;
         visited.add(key);
         prev[key] = cell;
-        next.push({ row: nr, col: nc });
         if (nr === targetRow && nc === targetCol) { found = true; break; }
+        if (hazardAt(nr, nc)) continue;
+        next.push({ row: nr, col: nc });
       }
       if (found) break;
     }

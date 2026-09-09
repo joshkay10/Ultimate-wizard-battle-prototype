@@ -38,7 +38,8 @@ const state = {
   rng: null,
   log: [],
   fxEnabled: true,
-  matchId: 0
+  matchId: 0,
+  aiBrain: 'hunter'
 };
 
 function makeNexus(spec, team) {
