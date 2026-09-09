@@ -538,8 +538,8 @@ function drawNexus(ctx, box, hp, flash) {
   ctx.save();
   ctx.fillStyle = pip;
   ctx.strokeStyle = pip;
-  const pipSize = box.s * 0.065;
-  const reach = box.s * 0.155;
+  const pipSize = box.s * 0.052;
+  const reach = box.s * 0.175;
   const slots = [
     { x: cx, y: cy - reach },
     { x: cx + reach, y: cy },
@@ -551,9 +551,14 @@ function drawNexus(ctx, box, hp, flash) {
     drawDiamond(ctx, slots[i].x, slots[i].y, pipSize);
     ctx.fill();
   }
+  const core = Math.max(3.4, box.s * 0.08);
   ctx.beginPath();
-  canvasArc(ctx, cx, cy, Math.max(2.6, box.s * 0.058));
+  canvasArc(ctx, cx, cy, core);
   ctx.fill();
+  ctx.lineWidth = Math.max(1.2, box.s * 0.025);
+  ctx.beginPath();
+  canvasArc(ctx, cx, cy, core);
+  ctx.stroke();
   ctx.restore();
 }
 
