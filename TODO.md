@@ -8,7 +8,7 @@ Board tiles that are not just a flat grid.
 
 - [ ] Water
 - [ ] Voids
-- [ ] Mountains
+- [x] Mountains — impassable edge ridges; block walk, summon, and cast
 - [ ] Fire, ice, and wind trails become real terrain:
   - Fire: walking onto a fire tile costs 1 damage
   - Wind: an escalator (it carries you)

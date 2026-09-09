@@ -21,6 +21,7 @@ const state = {
 
   // Elemental trails left behind by attacks: keyed by "row,col" -> { element, turnsLeft }
   trails: {},
+  mountains: {},
 
   // Mana: starts at 0, max mana +1 each round (capped 10), refilled to max on turn start.
   // Each team has its own pool so the enemy summons under the same rules.

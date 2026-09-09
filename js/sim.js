@@ -39,6 +39,7 @@ function resetMatch(seed) {
   state.gameOverResult = null;
   state.placingWizardId = null;
   state.trails = {};
+  state.mountains = {};
   state.mana = 1;
   state.maxMana = 1;
   state.enemyMana = 1;
@@ -46,6 +47,7 @@ function resetMatch(seed) {
   state.log = [];
   NEXUS.mine.hp = NEXUS.mine.maxHp;
   NEXUS.enemy.hp = NEXUS.enemy.maxHp;
+  generateMountains();
   seedRosters();
 }
 

@@ -85,6 +85,48 @@ async function runSimSelfTests() {
   resetActionFlagsFor('player');
   assert(!sick.summoningSickness && canMove(sick) && canAttack(sick), 'sickness clears next turn');
 
+  resetMatch(1);
+  state.fxEnabled = false;
+  const mountainKeys = Object.keys(state.mountains);
+  assert(mountainKeys.length >= 4, 'mountains should generate in groups');
+  assert(!mountainAt(NEXUS.mine.row, NEXUS.mine.col), 'no mountain on player nexus');
+  assert(!mountainAt(NEXUS.enemy.row, NEXUS.enemy.col), 'no mountain on enemy nexus');
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    assert(!mountainAt(r, CENTER), 'center lane must stay open');
+  }
+  mountainKeys.forEach(function (k) {
+    const p = k.split(',');
+    const r = parseInt(p[0], 10);
+    const c = parseInt(p[1], 10);
+    const n = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(function (d) {
+      return mountainAt(r + d[0], c + d[1]);
+    }).length;
+    assert(n > 0, 'mountains should not be loners (' + k + ')');
+  });
+  const scout = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  scout.state = 'onboard';
+  scout.row = 7;
+  scout.col = 4;
+  const scoutMoves = getMoveTiles(scout);
+  assert(!scoutMoves.some(t => mountainAt(t.row, t.col)), 'cannot walk onto mountains');
+  const castsFromLane = getCastTiles(scout);
+  assert(!castsFromLane.some(t => mountainAt(t.row, t.col)), 'cannot cast onto a mountain');
+  const row7Hit = mountainKeys.map(function (k) {
+    const p = k.split(',');
+    return { row: parseInt(p[0], 10), col: parseInt(p[1], 10) };
+  }).find(t => t.row === 7);
+  if (row7Hit) {
+    if (row7Hit.col < CENTER) {
+      assert(!castsFromLane.some(t => t.row === 7 && t.col <= row7Hit.col), 'cannot cast through a mountain');
+    } else {
+      assert(!castsFromLane.some(t => t.row === 7 && t.col >= row7Hit.col), 'cannot cast through a mountain');
+    }
+  }
+  const mtnA = Object.keys(state.mountains).sort().join(',');
+  resetMatch(1);
+  const mtnB = Object.keys(state.mountains).sort().join(',');
+  assert(mtnA === mtnB, 'same seed should place the same mountains');
+
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
   assert(m1.result === m2.result, 'same seed should same winner (' + m1.result + ' vs ' + m2.result + ')');

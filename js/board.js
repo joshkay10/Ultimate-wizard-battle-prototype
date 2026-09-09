@@ -1,4 +1,5 @@
 function layTrail(row, col, element) {
+  if (mountainAt(row, col) || nexusAt(row, col)) return;
   state.trails[row + ',' + col] = { element, turnsLeft: 1 };
 }
 
@@ -13,6 +14,19 @@ function tickTrails() {
   });
 }
 
+function mountainAt(row, col) {
+  return !!(state.mountains && state.mountains[row + ',' + col]);
+}
+
+function mountainKey(row, col) {
+  return row + ',' + col;
+}
+
+function nearNexus(row, col) {
+  return manhattan(row, col, NEXUS.mine.row, NEXUS.mine.col) <= 1
+    || manhattan(row, col, NEXUS.enemy.row, NEXUS.enemy.col) <= 1;
+}
+
 function nexusAt(row, col) {
   if (NEXUS.mine.row === row && NEXUS.mine.col === col) return NEXUS.mine;
   if (NEXUS.enemy.row === row && NEXUS.enemy.col === col) return NEXUS.enemy;
@@ -23,9 +37,10 @@ function wizardAt(row, col) {
   return Object.values(state.wizards).find(w => w.state === 'onboard' && w.row === row && w.col === col);
 }
 
-// A tile is blocked (can't summon onto it, can't move through/onto it) if it holds a wizard or a nexus
+// A tile is blocked (can't summon onto it, can't move through/onto it)
+// if it holds a wizard, a nexus, or a mountain.
 function isBlocked(row, col) {
-  return !!wizardAt(row, col) || !!nexusAt(row, col);
+  return !!wizardAt(row, col) || !!nexusAt(row, col) || mountainAt(row, col);
 }
 
 function isSummonTile(row, col) {
@@ -95,12 +110,16 @@ function getMeleeTiles(wizard) {
   const result = [];
   for (const [dr, dc] of dirs) {
     const nr = wizard.row + dr, nc = wizard.col + dc;
-    if (inBounds(nr, nc)) result.push({ row: nr, col: nc });
+    if (!inBounds(nr, nc)) continue;
+    if (mountainAt(nr, nc)) continue;
+    result.push({ row: nr, col: nc });
   }
   return result;
 }
 
-// Cast: line in each of 4 cardinal directions out to range 4 (stops at first blocker, inclusive of blocker tile as far as it can reach)
+// Cast: line in each of 4 cardinal directions out to range 4.
+// Stops on the first wizard or nexus (that tile is a valid hit).
+// Mountains are fully opaque: the line does not include them and does not continue past them.
 function getCastTiles(wizard) {
   const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
   const result = [];
@@ -108,8 +127,9 @@ function getCastTiles(wizard) {
     for (let dist = 1; dist <= 4; dist++) {
       const nr = wizard.row + dr * dist, nc = wizard.col + dc * dist;
       if (!inBounds(nr, nc)) break;
+      if (mountainAt(nr, nc)) break;
       result.push({ row: nr, col: nc });
-      if (isBlocked(nr, nc)) break; // line stops at first occupied tile (wizard or nexus)
+      if (wizardAt(nr, nc) || nexusAt(nr, nc)) break;
     }
   }
   return result;
@@ -152,4 +172,122 @@ function pathBFS(wizard, targetRow, targetCol) {
     cur = prev[cur.row + ',' + cur.col];
   }
   return path;
+}
+
+function mountainAllowed(row, col, map) {
+  if (!inBounds(row, col)) return false;
+  if (col === CENTER) return false;
+  if (nearNexus(row, col)) return false;
+  if (map[mountainKey(row, col)]) return false;
+  return true;
+}
+
+function stampMountainPair(map, row, col) {
+  const mr = BOARD_SIZE - 1 - row;
+  const mc = BOARD_SIZE - 1 - col;
+  if (!mountainAllowed(row, col, map)) return false;
+  if (row !== mr || col !== mc) {
+    if (!mountainAllowed(mr, mc, map) && !map[mountainKey(mr, mc)]) return false;
+  }
+  map[mountainKey(row, col)] = true;
+  map[mountainKey(mr, mc)] = true;
+  return true;
+}
+
+function pruneMountainSingletons(map) {
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  Object.keys(map).forEach(function (k) {
+    const parts = k.split(',');
+    const r = parseInt(parts[0], 10);
+    const c = parseInt(parts[1], 10);
+    const n = dirs.filter(function (d) {
+      return map[mountainKey(r + d[0], c + d[1])];
+    }).length;
+    if (n === 0) {
+      delete map[k];
+      delete map[mountainKey(BOARD_SIZE - 1 - r, BOARD_SIZE - 1 - c)];
+    }
+  });
+}
+
+function countOpenSummonTiles(map, team) {
+  let n = 0;
+  const start = team === 'player' ? SUMMON_ROW_START : 0;
+  const end = team === 'player' ? BOARD_SIZE : ENEMY_ROW_END;
+  for (let r = start; r < end; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (nexusAt(r, c)) continue;
+      if (map[mountainKey(r, c)]) continue;
+      n++;
+    }
+  }
+  return n;
+}
+
+function fallbackMountains() {
+  const map = {};
+  [[1, 0], [2, 0], [2, 1], [1, 8], [2, 8], [2, 7]].forEach(function (t) {
+    stampMountainPair(map, t[0], t[1]);
+  });
+  return map;
+}
+
+// Edge ridges in groups, 180-rotated so both sides get the same map.
+// Center column stays open as the lane between nexuses.
+function generateMountains() {
+  const map = {};
+  if (!state.rng) {
+    state.mountains = fallbackMountains();
+    return;
+  }
+
+  function pickSeed(cols) {
+    const opts = [];
+    cols.forEach(function (c) {
+      for (let r = 0; r <= 3; r++) {
+        if (!mountainAllowed(r, c, map)) continue;
+        const edge = (c === 0 || c === 8) ? 5 : (c === 1 || c === 7) ? 3 : 1;
+        const rowW = r === 0 ? 2 : 3;
+        const copies = edge * rowW;
+        for (let i = 0; i < copies; i++) opts.push({ row: r, col: c });
+      }
+    });
+    if (!opts.length) return null;
+    return opts[state.rng.int(opts.length)];
+  }
+
+  function growCluster(seed, size) {
+    if (!seed) return;
+    const body = [];
+    if (stampMountainPair(map, seed.row, seed.col)) body.push(seed);
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    let guard = 0;
+    while (body.length < size && guard++ < 28) {
+      const from = body[state.rng.int(body.length)];
+      if (!from) break;
+      const neigh = [];
+      dirs.forEach(function (d) {
+        const nr = from.row + d[0];
+        const nc = from.col + d[1];
+        if (nr > 4) return;
+        if (!mountainAllowed(nr, nc, map)) return;
+        const lr = Math.min(nc, BOARD_SIZE - 1 - nc);
+        const w = lr === 0 ? 7 : lr === 1 ? 3 : 1;
+        for (let i = 0; i < w; i++) neigh.push({ row: nr, col: nc });
+      });
+      if (!neigh.length) continue;
+      const n = neigh[state.rng.int(neigh.length)];
+      if (stampMountainPair(map, n.row, n.col)) body.push(n);
+    }
+  }
+
+  growCluster(pickSeed([0, 1, 2]), 3 + state.rng.int(2));
+  growCluster(pickSeed([8, 7, 6]), 2 + state.rng.int(3));
+  pruneMountainSingletons(map);
+
+  if (countOpenSummonTiles(map, 'player') < 6 || countOpenSummonTiles(map, 'enemy') < 6) {
+    state.mountains = fallbackMountains();
+    return;
+  }
+  state.mountains = map;
 }

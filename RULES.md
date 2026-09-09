@@ -5,6 +5,7 @@ A two-player turn game on a 9×9 grid. Destroy the enemy nexus, or wipe their wi
 ## Setup
 
 - Each player has a nexus (20 HP) in the center of their back row.
+- **Mountains** sit in edge ridges (never the center lane). They are impassable: you cannot walk onto them, summon onto them, or cast through them. A push into a mountain is blocked.
 - Each player has the same roster: two Ember, two Rime, two Gale. All start off the board.
 - Round 1 starts with 1 mana. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn.
 
@@ -21,14 +22,16 @@ A two-player turn game on a 9×9 grid. Destroy the enemy nexus, or wipe their wi
 On your turn you may, in any order:
 
 1. **Summon** — pay a wizard’s cost, place it in your back 3 rows (not on a nexus or occupied tile). **Summoning sickness:** it cannot move or attack the turn it is placed.
-2. **Move** — each onboard wizard that is not sick and has not moved may move once, up to its move range. Other wizards and nexuses block the path.
+2. **Move** — each onboard wizard that is not sick and has not moved may move once, up to its move range. Other wizards, nexuses, and mountains block the path.
 3. **Attack** — each onboard wizard that is not sick and has not attacked may attack once, melee or cast.
 4. **End turn** — the other player takes their turn.
 
 ## Combat
 
 - **Melee** hits an adjacent tile (up, down, left, right).
-- **Cast** hits a straight line, range 4, and stops on the first blocker.
+- **Cast** hits a straight line, range 4, and stops on the first wizard or nexus. Mountains block the line entirely (you cannot target them or shoot through them).
+- A hit deals that attack’s damage, then **pushes** the target that many tiles away.
+- If the push is blocked (wizard, nexus, mountain, or edge), the target takes 1 extra damage per tile they could not travel (max 3).
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away.
 - If the push is blocked (wizard, nexus, or edge), the target takes 1 extra damage per tile they could not travel (max 3).
 - HP 0 = dead, token leaves the board.

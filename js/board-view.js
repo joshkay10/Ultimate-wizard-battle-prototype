@@ -32,6 +32,11 @@ const BOARD_COLORS = {
   fire: '#d1481f',
   ice: '#1f7fb8',
   wind: '#2f9e6b',
+  mountain: '#d5cfc0',
+  mountainAlt: '#c8c1b0',
+  mountainBody: '#5a554a',
+  mountainBody2: '#6b6558',
+  mountainSnow: '#f3efe6',
   token: '#b9bcb5',
   enemy: '#1c1e1b',
   text: '#1c1e1b',
@@ -126,6 +131,7 @@ function roundRect(ctx, x, y, w, h, r) {
 
 function tileFill(row, col, highlight, kind) {
   const isAlt = (row + col) % 2 === 1;
+  if (mountainAt(row, col)) return isAlt ? BOARD_COLORS.mountainAlt : BOARD_COLORS.mountain;
   const trail = trailAt(row, col);
   if (highlight) {
     if (kind === 'melee') return BOARD_COLORS.melee;
@@ -176,6 +182,49 @@ function drawElementIcon(ctx, element, cx, cy, size) {
     ctx.quadraticCurveTo(cx, cy - size * 0.05, cx + size * 0.35, cy - size * 0.2);
     ctx.quadraticCurveTo(cx + size * 0.15, cy + size * 0.35, cx, cy + size * 0.85);
     ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMountain(ctx, box, row, col) {
+  const x = box.x;
+  const y = box.y;
+  const s = box.s;
+  const variant = (row * 3 + col * 7) % 3;
+  const baseY = y + s * 0.88;
+
+  function peak(px, w, h, body, snow) {
+    ctx.beginPath();
+    ctx.moveTo(px - w / 2, baseY);
+    ctx.lineTo(px, baseY - h);
+    ctx.lineTo(px + w / 2, baseY);
+    ctx.closePath();
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(px - w * 0.2, baseY - h * 0.58);
+    ctx.lineTo(px, baseY - h);
+    ctx.lineTo(px + w * 0.24, baseY - h * 0.52);
+    ctx.closePath();
+    ctx.fillStyle = snow;
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(80, 74, 62, 0.18)';
+  ctx.beginPath();
+  ctx.ellipse(x + s / 2, y + s * 0.82, s * 0.34, s * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (variant === 0) {
+    peak(x + s * 0.36, s * 0.5, s * 0.52, BOARD_COLORS.mountainBody2, '#e7e2d6');
+    peak(x + s * 0.62, s * 0.56, s * 0.7, BOARD_COLORS.mountainBody, BOARD_COLORS.mountainSnow);
+  } else if (variant === 1) {
+    peak(x + s * 0.66, s * 0.48, s * 0.5, BOARD_COLORS.mountainBody2, '#e7e2d6');
+    peak(x + s * 0.4, s * 0.6, s * 0.74, BOARD_COLORS.mountainBody, BOARD_COLORS.mountainSnow);
+  } else {
+    peak(x + s * 0.3, s * 0.44, s * 0.46, BOARD_COLORS.mountainBody2, '#e7e2d6');
+    peak(x + s * 0.72, s * 0.42, s * 0.54, '#615c52', '#ece8df');
+    peak(x + s * 0.5, s * 0.52, s * 0.68, BOARD_COLORS.mountainBody, BOARD_COLORS.mountainSnow);
   }
   ctx.restore();
 }
@@ -410,6 +459,8 @@ function drawBoard() {
       roundRect(ctx, box.x, box.y, box.s, box.s, 2);
       ctx.fillStyle = fill;
       ctx.fill();
+
+      if (mountainAt(r, c) && !flashHere) drawMountain(ctx, box, r, c);
 
       if (highlighted) {
         ctx.save();
