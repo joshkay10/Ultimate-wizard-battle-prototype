@@ -73,38 +73,43 @@ function renderRulesPage() {
 }
 
 function renderTodoPage() {
-  function item(done, text) {
-    return '<li class="' + (done ? 'done' : 'open') + '"><span class="todo-mark">' + (done ? '✓' : '') + '</span>' + text + '</li>';
+  function item(text) {
+    return '<li class="open"><span class="todo-mark"></span>' + text + '</li>';
   }
   return (
     '<article class="page">' +
       '<h1>To-do</h1>' +
-      '<p class="lede">What is in, and what still makes a fight mean more.</p>' +
+      '<p class="lede">What still makes a fight mean more. Done work is gone from this list.</p>' +
 
-      '<h2>Live</h2>' +
+      '<h2>Play</h2>' +
       '<ul class="todo-list">' +
-        item(true, 'Six unique kits — Ember stream, Ice pulse, Gale gust, Earth raise, Lightning bolt, Temporal swap') +
-        item(true, 'Fire, ice, and wind trails are real terrain') +
-        item(true, 'Round 1 starts at 2 mana') +
-        item(true, 'Water and mountains') +
-        item(true, 'Earth raise — a temporary mountain') +
-        item(true, 'Crash damage and friendly fire') +
-        item(true, 'Portals that arrive next turn') +
+        item('<strong>Casts are not readable.</strong> Name the spell, show the shape, and make stream / pulse / gust / raise / bolt / swap look different.') +
+        item('Plain-English action log. “Gale gusts Ice three tiles east.”') +
+        item('Portal arrival is easy to miss — say so when you place it, and when it lands.') +
+        item('Restart / rematch without a refresh.') +
       '</ul>' +
 
-      '<h2>Next</h2>' +
+      '<h2>Look</h2>' +
       '<ul class="todo-list">' +
-        item(false, 'Voids') +
-        item(false, 'Lightning jumps on water, grounds on raised earth') +
-        item(false, 'Wind fans fire (spreads it)') +
-        item(false, 'Restart / rematch without a refresh') +
-        item(false, 'Portrait art for the six wizards') +
+        item('Sprite icons for the six elements (card badge and board).') +
+        item('Wizard discs should look like units, not gray coins with a doodle.') +
+        item('Better walks, pushes, blinks, and hit animations.') +
       '</ul>' +
 
-      '<h2>Later</h2>' +
+      '<h2>Terrain</h2>' +
       '<ul class="todo-list">' +
-        item(false, 'AI vs AI batch: win rate, rounds, nexus vs wipe') +
-        item(false, 'Hook so we can swap AI brains without rewriting the rules') +
+        item('<strong>Water and voids kill on enter</strong> — step, slide, blink, or get pushed on and you die.') +
+        item('<strong>A dead nexus becomes a void</strong> on that tile.') +
+        item('Lightning jumps along water, grounds on a raised earth wall.') +
+        item('Wind fans fire (spreads it along the gust).') +
+        item('Lightning and Temporal trails are still visual-only. Give them a rule or stop painting them.') +
+      '</ul>' +
+
+      '<h2>AI</h2>' +
+      '<ul class="todo-list">' +
+        item('<strong>Overhaul.</strong> Hunt portals, respect voids and water, use raise as a wall, stop Temporal from teleporting onto a nexus every fight, play each kit like itself.') +
+        item('Hook so we can swap AI brains without rewriting the rules.') +
+        item('AI vs AI batch once the new brain is in: win rate, rounds, nexus vs wipe vs void.') +
       '</ul>' +
     '</article>'
   );

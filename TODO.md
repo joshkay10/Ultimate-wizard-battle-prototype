@@ -1,31 +1,30 @@
 # To-do
 
-Six unique wizards are in: Ember stream, Ice pulse, Gale gust, Earth raise, Lightning bolt, Temporal swap/blink. Fire, ice, and wind trails are real terrain. Round 1 starts at 2 mana.
+Shipped: six unique kits, real fire/ice/wind trails, portals, mountains, water-as-wall, crash, friendly fire, 2 starting mana. This list is only what is next.
 
-## Next: terrain
+## Play
 
-Board tiles that are not just a flat grid.
+- [ ] **Casts are not readable.** Stream, pulse, gust, raise, bolt, and swap all feel like “highlight some tiles and click.” Name the spell on the board, show range/shape before you pick a tile, and make each kit’s FX obviously different.
+- [ ] Plain-English action log. “Gale gusts Ice three tiles east.” If you have to infer it from a flash, it is not clear.
+- [ ] Portal arrival is easy to miss. The wizard shows up next turn — say so when you place it, and when it lands.
+- [ ] Restart / rematch without a refresh.
 
-- [x] Water — impassable lakes on some maps; spells fly over
-- [ ] Voids
-- [x] Mountains — impassable edge ridges; block walk, summon, and cast
-- [x] Earth raise — temporary mountain, about one round
-- [x] Fire, ice, and wind trails become real terrain:
-  - Fire: walking onto a fire tile costs 1 damage
-  - Wind: an escalator (it carries you)
-  - Ice: no friction — a push over ice does not spend a displacement count
-- [ ] Lightning / earth matchups later: bolt jumps on water, grounds on raised earth
-- [ ] Wind fans fire (spreads it)
+## Look
 
-## Combat
+- [ ] Sprite icons for the six elements (card badge and board).
+- [ ] Wizard discs should look like units, not gray coins with a doodle.
+- [ ] Movement and combat animations: walks, pushes, blinks, and hits need to read at a glance.
 
-- [x] Crash damage: wall = pushee takes 1 per tile short (max 3). Wizard = both take it. Allies included.
-- [x] Friendly fire: you can hit your own wizards. Empty tiles stay valid.
-- [x] Unique casts per wizard
+## Terrain
 
-## Later
+- [ ] **Water and voids kill on enter.** Not a crash wall — step, slide, blink, or get pushed on and you die.
+- [ ] **A dead nexus becomes a void** on that tile. Dropping a crystal opens a hole in the camp.
+- [ ] Lightning jumps along water, grounds / fizzles on a raised earth wall.
+- [ ] Wind fans fire (spreads it along the gust).
+- [ ] Lightning and Temporal trails are still visual-only. Give them a tile rule or stop painting them.
 
-- [ ] Restart / rematch without a refresh
-- [ ] AI vs AI batch: win rate, average rounds, who died to nexus vs wipe
-- [ ] Hook so we can swap AI brains without rewriting the rules
-- [ ] Portrait art for the six wizards
+## AI
+
+- [ ] **Overhaul.** Hunt portals, respect voids/water, use raise as a wall, stop Temporal from teleporting into a nexus every fight, and play each kit like itself.
+- [ ] Hook so we can swap AI brains without rewriting the rules.
+- [ ] AI vs AI batch once the new brain is in: win rate, rounds, nexus vs wipe vs void.
