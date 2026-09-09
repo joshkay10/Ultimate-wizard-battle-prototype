@@ -88,12 +88,7 @@ function renderTodoPage() {
         item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Ember, Ice, Gale, Earth, Lightning, Temporal). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
         item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, later void. 64×64 tiles that can repeat. Magma and ice frost are painted in code now; sprites can replace them.', 'need') +
       '</ul>' +
-      '<p class="need-note">Not blocking: unique cast VFX and the AI. Those are code.</p>' +
-
-      '<h2>Play</h2>' +
-      '<ul class="todo-list">' +
-        item('<strong>Casts still look too similar in motion.</strong> The button, hint, and tile tint name the spell. Stream / pulse / gust / raise / bolt / swap still need obviously different animations.') +
-      '</ul>' +
+      '<p class="need-note">Not blocking: the AI. That is code.</p>' +
 
       '<h2>Look</h2>' +
       '<ul class="todo-list">' +

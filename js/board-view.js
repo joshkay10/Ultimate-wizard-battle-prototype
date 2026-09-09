@@ -13,6 +13,10 @@ const boardFx = {
   fade: {},
   lungeReturn: null,
   stream: null,
+  gust: null,
+  bolt: null,
+  pulseWave: null,
+  raiseSpike: null,
   charge: null
 };
 
@@ -646,6 +650,77 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
 }
 
+function drawChargeGlow(ctx, box, element, t) {
+  const cx = box.x + box.s / 2;
+  const cy = box.y + box.s / 2;
+  const color = BOARD_COLORS[element] || '#fff';
+  const r = box.s * (0.38 + t * 0.28);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineCap = 'round';
+  if (element === 'lightning') {
+    ctx.globalAlpha = 0.35 + (Math.sin(performance.now() / 18) * 0.5 + 0.5) * 0.65;
+    ctx.lineWidth = 2.4 + t * 3;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  } else if (element === 'wind') {
+    ctx.globalAlpha = 0.55 + t * 0.4;
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([6, 7]);
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else if (element === 'earth') {
+    ctx.globalAlpha = 0.5 + t * 0.45;
+    ctx.lineWidth = 3.2;
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 4);
+    const s = r * 0.95;
+    ctx.strokeRect(-s, -s, s * 2, s * 2);
+  } else if (element === 'temporal') {
+    ctx.globalAlpha = 0.55 + t * 0.4;
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - r * 0.7);
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + r * 0.45, cy + r * 0.2);
+    ctx.stroke();
+  } else if (element === 'ice') {
+    ctx.globalAlpha = 0.4 + t * 0.5;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.stroke();
+    ctx.globalAlpha = 0.28 + t * 0.3;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r * 0.62);
+    ctx.stroke();
+  } else {
+    ctx.globalAlpha = 0.45 + t * 0.55;
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = t * 0.22;
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = t * 0.28;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawStream(ctx) {
   const s = boardFx.stream;
   if (!s) return;
@@ -653,76 +728,200 @@ function drawStream(ctx) {
   const t = s.head;
   const x = s.x0 + (s.x1 - s.x0) * t;
   const y = s.y0 + (s.y1 - s.y0) * t;
-  const color = BOARD_COLORS[s.element] || '#fff';
   const now = performance.now() / 90;
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.22 * fade;
-  ctx.lineWidth = 18;
-  ctx.beginPath();
-  ctx.moveTo(s.x0, s.y0);
-  ctx.lineTo(x, y);
-  ctx.stroke();
-
-  ctx.globalAlpha = 0.55 * fade;
-  ctx.lineWidth = 9;
-  ctx.beginPath();
-  ctx.moveTo(s.x0, s.y0);
   const dx = s.x1 - s.x0;
   const dy = s.y1 - s.y0;
   const len = Math.hypot(dx, dy) || 1;
   const nx = -dy / len;
   const ny = dx / len;
-  const steps = 12;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.strokeStyle = '#7a1808';
+  ctx.globalAlpha = 0.35 * fade;
+  ctx.lineWidth = 22;
+  ctx.beginPath();
+  ctx.moveTo(s.x0, s.y0);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+
+  ctx.strokeStyle = BOARD_COLORS.fire;
+  ctx.globalAlpha = 0.7 * fade;
+  ctx.lineWidth = 11;
+  ctx.beginPath();
+  ctx.moveTo(s.x0, s.y0);
+  const steps = 14;
   for (let i = 1; i <= steps; i++) {
     const u = (i / steps) * t;
-    const wobble = Math.sin(u * 18 + now) * 3.5 * (0.4 + u);
+    const wobble = Math.sin(u * 14 + now) * 4.2 * (0.35 + u);
     ctx.lineTo(s.x0 + dx * u + nx * wobble, s.y0 + dy * u + ny * wobble);
   }
   ctx.stroke();
 
   ctx.globalAlpha = 0.95 * fade;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3.2;
+  ctx.strokeStyle = '#ffd36a';
+  ctx.lineWidth = 4.4;
   ctx.beginPath();
   ctx.moveTo(s.x0, s.y0);
   ctx.lineTo(x, y);
   ctx.stroke();
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1.8;
   ctx.stroke();
 
   ctx.globalAlpha = fade;
+  ctx.fillStyle = '#ffd36a';
+  ctx.beginPath();
+  canvasArc(ctx, x, y, 12);
+  ctx.fill();
+  ctx.fillStyle = BOARD_COLORS.fire;
+  ctx.beginPath();
+  canvasArc(ctx, x, y, 7.5);
+  ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  canvasArc(ctx, x, y, 9);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  canvasArc(ctx, x, y, 5.5);
+  canvasArc(ctx, x, y, 3.2);
   ctx.fill();
   ctx.restore();
 }
 
-function drawChargeGlow(ctx, box, element, t) {
-  const cx = box.x + box.s / 2;
-  const cy = box.y + box.s / 2;
-  const color = BOARD_COLORS[element] || '#fff';
+function drawGust(ctx) {
+  const g = boardFx.gust;
+  if (!g) return;
+  const fade = g.fade != null ? 1 - g.fade : 1;
+  const t = g.head;
+  const dx = g.x1 - g.x0;
+  const dy = g.y1 - g.y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const now = performance.now() / 70;
   ctx.save();
-  ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.45 + t * 0.55;
-  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const blades = [-14, 0, 14];
+  blades.forEach(function (off, bi) {
+    ctx.strokeStyle = bi === 1 ? '#ffffff' : BOARD_COLORS.wind;
+    ctx.globalAlpha = (bi === 1 ? 0.95 : 0.55) * fade;
+    ctx.lineWidth = bi === 1 ? 3.2 : 5.5;
+    ctx.beginPath();
+    const steps = 10;
+    for (let i = 0; i <= steps; i++) {
+      const u = (i / steps) * t;
+      const wobble = Math.sin(u * 10 + now + bi) * 5 + off * (0.4 + u);
+      const x = g.x0 + dx * u + nx * wobble;
+      const y = g.y0 + dy * u + ny * wobble;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+  const hx = g.x0 + dx * t;
+  const hy = g.y0 + dy * t;
+  const ux = dx / len;
+  const uy = dy / len;
+  ctx.globalAlpha = 0.9 * fade;
+  ctx.strokeStyle = BOARD_COLORS.wind;
+  ctx.lineWidth = 3.4;
   ctx.beginPath();
-  canvasArc(ctx, cx, cy, box.s * (0.38 + t * 0.28));
+  ctx.moveTo(hx - ux * 10 - nx * 12, hy - uy * 10 - ny * 12);
+  ctx.lineTo(hx + ux * 6, hy + uy * 6);
+  ctx.lineTo(hx - ux * 10 + nx * 12, hy - uy * 10 + ny * 12);
   ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = t * 0.22;
+  ctx.restore();
+}
+
+function drawBolt(ctx) {
+  const b = boardFx.bolt;
+  if (!b || !b.pts || !b.pts.length) return;
+  const fade = b.fade != null ? 1 - b.fade : 1;
+  const t = b.head == null ? 1 : b.head;
+  const count = Math.max(2, Math.floor(b.pts.length * t));
+  function strokePts(pts, n, width, color, alpha) {
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha * fade;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < n; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  }
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  strokePts(b.pts, count, 10, BOARD_COLORS.lightning, 0.28);
+  strokePts(b.pts, count, 4.4, '#fff4b0', 0.9);
+  strokePts(b.pts, count, 1.8, '#ffffff', 1);
+  (b.forks || []).forEach(function (fork) {
+    if (t < 0.55) return;
+    strokePts(fork, fork.length, 3.2, '#fff4b0', 0.75);
+    strokePts(fork, fork.length, 1.4, '#ffffff', 0.9);
+  });
+  ctx.restore();
+}
+
+function drawPulseWave(ctx) {
+  const p = boardFx.pulseWave;
+  if (!p) return;
+  ctx.save();
+  ctx.strokeStyle = BOARD_COLORS.ice;
+  ctx.lineWidth = 3.2;
+  ctx.globalAlpha = (1 - p.t) * 0.85;
+  ctx.beginPath();
+  canvasArc(ctx, p.x, p.y, 8 + p.t * p.maxR);
+  ctx.stroke();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.4;
+  ctx.globalAlpha = (1 - p.t) * 0.7;
+  ctx.beginPath();
+  canvasArc(ctx, p.x, p.y, 4 + p.t * p.maxR * 0.62);
+  ctx.stroke();
+  if (p.burst) {
+    (p.tiles || []).forEach(function (tile) {
+      ctx.save();
+      ctx.translate(tile.x, tile.y);
+      ctx.rotate(Math.PI / 4);
+      const s = 5 + p.burst * 7;
+      ctx.globalAlpha = (1 - p.burst) * 0.9;
+      ctx.strokeStyle = BOARD_COLORS.ice;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-s, -s, s * 2, s * 2);
+      ctx.restore();
+    });
+  }
+  ctx.restore();
+}
+
+function drawRaiseSpike(ctx) {
+  const r = boardFx.raiseSpike;
+  if (!r) return;
+  const layout = boardLayout();
+  if (!layout) return;
+  const box = cellRect(layout, r.row, r.col);
+  const t = r.t;
+  const x = box.x + box.s / 2;
+  const base = box.y + box.s * 0.88;
+  const h = box.s * 0.22 + t * box.s * 0.62;
+  ctx.save();
+  ctx.globalAlpha = 0.35 + t * 0.65;
+  ctx.fillStyle = 'rgba(80, 74, 62, 0.28)';
+  ctx.beginPath();
+  ctx.ellipse(x, base, box.s * 0.28 * t, box.s * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = color;
-  ctx.globalAlpha = t * 0.28;
+  ctx.beginPath();
+  ctx.moveTo(x - box.s * 0.28, base);
+  ctx.lineTo(x, base - h);
+  ctx.lineTo(x + box.s * 0.28, base);
+  ctx.closePath();
+  ctx.fillStyle = BOARD_COLORS.mountainBody;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x - box.s * 0.08, base - h * 0.55);
+  ctx.lineTo(x, base - h);
+  ctx.lineTo(x + box.s * 0.1, base - h * 0.5);
+  ctx.closePath();
+  ctx.fillStyle = BOARD_COLORS.mountainSnow;
   ctx.fill();
   ctx.restore();
 }
@@ -752,9 +951,11 @@ function tickFx(dt) {
   boardFx.particles.forEach(p => {
     p.x += p.vx * k;
     p.y += p.vy * k;
-    p.vx *= 0.94;
-    p.vy *= 0.94;
-    p.life -= 0.045 * k;
+    if (p.kind === 'ember') p.vy -= 0.04 * k;
+    if (p.kind === 'shard') p.vy += 0.06 * k;
+    p.vx *= p.kind === 'streak' ? 0.97 : 0.94;
+    p.vy *= p.kind === 'streak' ? 0.97 : 0.94;
+    p.life -= (p.kind === 'streak' ? 0.06 : 0.045) * k;
   });
   boardFx.particles = boardFx.particles.filter(p => p.life > 0);
   boardFx.rings.forEach(r => { r.t += 0.06 * k; });
@@ -781,6 +982,10 @@ function resetBoardFx() {
   boardFx.fade = {};
   boardFx.lungeReturn = null;
   boardFx.stream = null;
+  boardFx.gust = null;
+  boardFx.bolt = null;
+  boardFx.pulseWave = null;
+  boardFx.raiseSpike = null;
   boardFx.charge = null;
 }
 
@@ -793,7 +998,7 @@ function ensureFxLoop() {
     fxLast = now;
     tickFx(dt);
     try { drawBoard(); } catch (err) { console.error(err); }
-    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || !!(state.portals && Object.keys(state.portals).length);
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || !!(state.portals && Object.keys(state.portals).length);
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
   }
@@ -917,6 +1122,10 @@ function drawBoard() {
   });
 
   if (boardFx.stream) drawStream(ctx);
+  if (boardFx.gust) drawGust(ctx);
+  if (boardFx.bolt) drawBolt(ctx);
+  if (boardFx.pulseWave) drawPulseWave(ctx);
+  if (boardFx.raiseSpike) drawRaiseSpike(ctx);
   if (boardFx.projectile) {
     const p = boardFx.projectile;
     ctx.save();
@@ -962,10 +1171,26 @@ function drawBoard() {
   boardFx.particles.forEach(p => {
     ctx.save();
     ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    canvasArc(ctx, p.x, p.y, p.size);
-    ctx.fill();
+    if (p.kind === 'streak') {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.size || 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - (p.vx || 0) * 5, p.y - (p.vy || 0) * 5);
+      ctx.stroke();
+    } else if (p.kind === 'shard') {
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.PI / 4);
+      const s = p.size || 3;
+      ctx.fillRect(-s, -s, s * 2, s * 2);
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      canvasArc(ctx, p.x, p.y, p.size);
+      ctx.fill();
+    }
     ctx.restore();
   });
 
