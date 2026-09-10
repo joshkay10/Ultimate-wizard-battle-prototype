@@ -302,45 +302,49 @@ function generateDefenseTerrain(match) {
     match.water = {};
     return;
   }
+  const style = match.rng.int(5);
   const mountains = {};
   const water = {};
   function edgeWeight(c, r) {
     const edge = (c === 0 || c === 8) ? 6 : (c === 1 || c === 7) ? 3 : 1;
     return edge * (r <= 2 ? 2 : 3);
   }
-  growUnmirroredCluster(
-    match, mountains, mountains, water,
-    pickUnmirroredSeed(match, mountains, water, [0, 1, 2], 0, 6, edgeWeight),
-    3 + match.rng.int(3),
-    true
-  );
-  growUnmirroredCluster(
-    match, mountains, mountains, water,
-    pickUnmirroredSeed(match, mountains, water, [8, 7, 6], 0, 7, edgeWeight),
-    2 + match.rng.int(4),
-    true
-  );
-  if (match.rng.next() < 0.35) {
+  function lakeWeight(c, r) {
+    const lr = Math.min(c, BOARD_SIZE - 1 - c);
+    return (lr <= 1 ? 1 : 4) * (r <= 1 ? 1 : 3);
+  }
+  const mountainPasses = style === 3 ? 3 : (style === 2 ? 1 : 2);
+  const mountainCols = [
+    [0, 1, 2],
+    [8, 7, 6],
+    [0, 8, 1, 7]
+  ];
+  let p;
+  for (p = 0; p < mountainPasses; p++) {
+    const cols = mountainCols[p] || mountainCols[0];
+    const size = style === 2
+      ? (1 + match.rng.int(3))
+      : (style === 3 ? (3 + match.rng.int(4)) : (2 + match.rng.int(4)));
     growUnmirroredCluster(
       match, mountains, mountains, water,
-      pickUnmirroredSeed(match, mountains, water, [0, 8, 1, 7], 3, 8, edgeWeight),
-      2 + match.rng.int(3),
+      pickUnmirroredSeed(match, mountains, water, cols, 0, style === 3 ? 8 : 7, edgeWeight),
+      size,
       true
     );
   }
   pruneSingletons(mountains);
-  if (match.rng.next() < 0.55) {
-    function lakeWeight(c, r) {
-      const lr = Math.min(c, BOARD_SIZE - 1 - c);
-      return (lr <= 1 ? 1 : 4) * (r <= 1 ? 1 : 3);
-    }
-    const groups = 1 + match.rng.int(2);
+
+  const waterChance = style === 1 ? 0.92 : (style === 4 ? 0.8 : (style === 2 ? 0.22 : 0.5));
+  if (match.rng.next() < waterChance) {
+    const groups = style === 1 ? (2 + match.rng.int(2)) : (style === 4 ? 1 : (1 + match.rng.int(2)));
+    const waterSize = style === 4 ? (4 + match.rng.int(4)) : (2 + match.rng.int(4));
+    const waterCols = style === 4 ? [3, 4, 5] : [1, 2, 3, 4, 5, 6, 7];
     let g;
     for (g = 0; g < groups; g++) {
       growUnmirroredCluster(
         match, water, mountains, water,
-        pickUnmirroredSeed(match, mountains, water, [2, 3, 4, 5, 6], 1, 6, lakeWeight),
-        2 + match.rng.int(3),
+        pickUnmirroredSeed(match, mountains, water, waterCols, 1, style === 4 ? 7 : 6, lakeWeight),
+        waterSize,
         false
       );
     }

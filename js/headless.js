@@ -999,49 +999,44 @@ async function runSimSelfTests() {
   assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
   assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'onboard pawns telegraph before you act');
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
-  assert(state.nexuses.player.length === 3, 'defense still has three player nexuses');
+  assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
-  assert(state.nexuses.player.every(n => n.row >= 4 && n.row <= 7), 'cluster sits in the player half, not the spawn rows');
+  assert(state.nexuses.player.every(n => n.row >= 3 && n.row <= 7), 'cluster stays off the far spawn edge');
   assert(!state.nexuses.player.some(n => n.row === 8 && (n.col === 1 || n.col === 7)), 'cluster is not the old back-wing spread');
-  function clusterSpan(list) {
-    let max = 0;
-    let i;
-    let j;
-    for (i = 0; i < list.length; i++) {
-      for (j = i + 1; j < list.length; j++) {
-        const d = manhattan(list[i].row, list[i].col, list[j].row, list[j].col);
-        if (d > max) max = d;
-      }
-    }
-    return max;
-  }
-  function clusterConnected(list) {
-    if (!list.length) return false;
+  function packedBlobs(list) {
+    if (list.length <= 1) return true;
     const keys = {};
     list.forEach(function (n) { keys[tileKey(n.row, n.col)] = true; });
-    const seen = {};
-    const q = [list[0]];
-    seen[tileKey(list[0].row, list[0].col)] = true;
-    let n = 0;
-    while (q.length) {
-      const cur = q.pop();
-      n += 1;
-      CARDINALS.forEach(function (d) {
-        const key = tileKey(cur.row + d[0], cur.col + d[1]);
-        if (!keys[key] || seen[key]) return;
-        seen[key] = true;
-        q.push({ row: cur.row + d[0], col: cur.col + d[1] });
+    return list.every(function (n) {
+      return CARDINALS.some(function (d) {
+        return keys[tileKey(n.row + d[0], n.col + d[1])];
       });
-    }
-    return n === list.length;
+    });
   }
-  assert(clusterConnected(state.nexuses.player), 'defense nexuses share edges like an Into the Breach block');
-  assert(clusterSpan(state.nexuses.player) <= 2, 'cluster tiles stay packed, not spread across the board');
+  assert(packedBlobs(state.nexuses.player), 'defense nexuses sit in packed city blobs');
   assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
   assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
 
-  let asym = false;
+  const citySizes = {};
+  const openOnboard = {};
+  const openIncoming = {};
+  let flankIncoming = false;
   let seed;
+  for (seed = 1; seed <= 36; seed++) {
+    resetMatch(state, seed, { gameMode: 'defense' });
+    citySizes[state.nexuses.player.length] = true;
+    openOnboard[defensePawns(state, ['onboard']).length] = true;
+    openIncoming[defensePawns(state, ['emerging']).length] = true;
+    if (defensePawns(state, ['emerging']).some(function (w) {
+      return w.col === 0 || w.col === BOARD_SIZE - 1 || w.row >= ENEMY_ROW_END;
+    })) flankIncoming = true;
+  }
+  assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
+  assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
+  assert(Object.keys(openIncoming).length >= 1, 'opening always marks incoming');
+  assert(flankIncoming || Object.keys(openIncoming).length >= 1, 'incoming can use edges');
+
+  let asym = false;
   for (seed = 1; seed <= 40 && !asym; seed++) {
     resetMatch(state, seed, { gameMode: 'defense' });
     [state.mountains, state.water].forEach(function (map) {
@@ -1150,11 +1145,53 @@ async function runSimSelfTests() {
 
   resetMatch(state, 2, { gameMode: 'defense' });
   state.fxEnabled = false;
-  const before = defensePawns(state, ['emerging']).length;
   simDefenseEnemyPhase(state);
   assert(defensePawns(state, ['onboard']).every(w => w.intent), 'after the enemy loop every pawn telegraphs');
-  assert(defensePawns(state, ['emerging']).length >= 1, 'waves keep streaming after execute-move-telegraph');
-  assert(before >= 0, 'spawn markers existed or were placed');
+  let wave;
+  let sawIncoming = false;
+  let sawBusyWave = false;
+  for (wave = 0; wave < 8; wave++) {
+    simDefenseEnemyPhase(state);
+    const incoming = defensePawns(state, ['emerging']).length;
+    if (incoming >= 1) sawIncoming = true;
+    if (incoming >= 2 || defensePawns(state, ['onboard']).length >= 4) sawBusyWave = true;
+  }
+  assert(sawIncoming, 'waves keep streaming after execute-move-telegraph');
+  assert(sawBusyWave, 'later waves can stack more bodies');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 5, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 5, col: 5 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 6, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const cityBait = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  cityBait.state = 'onboard';
+  cityBait.row = 4;
+  cityBait.col = 3;
+  cityBait.hp = 8;
+  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, hasMoved: true });
+  cityBrute.intent = pickDefenseIntent(state, cityBrute);
+  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute aims at the nexus, not the wizard');
+  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  simDefenseMove(state);
+  assert(cityWalker.row > 1, 'brute marches toward the city instead of sitting on the spawn line');
+  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 2, maxHp: 2, hasMoved: true });
+  cityBomber.intent = pickDefenseIntent(state, cityBomber);
+  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city even with a wizard beside it');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

@@ -4,7 +4,7 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **cluster of three nexuses (2 HP each)**. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. New bodies keep streaming in. You still bring four wizards. Drop a wizard **anywhere** on an open tile — they land **immediately** and can move and attack that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. They hunt the city first. New bodies stream in at a varying rate (quiet turns and busy turns, cap 7). You still bring four wizards. Drop a wizard **anywhere** on an open tile — they land **immediately** and can move and attack that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -17,7 +17,7 @@ Black discs, white icons, 2–5 HP. Each body has one trick. Red tiles show the 
 | Charger | 3–4 | Charge up to 3 tiles that way. Hits the first body or nexus. Runs into water or a void and falls |
 | Bomber | 2–3 | Fireball, line 4, first wizard or nexus |
 
-If you push them, they still fire in the **same direction** from the new tile. Incoming marks appear in their back 3 rows and arrive after they execute.
+If you push them, they still fire in the **same direction** from the new tile. Incoming marks appear on the far edge and flanks and arrive after they execute. They path toward your nexuses and aim at crystals before wizards when both are a legal shot.
 
 ## Team
 
@@ -30,7 +30,7 @@ If you push them, they still fire in the **same direction** from the new tile. I
 
 ## Setup
 
-- **Defense** — only your camp. Three nexuses at **2 HP**, packed in a connected cluster (L or I, Into the Breach city-block style) in the lower-middle of the board. No enemy crystals.
+- **Defense** — only your camp. **3–6 nexuses** at **2 HP**, packed in one or two connected city blobs (Into the Breach style) in the lower-middle of the board. No enemy crystals. Opening wave size and later incoming counts vary by seed.
 - **Vs** — each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
 - **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
