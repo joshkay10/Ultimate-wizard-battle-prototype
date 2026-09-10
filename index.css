@@ -109,7 +109,7 @@ html, body {
 /* ---------- Top bar ---------- */
 .topbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
@@ -131,7 +131,7 @@ html, body {
   font-size: 12px;
   color: var(--text-dim);
   text-align: center;
-  white-space: nowrap;
+  min-width: 0;
 }
 .new-match-btn {
   justify-self: end;
