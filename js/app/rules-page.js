@@ -6,13 +6,13 @@ function renderRulesPage() {
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute, move, and telegraph again. They hunt the city first. Weak black discs (2–5 HP): melee, charge 3, or fireball 4. Pushing them does not change the aimed direction. Charge into water or a void still falls. Incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately and can act that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute, move, and telegraph again. They hunt the city first. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. Incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
         '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
 
       '<h2>Team</h2>' +
       '<ul>' +
-        '<li>Six kits in the pool. You bring <strong>exactly four</strong>. Copies are allowed. Each body brings <strong>one spell</strong> from its element — two Rimes can take Pulse and Blizzard.</li>' +
+        '<li>Six kits in the pool. <strong>Pyre, Rime, and Squall are live</strong>. Cairn, Volt, and Chrono are on the bench. You bring <strong>exactly four</strong> from the live three (copies allowed). Team can randomize from those three.</li>' +
         '<li>Pick kits and spells on <a href="' + routeHref('team') + '">Team</a>. That loadout is saved on this device and used for every battle until you change it.</li>' +
         '<li>The enemy rolls <strong>four kits from the same pool</strong> each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
         '<li>The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).</li>' +
@@ -87,7 +87,7 @@ function renderRulesPage() {
 
       '<h2>Turn</h2>' +
       '<ol>' +
-        '<li><strong>Summon</strong> — pay cost. In Defense, drop anywhere on an open tile; they land immediately and can act this turn. In Vs, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, with no sickness. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
+        '<li><strong>Summon</strong> — pay cost. In Defense, drop anywhere on an open tile; they land immediately, burst (pulse shape, push only), then have summoning sickness this turn. In Vs, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, also bursts, then is sick. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
         '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, mountains, water, and voids block. You cannot walk onto water or a void. Undo a move if that wizard has not attacked yet.</li>' +
         '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the spell says otherwise.</li>' +
         '<li><strong>End turn</strong> — or it ends on its own when you have nothing left. A pending move-undo still counts, so the turn waits until you attack or undo.</li>' +

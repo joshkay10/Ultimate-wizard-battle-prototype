@@ -198,7 +198,7 @@ async function runSimSelfTests() {
   const chainAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   const chainA = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const chainB = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  const chainC = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'earth');
+  const chainC = spawnShelved('player', 'earth', { row: 4, col: 4, hp: 14, maxHp: 14 });
   chainAtk.state = 'onboard';
   chainAtk.row = 4;
   chainAtk.col = 1;
@@ -210,10 +210,6 @@ async function runSimSelfTests() {
   chainB.row = 4;
   chainB.col = 3;
   chainB.hp = 8;
-  chainC.state = 'onboard';
-  chainC.row = 4;
-  chainC.col = 4;
-  chainC.hp = 14;
   simAttack(state, chainAtk, 4, 2, 'melee');
   assert(chainA.row === 4 && chainA.col === 2, 'packed first wizard stays');
   assert(chainB.row === 4 && chainB.col === 3, 'packed middle wizard stays');
@@ -306,8 +302,8 @@ async function runSimSelfTests() {
   assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 3, 'Squall costs 3');
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 3, 'Pyre costs 3');
   assert(WIZARD_TYPES.length === 6, 'kit pool is six');
-  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,earth', 'default team is Pyre Rime Squall Cairn');
-  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,earth', 'short teams fill from the default');
+  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,ice', 'default team is Pyre Rime Squall Rime');
+  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,ice', 'short teams fill from the default');
   assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire', 'teams stay at four kits');
   assert(normalizeTeam(['fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire', 'duplicate kits are allowed');
   assert(TEAM_SIZE === 4, 'team size is four');
@@ -377,7 +373,12 @@ async function runSimSelfTests() {
   simEndEnemyTurn(state);
   assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
   assert(!portalAt(state, 7, 3), 'portal closes on arrival');
-  assert(canMove(arriving) && canAttack(arriving), 'arrived wizard has no sickness');
+  assert(arriving.summoningSickness, 'arrived wizard has summoning sickness');
+  assert(!canMove(arriving) && !canAttack(arriving), 'sickness blocks move and attack');
+  simEndPlayerTurn(state);
+  simEndEnemyTurn(state);
+  assert(!arriving.summoningSickness, 'sickness clears on the following player turn');
+  assert(canMove(arriving) && canAttack(arriving), 'after sickness they can act');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -507,7 +508,7 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(playerEls.join(',') === 'earth,fire,ice,wind', 'roster is fire ice wind earth');
+  assert(playerEls.join(',') === 'fire,ice,ice,wind', 'roster is Pyre Rime Rime Squall');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 4, 'enemy has four wizards');
 
   resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: ['fire', 'ice', 'wind', 'earth'] });
@@ -533,8 +534,12 @@ async function runSimSelfTests() {
   assert(variety >= 3, 'enemy teams vary across seeds');
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
-  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,earth', 'old three-kit arrays pad to four');
-  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,raise', 'old team arrays keep default spells');
+  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,ice', 'old three-kit arrays pad to four');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,pulse', 'old team arrays keep default spells');
+  const rolledPlayable = pickEnemyTeam(createRng(3), DEFAULT_TEAM);
+  assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
+  const mixed = randomPlayableLoadout(createRng(9));
+  assert(mixed.length === TEAM_SIZE && mixed.every(function (s) { return kitPlayable(s.kit); }), 'randomize stays in Pyre Rime Squall');
   assert(SPELLS.length === 18, 'spell catalog is eighteen');
   assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
   assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
@@ -1078,13 +1083,17 @@ async function runSimSelfTests() {
   state.nexuses.enemy = [];
   state.mana = 10;
   const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
   const drop = simSummon(state, dropper, 3, 4, 'player');
   assert(drop.some(e => e.type === 'summon'), 'defense summon emits summon, not a portal');
   assert(!drop.some(e => e.type === 'portal'), 'defense summon skips the portal delay');
+  assert(drop.some(e => e.castKind === 'summonBurst' && e.damage === 0), 'landing fires a damage-free burst');
   assert(dropper.state === 'onboard' && dropper.row === 3 && dropper.col === 4, 'wizard lands immediately');
+  assert(dropper.summoningSickness, 'dropped wizard has summoning sickness');
+  assert(!canMove(dropper) && !canAttack(dropper), 'sickness blocks the rest of the turn');
   assert(!portalAt(state, 3, 4), 'no portal token on an instant drop');
-  assert(canMove(dropper) && canAttack(dropper), 'dropped wizard can move and attack this turn');
-  assert(getMoveTiles(state, dropper).length > 0, 'dropped wizard has a move range');
+  assert(burstTarget.col === 6, 'burst pushes a neighbor away with no damage (' + burstTarget.col + ')');
+  assert(burstTarget.hp === 5, 'burst does not deal damage');
   assert(!canSummonAt(state, 8, 0, 'player'), 'still cannot drop on a nexus');
 
   state.nexuses.player.forEach(function (n) { n.hp = 0; });

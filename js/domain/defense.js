@@ -1,3 +1,19 @@
+function defenseKindLabel(kind) {
+  if (kind === 'charge') return 'charge';
+  if (kind === 'fireball') return 'shot';
+  return 'melee';
+}
+
+function defenseTelegraphStyle(kind) {
+  if (kind === 'charge') {
+    return { fill: 'rgba(26, 140, 108, 0.42)', edge: '#17a078', label: 'CHARGE', dash: [8, 5], pip: true };
+  }
+  if (kind === 'fireball') {
+    return { fill: 'rgba(214, 52, 36, 0.4)', edge: '#e23b28', label: 'SHOT', dash: [2.5, 4.5], pip: true };
+  }
+  return { fill: 'rgba(186, 78, 22, 0.52)', edge: '#d26518', label: 'MELEE', dash: [], pip: false };
+}
+
 const DEFENSE_PAWN_KINDS = {
   melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 2, range: 1, hpMin: 4, hpMax: 5 },
   charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 2, range: 3, hpMin: 3, hpMax: 4 },
@@ -245,10 +261,11 @@ function scoreDefenseTile(match, pawn, row, col) {
   const shot = bestDefenseShot(match, pawn, row, col);
   const nexus = nearestDefenseNexus(match, row, col);
   const dist = nexus ? manhattan(row, col, nexus.row, nexus.col) : 12;
-  let score = (16 - dist) * 36;
-  if (shot.score >= 400) score += shot.score;
-  else if (shot.score > 0) score += 40;
-  return { score: score, dr: shot.dr, dc: shot.dc };
+  const nexusShot = shot.score >= 400;
+  let score;
+  if (nexusShot) score = 9000 + shot.score - dist * 4;
+  else score = (18 - dist) * 110;
+  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: nexusShot };
 }
 
 function pickScoredOption(rng, options) {
@@ -272,15 +289,21 @@ function pickDefenseIntent(match, pawn) {
   for (d = 0; d < CARDINALS.length; d++) {
     const dr = CARDINALS[d][0];
     const dc = CARDINALS[d][1];
-    options.push({
-      kind: spec.id,
-      dr: dr,
-      dc: dc,
-      score: defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc)
-    });
+    const score = defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
+    options.push({ kind: spec.id, dr: dr, dc: dc, score: score, nexusShot: score >= 400 });
   }
-  const hit = pickScoredOption(match.rng, options);
+  const nexusHits = options.filter(function (opt) { return opt.nexusShot; });
+  const pool = nexusHits.length ? nexusHits : options;
+  const hit = pickScoredOption(match.rng, pool);
+  if (nexusHits.length && hit) {
+    return { kind: spec.id, dr: hit.dr, dc: hit.dc };
+  }
   if (hit && hit.score >= 40) {
+    const prey = nearestDefenseNexus(match, pawn.row, pawn.col);
+    if (prey) {
+      const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
+      return { kind: spec.id, dr: dir.dr, dc: dir.dc };
+    }
     return { kind: spec.id, dr: hit.dr, dc: hit.dc };
   }
   const prey = nearestDefensePrey(match, pawn.row, pawn.col);
@@ -533,21 +556,26 @@ function simDefenseMove(match) {
   for (i = 0; i < pawns.length; i++) {
     const pawn = pawns[i];
     if (pawn.state !== 'onboard' || pawn.hasMoved) continue;
+    const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
     const options = [{
       row: pawn.row,
       col: pawn.col,
       stay: true,
-      score: scoreDefenseTile(match, pawn, pawn.row, pawn.col).score
+      score: stay.score,
+      nexusShot: stay.nexusShot
     }];
     getMoveTiles(match, pawn).forEach(function (tile) {
+      const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
       options.push({
         row: tile.row,
         col: tile.col,
         stay: false,
-        score: scoreDefenseTile(match, pawn, tile.row, tile.col).score
+        score: scored.score,
+        nexusShot: scored.nexusShot
       });
     });
-    const picked = pickScoredOption(match.rng, options);
+    const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
+    const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
     if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
       const path = pathBFS(match, pawn, picked.row, picked.col);
       if (path && path.length) events.push.apply(events, simMove(match, pawn, path));

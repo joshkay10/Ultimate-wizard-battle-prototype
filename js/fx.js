@@ -174,7 +174,7 @@ function banner(ev, text) {
 async function playAttack(ev) {
   if (ev.kind === 'cast' && (ev.spellName || ev.castKind)) banner(ev, ev.spellName || ev.castKind);
   if (ev.kind !== 'cast') return playMeleeLunge(ev);
-  if (ev.castKind === 'pulse') return playPulseCast(ev);
+  if (ev.castKind === 'pulse' || ev.castKind === 'summonBurst') return playPulseCast(ev);
   if (ev.castKind === 'burst') return playBurstCast(ev);
   if (ev.castKind === 'raise') return playRaiseCast(ev);
   if (ev.castKind === 'swap' || ev.castKind === 'blink') return playSwapCast(ev);

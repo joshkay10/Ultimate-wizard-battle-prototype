@@ -2,7 +2,7 @@ const DEFAULT_LOADOUT = [
   { kit: 'fire', spell: 'stream' },
   { kit: 'ice', spell: 'pulse' },
   { kit: 'wind', spell: 'gust' },
-  { kit: 'earth', spell: 'raise' }
+  { kit: 'ice', spell: 'pulse' }
 ];
 
 function emptyLoadoutSlot(kitId) {
@@ -37,19 +37,44 @@ function parseLoadoutSlots(raw) {
 
 function padLoadout(slots) {
   const out = (slots || []).slice(0, TEAM_SIZE);
-  const present = {};
+  const used = {};
+  const seen = {};
   let i;
-  for (i = 0; i < out.length; i++) present[out[i].kit] = true;
+  for (i = 0; i < out.length; i++) used[out[i].kit] = (used[out[i].kit] || 0) + 1;
   for (i = 0; i < DEFAULT_LOADOUT.length && out.length < TEAM_SIZE; i++) {
-    if (present[DEFAULT_LOADOUT[i].kit]) continue;
-    out.push({ kit: DEFAULT_LOADOUT[i].kit, spell: DEFAULT_LOADOUT[i].spell });
-    present[DEFAULT_LOADOUT[i].kit] = true;
+    const row = DEFAULT_LOADOUT[i];
+    seen[row.kit] = (seen[row.kit] || 0) + 1;
+    if ((used[row.kit] || 0) < seen[row.kit]) {
+      out.push({ kit: row.kit, spell: row.spell });
+      used[row.kit] = (used[row.kit] || 0) + 1;
+    }
   }
   i = 0;
   while (out.length < TEAM_SIZE) {
     const row = DEFAULT_LOADOUT[i % DEFAULT_LOADOUT.length];
     out.push({ kit: row.kit, spell: row.spell });
     i += 1;
+  }
+  return out;
+}
+
+function filterPlayableLoadout(raw) {
+  const slots = parseLoadoutSlots(raw).filter(function (slot) {
+    return kitPlayable(slot.kit);
+  });
+  return padLoadout(slots);
+}
+
+function randomPlayableLoadout(rng) {
+  rng = rng || createRng((Date.now() >>> 0) || 1);
+  const kits = PLAYABLE_KIT_IDS;
+  const out = [];
+  let i;
+  for (i = 0; i < TEAM_SIZE; i++) {
+    const kitId = kits[rng.int(kits.length)];
+    const pool = spellsForElement((kitById(kitId) || {}).element);
+    const spell = pool.length ? pool[rng.int(pool.length)] : defaultSpellForKit(kitById(kitId));
+    out.push({ kit: kitId, spell: spell ? spell.id : normalizeSpellId(kitId, null) });
   }
   return out;
 }

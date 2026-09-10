@@ -18,7 +18,7 @@ function placeWizard(row, col) {
     state.placingWizardId = null;
     if (wizard.state === 'onboard') {
       state.selectedWizardId = wizard.id;
-      state.selectedAction = 'move';
+      state.selectedAction = wizard.summoningSickness ? null : 'move';
     }
   }
   present(events).then(afterPlayerAction);
@@ -32,7 +32,7 @@ function selectWizard(id) {
     state.selectedWizardId = null;
   } else {
     state.selectedWizardId = id;
-    state.selectedAction = wizard.team === 'player' ? 'move' : null;
+    state.selectedAction = wizard.team === 'player' && !wizard.summoningSickness ? 'move' : null;
   }
   render();
 }

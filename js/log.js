@@ -62,6 +62,7 @@ function describeEvent(ev) {
     if (ev.hit === 'fizzle') return '';
     const spell = ev.spellId || ev.castKind || 'cast';
     if (spell === 'pulse') return who + ' pulses';
+    if (spell === 'burst' || ev.castKind === 'summonBurst') return who + ' bursts';
     if (spell === 'bolt') {
       if (ev.hit === 'nexus') return who + ' bolts ' + nexusOwnerWord(ev);
       return who + ' bolts' + toward;

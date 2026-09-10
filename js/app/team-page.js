@@ -54,7 +54,7 @@ function renderTeamPage() {
     empty += '<div class="team-slot empty"><div class="team-empty">empty slot — add a kit</div></div>';
   }
 
-  const adders = WIZARD_TYPES.map(function (kit) {
+  const adders = playableKits().map(function (kit) {
     const n = kitCount(selected, kit.id);
     const full = selected.length >= TEAM_SIZE;
     return (
@@ -80,7 +80,7 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards. Copies are allowed — two Rimes with different spells is a real team. Each body picks one spell. The enemy rolls four each match, copies included. Saved on this device.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body picks one spell. Saved on this device.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
@@ -90,7 +90,8 @@ function renderTeamPage() {
       '<div class="team-grid">' + adders + '</div>' +
       '<div class="team-actions">' +
         '<button type="button" class="end-turn-btn" id="team-fight-btn"' + (ready ? '' : ' disabled') + '>fight</button>' +
-        '<a class="team-reset" href="#" id="team-reset-btn">reset to Pyre, Rime, Squall, Cairn</a>' +
+        '<button type="button" class="team-random-btn" id="team-random-btn">randomize from Pyre, Rime, Squall</button>' +
+        '<a class="team-reset" href="#" id="team-reset-btn">reset to Pyre, Rime, Squall, Rime</a>' +
       '</div>' +
     '</article>'
   );
@@ -99,7 +100,7 @@ function renderTeamPage() {
 function addTeamKit(id) {
   const draft = teamDraftList();
   if (draft.length >= TEAM_SIZE) return;
-  if (!kitById(id)) return;
+  if (!kitPlayable(id) || !kitById(id)) return;
   draft.push(emptyLoadoutSlot(id));
   persistTeamDraft();
   render();
@@ -145,6 +146,14 @@ function bindTeamPage() {
       if (draft.length !== TEAM_SIZE) return;
       savePlayerLoadout(draft);
       location.href = routeHref('play');
+    });
+  }
+  const randomize = document.getElementById('team-random-btn');
+  if (randomize) {
+    randomize.addEventListener('click', function () {
+      teamDraft = randomPlayableLoadout(createRng((Date.now() >>> 0) || 1));
+      savePlayerLoadout(teamDraft);
+      render();
     });
   }
   const reset = document.getElementById('team-reset-btn');

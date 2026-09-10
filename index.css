@@ -921,6 +921,16 @@ html, body {
   gap: 14px;
   margin-top: 18px;
 }
+.team-random-btn {
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+}
+.team-random-btn:hover { text-decoration: underline; }
 .team-reset {
   font-size: 13px;
   font-weight: 700;
