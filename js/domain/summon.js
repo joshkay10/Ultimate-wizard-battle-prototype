@@ -1,16 +1,27 @@
 function simSummon(match, wizard, row, col, team) {
   if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return [];
   if (teamMana(match, team) < wizard.cost) return [];
-  if (!canOpenPortalAt(match, row, col)) return [];
-  if (team === 'player' && !isSummonTile(row, col)) return [];
-  if (team === 'enemy' && !isEnemySummonTile(row, col)) return [];
+  if (!canSummonAt(match, row, col, team)) return [];
   spendMana(match, team, wizard.cost);
-  wizard.state = 'portaling';
   wizard.row = row;
   wizard.col = col;
   wizard.hasMoved = false;
   wizard.hasAttacked = false;
   wizard.summoningSickness = false;
+  if (match.gameMode === 'defense' && team === 'player') {
+    wizard.state = 'onboard';
+    const events = [{
+      type: 'summon',
+      wizardId: wizard.id,
+      row: row,
+      col: col,
+      team: team,
+      element: wizard.element
+    }];
+    events.push.apply(events, applyTileEnter(match, wizard));
+    return events;
+  }
+  wizard.state = 'portaling';
   match.portals[tileKey(row, col)] = {
     row: row,
     col: col,

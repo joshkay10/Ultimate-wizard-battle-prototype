@@ -27,10 +27,17 @@ function resetMatch(match, seed, opts) {
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
   match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
-  match.nexuses = {
-    player: makeNexusCamp('player'),
-    enemy: makeNexusCamp('enemy')
-  };
+  if (match.gameMode === 'defense') {
+    match.nexuses = {
+      player: makeDefenseNexusCluster(match),
+      enemy: []
+    };
+  } else {
+    match.nexuses = {
+      player: makeNexusCamp('player'),
+      enemy: makeNexusCamp('enemy')
+    };
+  }
 
   const playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT);
   let enemyLoadout;

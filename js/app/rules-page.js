@@ -2,12 +2,12 @@ function renderRulesPage() {
   return (
     '<article class="page">' +
       '<h1>Rules</h1>' +
-      '<p class="lede">A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards. The toolbar picks <strong>Defense</strong> (default) or <strong>Vs</strong>.</p>' +
+      '<p class="lede">A two-player turn game on a 9×9 grid. The toolbar picks <strong>Defense</strong> (default) or <strong>Vs</strong>.</p>' +
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — enemies telegraph, then after your turn they execute, move, and telegraph again. Weak black discs (2–5 HP): melee, charge 3, or fireball 4. Pushing them does not change the aimed direction. Charge into water or a void still falls. New bodies keep streaming in. Kill their nexuses to win.</li>' +
-        '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a cluster of three nexuses (2 HP each). No enemy crystals. Enemies telegraph, then after your turn they execute, move, and telegraph again. Weak black discs (2–5 HP): melee, charge 3, or fireball 4. Pushing them does not change the aimed direction. Charge into water or a void still falls. New bodies keep streaming in. Drop a wizard anywhere on an open tile — they land immediately and can act that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
 
       '<h2>Team</h2>' +
@@ -15,18 +15,19 @@ function renderRulesPage() {
         '<li>Six kits in the pool. You bring <strong>exactly four</strong>. Copies are allowed. Each body brings <strong>one spell</strong> from its element — two Rimes can take Pulse and Blizzard.</li>' +
         '<li>Pick kits and spells on <a href="' + routeHref('team') + '">Team</a>. That loadout is saved on this device and used for every battle until you change it.</li>' +
         '<li>The enemy rolls <strong>four kits from the same pool</strong> each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
-        '<li>The battle top bar names the enemy four and their spells so you can read the matchup before you portal.</li>' +
-        '<li>Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
+        '<li>The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).</li>' +
+        '<li>Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
         '<li>Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.</li>' +
       '</ul>' +
 
       '<h2>Setup</h2>' +
       '<ul>' +
-        '<li>Each side has <strong>three nexuses</strong> (5 HP): two back wings and one forward center, vertically mirrored. Drop all three to win that way.</li>' +
+        '<li><strong>Defense</strong> — only your camp. Three nexuses at <strong>2 HP</strong>, packed in a connected cluster in the lower-middle of the board. No enemy crystals.</li>' +
+        '<li><strong>Vs</strong> — each side has <strong>three nexuses</strong> (5 HP): two back wings and one forward center, vertically mirrored. Drop all three to win that way.</li>' +
         '<li><strong>Mountains</strong> block walk, summon, melee, cast, and push.</li>' +
         '<li><strong>Water</strong> shows up on some maps. Step, slide, or get pushed on and you die. No summoning onto it. Line spells fly over.</li>' +
         '<li><strong>Voids</strong> open when a nexus hits 0. Same kill-on-enter as water. The crystal is gone.</li>' +
-        '<li>Terrain is vertically mirrored so both camps get the same layout.</li>' +
+        '<li>Vs terrain is vertically mirrored so both camps get the same layout. Defense maps are not mirrored.</li>' +
         '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Each team has its own pool. Refill to max at the start of your turn.</li>' +
       '</ul>' +
 
@@ -86,7 +87,7 @@ function renderRulesPage() {
 
       '<h2>Turn</h2>' +
       '<ol>' +
-        '<li><strong>Summon</strong> — pay cost, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, with no sickness. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
+        '<li><strong>Summon</strong> — pay cost. In Defense, drop anywhere on an open tile; they land immediately and can act this turn. In Vs, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, with no sickness. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
         '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, mountains, water, and voids block. You cannot walk onto water or a void. Undo a move if that wizard has not attacked yet.</li>' +
         '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the spell says otherwise.</li>' +
         '<li><strong>End turn</strong> — or it ends on its own when you have nothing left. A pending move-undo still counts, so the turn waits until you attack or undo.</li>' +
@@ -102,7 +103,7 @@ function renderRulesPage() {
       '</ul>' +
 
       '<h2>Winning</h2>' +
-      '<p>Checked after each side’s turn (not on that side’s very first turn). All enemy nexuses at 0, or in Vs no wizards left. Defense waves do not end the fight. Draw if both sides lose at once.</p>' +
+      '<p>Checked after each side’s turn (not on that side’s very first turn). Defense: lose if your cluster falls or your wizards are wiped; waves do not end the fight. Vs: all enemy nexuses at 0, or no wizards left. Draw if both sides lose at once.</p>' +
     '</article>'
   );
 }

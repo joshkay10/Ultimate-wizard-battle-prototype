@@ -139,11 +139,9 @@ function highlightSet() {
 
   if (state.placingWizardId && !state.animating) {
     kind = 'summon';
-    for (let r = SUMMON_ROW_START; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        if (canOpenPortalAt(state, r, c)) tiles.push({ row: r, col: c });
-      }
-    }
+    const placing = state.wizards[state.placingWizardId];
+    const team = placing && placing.team ? placing.team : 'player';
+    return { tiles: getTeamSummonTiles(state, team), kind: 'summon' };
   } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
     if (state.selectedAction === 'move' && canMove(selectedWizard)) {
       return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
@@ -207,7 +205,7 @@ function tileFill(row, col, highlight, kind, castKind) {
     if (trail.element === 'temporal') return isAlt ? '#e4d8ef' : BOARD_COLORS.temporalBg;
     return isAlt ? '#d8ebe1' : BOARD_COLORS.windBg;
   }
-  if (isSummonTile(row, col)) return isAlt ? BOARD_COLORS.summonAlt : BOARD_COLORS.summon;
+  if (isSummonTile(row, col) && state.gameMode !== 'defense') return isAlt ? BOARD_COLORS.summonAlt : BOARD_COLORS.summon;
   return isAlt ? BOARD_COLORS.tileAlt : BOARD_COLORS.tile;
 }
 
@@ -707,7 +705,7 @@ function drawDefenseOverlays(ctx, layout) {
   });
 }
 
-function drawNexus(ctx, box, hp, flash) {
+function drawNexus(ctx, box, hp, flash, maxHp) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   const r = box.s * 0.42;
@@ -741,7 +739,9 @@ function drawNexus(ctx, box, hp, flash) {
     return;
   }
 
-  const diamondsLeft = Math.max(0, Math.min(4, hp - 1));
+  const diamondsLeft = (maxHp != null && maxHp <= 2)
+    ? (hp >= 2 ? 4 : (hp >= 1 ? 1 : 0))
+    : Math.max(0, Math.min(4, hp - 1));
   ctx.fillStyle = fill;
   for (let i = 0; i < diamondsLeft; i++) {
     ctx.beginPath();
@@ -1334,7 +1334,7 @@ function drawBoard() {
         ctx.restore();
       }
 
-      if (nex) drawNexus(ctx, box, nex.hp, flashHere);
+      if (nex) drawNexus(ctx, box, nex.hp, flashHere, nex.maxHp);
     }
   }
 

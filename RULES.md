@@ -1,11 +1,11 @@
 # Wizard Battle — Rules
 
-A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards. The toolbar picks **Defense** (default) or **Vs**.
+A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) or **Vs**.
 
 ## Modes
 
-- **Defense** — Into the Breach loop. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. New bodies keep streaming in. You still bring four wizards. Kill their nexuses to win; wiping a wave does not end the fight.
-- **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph.
+- **Defense** — Into the Breach holdout. You defend a **cluster of three nexuses (2 HP each)**. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. New bodies keep streaming in. You still bring four wizards. Drop a wizard **anywhere** on an open tile — they land **immediately** and can move and attack that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
+- **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
 
@@ -24,17 +24,18 @@ If you push them, they still fire in the **same direction** from the new tile. I
 - Six kits in the pool. You bring **exactly four**. Copies are allowed. Each body brings **one spell** from its element — two Rimes can take Pulse and Blizzard.
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
-- The battle top bar names the enemy four and their spells so you can read the matchup before you portal.
-- Rime is the only **2-cost** kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.
+- The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
+- Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
 
-- Each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
+- **Defense** — only your camp. Three nexuses at **2 HP**, packed in a connected cluster (L or I, Into the Breach city-block style) in the lower-middle of the board. No enemy crystals.
+- **Vs** — each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
 - **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
-- Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
+- **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. **Defense** maps are not mirrored — ridges and water can sit on one side only.
 - Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn.
 
 ## Wizards
@@ -88,7 +89,9 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 
 On your turn you may, in any order:
 
-1. **Summon** — pay a wizard’s cost and open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
+1. **Summon** — pay a wizard’s cost.
+   - **Defense:** drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately** and can move and attack this turn.
+   - **Vs:** open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
 2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
 4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
@@ -109,5 +112,6 @@ On your turn you may, in any order:
 
 Checked after each side’s turn (not on that side’s very first turn):
 
-- You win if **all** enemy nexuses are at 0 HP, or (in Vs) they have no wizards left in hand or on the board. Defense waves do not end when you clear a wave — only the crystals do.
-- Draw if both sides lose at the same time.
+- **Defense:** you lose if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. Waves do not end the fight. There is no enemy camp to knock out.
+- **Vs:** you win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
+- Draw if both sides lose at the same time (Vs).

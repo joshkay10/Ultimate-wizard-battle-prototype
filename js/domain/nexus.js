@@ -1,18 +1,76 @@
-function makeNexus(spec, team) {
+function makeNexus(spec, team, hp) {
+  hp = hp == null ? NEXUS_HP : hp;
   return {
     id: spec.id,
     team: team,
     row: spec.row,
     col: spec.col,
-    hp: NEXUS_HP,
-    maxHp: NEXUS_HP
+    hp: hp,
+    maxHp: hp
   };
 }
 
-function makeNexusCamp(team) {
+function makeNexusCamp(team, hp) {
   return NEXUS_LAYOUT[team].map(function (spec) {
-    return makeNexus(spec, team);
+    return makeNexus(spec, team, hp);
   });
+}
+
+function defenseNexusShapes() {
+  return [
+    [[0, 0], [0, 1], [1, 0]],
+    [[0, 0], [0, 1], [1, 1]],
+    [[0, 0], [1, 0], [1, 1]],
+    [[0, 0], [1, 0], [1, -1]],
+    [[0, 0], [0, 1], [0, 2]],
+    [[0, 0], [1, 0], [2, 0]]
+  ];
+}
+
+function makeDefenseNexusCluster(match) {
+  const rng = match.rng;
+  const shapes = defenseNexusShapes();
+  let attempt;
+  for (attempt = 0; attempt < 40; attempt++) {
+    const shape = shapes[rng ? rng.int(shapes.length) : attempt % shapes.length];
+    const originRow = rng ? (4 + rng.int(4)) : 5;
+    const originCol = rng ? (2 + rng.int(5)) : 4;
+    const tiles = [];
+    let ok = true;
+    let i;
+    for (i = 0; i < shape.length; i++) {
+      const row = originRow + shape[i][0];
+      const col = originCol + shape[i][1];
+      if (!inBounds(row, col) || row < 4 || row > 7) {
+        ok = false;
+        break;
+      }
+      tiles.push({ row: row, col: col });
+    }
+    if (!ok) continue;
+    const seen = {};
+    for (i = 0; i < tiles.length; i++) {
+      const key = tileKey(tiles[i].row, tiles[i].col);
+      if (seen[key]) {
+        ok = false;
+        break;
+      }
+      seen[key] = true;
+    }
+    if (!ok) continue;
+    return tiles.map(function (tile, idx) {
+      return makeNexus({
+        id: 'player-cluster-' + idx,
+        row: tile.row,
+        col: tile.col
+      }, 'player', DEFENSE_NEXUS_HP);
+    });
+  }
+  return [
+    makeNexus({ id: 'player-cluster-0', row: 5, col: 3 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 5, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 6, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
 }
 
 function allNexuses(match) {
@@ -30,7 +88,9 @@ function livingNexuses(match, team) {
 }
 
 function teamNexusesFallen(match, team) {
-  return match.nexuses[team].every(function (nexus) {
+  const list = (match.nexuses && match.nexuses[team]) || [];
+  if (!list.length) return false;
+  return list.every(function (nexus) {
     return nexus.hp <= 0;
   });
 }

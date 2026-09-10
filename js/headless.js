@@ -998,7 +998,111 @@ async function runSimSelfTests() {
   assert(defensePawns(state, ['onboard']).length >= 1, 'defense opens with pawns on the board');
   assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
   assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'onboard pawns telegraph before you act');
+  assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
+  assert(state.nexuses.player.length === 3, 'defense still has three player nexuses');
+  assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
+  assert(state.nexuses.player.every(n => n.row >= 4 && n.row <= 7), 'cluster sits in the player half, not the spawn rows');
+  assert(!state.nexuses.player.some(n => n.row === 8 && (n.col === 1 || n.col === 7)), 'cluster is not the old back-wing spread');
+  function clusterSpan(list) {
+    let max = 0;
+    let i;
+    let j;
+    for (i = 0; i < list.length; i++) {
+      for (j = i + 1; j < list.length; j++) {
+        const d = manhattan(list[i].row, list[i].col, list[j].row, list[j].col);
+        if (d > max) max = d;
+      }
+    }
+    return max;
+  }
+  function clusterConnected(list) {
+    if (!list.length) return false;
+    const keys = {};
+    list.forEach(function (n) { keys[tileKey(n.row, n.col)] = true; });
+    const seen = {};
+    const q = [list[0]];
+    seen[tileKey(list[0].row, list[0].col)] = true;
+    let n = 0;
+    while (q.length) {
+      const cur = q.pop();
+      n += 1;
+      CARDINALS.forEach(function (d) {
+        const key = tileKey(cur.row + d[0], cur.col + d[1]);
+        if (!keys[key] || seen[key]) return;
+        seen[key] = true;
+        q.push({ row: cur.row + d[0], col: cur.col + d[1] });
+      });
+    }
+    return n === list.length;
+  }
+  assert(clusterConnected(state.nexuses.player), 'defense nexuses share edges like an Into the Breach block');
+  assert(clusterSpan(state.nexuses.player) <= 2, 'cluster tiles stay packed, not spread across the board');
+  assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
+  assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
 
+  let asym = false;
+  let seed;
+  for (seed = 1; seed <= 40 && !asym; seed++) {
+    resetMatch(state, seed, { gameMode: 'defense' });
+    [state.mountains, state.water].forEach(function (map) {
+      Object.keys(map).forEach(function (k) {
+        const p = k.split(',');
+        const r = parseInt(p[0], 10);
+        const c = parseInt(p[1], 10);
+        if (!map[(BOARD_SIZE - 1 - r) + ',' + c]) asym = true;
+      });
+    });
+  }
+  assert(asym, 'defense terrain is not forced to a vertical mirror');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const incoming = defensePawns(state, ['emerging'])[0];
+  assert(incoming && incoming.row != null, 'incoming marker has a tile');
+  assert(!canSummonAt(state, incoming.row, incoming.col, 'player'), 'cannot drop on an emerging pawn');
+  const midTiles = getPlayerSummonTiles(state).filter(function (t) { return t.row < SUMMON_ROW_START; });
+  assert(midTiles.length > 0, 'defense can drop outside the back 3 rows');
+  const frontTiles = getPlayerSummonTiles(state).filter(function (t) { return t.row < ENEMY_ROW_END; });
+  assert(frontTiles.length > 0, 'defense can drop in the enemy spawn rows');
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  state.mana = 10;
+  const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const drop = simSummon(state, dropper, 3, 4, 'player');
+  assert(drop.some(e => e.type === 'summon'), 'defense summon emits summon, not a portal');
+  assert(!drop.some(e => e.type === 'portal'), 'defense summon skips the portal delay');
+  assert(dropper.state === 'onboard' && dropper.row === 3 && dropper.col === 4, 'wizard lands immediately');
+  assert(!portalAt(state, 3, 4), 'no portal token on an instant drop');
+  assert(canMove(dropper) && canAttack(dropper), 'dropped wizard can move and attack this turn');
+  assert(getMoveTiles(state, dropper).length > 0, 'dropped wizard has a move range');
+  assert(!canSummonAt(state, 8, 0, 'player'), 'still cannot drop on a nexus');
+
+  state.nexuses.player.forEach(function (n) { n.hp = 0; });
+  assert(checkWinLoss(state) === 'enemy', 'defense loses when the cluster falls');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  assert(!canSummonAt(state, 3, 4, 'player'), 'vs still cannot summon mid-board');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
   Object.values(state.wizards).forEach(function (w) {
     if (w.team === 'enemy') {
       w.state = 'dead';
@@ -1010,6 +1114,12 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
   const pyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   pyre.state = 'onboard';
   pyre.row = 5;

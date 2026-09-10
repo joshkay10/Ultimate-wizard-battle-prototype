@@ -1,10 +1,14 @@
 function checkWinLoss(match) {
   const mineDead = teamNexusesFallen(match, 'player');
+  if (isDefenseMode(match)) {
+    if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
+    return null;
+  }
   const enemyDead = teamNexusesFallen(match, 'enemy');
   if (mineDead && enemyDead) return 'draw';
 
   const playerWiped = mineDead || !teamHasPresence(match, 'player');
-  const enemyWiped = enemyDead || (!isDefenseMode(match) && !teamHasPresence(match, 'enemy'));
+  const enemyWiped = enemyDead || !teamHasPresence(match, 'enemy');
 
   if (playerWiped && enemyWiped) return 'draw';
   if (playerWiped) return 'enemy';

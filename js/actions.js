@@ -14,7 +14,13 @@ function placeWizard(row, col) {
   const wizard = state.wizards[state.placingWizardId];
   if (!wizard) return;
   const events = simSummon(state, wizard, row, col, 'player');
-  if (events.length) state.placingWizardId = null;
+  if (events.length) {
+    state.placingWizardId = null;
+    if (wizard.state === 'onboard') {
+      state.selectedWizardId = wizard.id;
+      state.selectedAction = 'move';
+    }
+  }
   present(events).then(afterPlayerAction);
 }
 

@@ -91,7 +91,7 @@ function renderPanel() {
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows. ' + state.wizards[state.placingWizardId].name + ' arrives at the start of your next turn.</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' drops in immediately.' : ' arrives at the start of your next turn.') + '</div>'
     : '';
 
   const logLines = recentLogLines(5);
@@ -202,10 +202,14 @@ function renderGameOverOverlay() {
     sub = 'all nexuses on both sides fell at the same time';
   } else if (state.gameOverResult === 'player') {
     heading = 'you win';
-    sub = 'all enemy nexuses fell, or their wizards were wiped out';
+    sub = state.gameMode === 'defense'
+      ? 'you held the cluster'
+      : 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
     heading = 'you lose';
-    sub = 'all of your nexuses fell, or your wizards were wiped out';
+    sub = state.gameMode === 'defense'
+      ? 'your nexuses fell, or your wizards were wiped out'
+      : 'all of your nexuses fell, or your wizards were wiped out';
   }
   return (
     '<div class="game-over-overlay">' +

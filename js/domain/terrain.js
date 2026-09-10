@@ -207,6 +207,10 @@ function generateWaterInto(match, mountains, water) {
 }
 
 function generateTerrain(match) {
+  if (match.gameMode === 'defense') {
+    generateDefenseTerrain(match);
+    return;
+  }
   if (!match.rng) {
     match.mountains = fallbackMountains(match);
     match.water = {};
@@ -228,6 +232,140 @@ function generateTerrain(match) {
 
   if (countOpenSummonTiles(match, mountains, water, 'player') < 6 || countOpenSummonTiles(match, mountains, water, 'enemy') < 6) {
     match.mountains = fallbackMountains(match);
+    match.water = {};
+    return;
+  }
+  match.mountains = mountains;
+  match.water = water;
+}
+
+function stampOne(match, map, mountains, water, row, col) {
+  if (!terrainAllowed(match, row, col, mountains, water)) return false;
+  map[tileKey(row, col)] = true;
+  return true;
+}
+
+function pruneSingletons(map) {
+  Object.keys(map).forEach(function (key) {
+    const tile = parseTileKey(key);
+    const neighbors = CARDINALS.filter(function (d) {
+      return map[tileKey(tile.row + d[0], tile.col + d[1])];
+    }).length;
+    if (neighbors === 0) delete map[key];
+  });
+}
+
+function growUnmirroredCluster(match, map, mountains, water, seed, size, edgeBias) {
+  if (!seed) return;
+  const body = [];
+  if (stampOne(match, map, mountains, water, seed.row, seed.col)) body.push(seed);
+  let guard = 0;
+  while (body.length < size && guard++ < 36) {
+    const from = body[match.rng.int(body.length)];
+    if (!from) break;
+    const neigh = [];
+    CARDINALS.forEach(function (d) {
+      const nr = from.row + d[0];
+      const nc = from.col + d[1];
+      if (!terrainAllowed(match, nr, nc, mountains, water)) return;
+      const lr = Math.min(nc, BOARD_SIZE - 1 - nc);
+      let weight = 1;
+      if (edgeBias) weight = lr === 0 ? 6 : lr === 1 ? 3 : 1;
+      else weight = lr <= 1 ? 1 : 3;
+      let i;
+      for (i = 0; i < weight; i++) neigh.push({ row: nr, col: nc });
+    });
+    if (!neigh.length) continue;
+    const next = neigh[match.rng.int(neigh.length)];
+    if (stampOne(match, map, mountains, water, next.row, next.col)) body.push(next);
+  }
+}
+
+function pickUnmirroredSeed(match, mountains, water, cols, minRow, maxRow, colWeight) {
+  const opts = [];
+  cols.forEach(function (c) {
+    let r;
+    for (r = minRow; r <= maxRow; r++) {
+      if (!terrainAllowed(match, r, c, mountains, water)) continue;
+      const copies = colWeight(c, r);
+      let i;
+      for (i = 0; i < copies; i++) opts.push({ row: r, col: c });
+    }
+  });
+  if (!opts.length) return null;
+  return opts[match.rng.int(opts.length)];
+}
+
+function generateDefenseTerrain(match) {
+  if (!match.rng) {
+    match.mountains = { '1,0': true, '2,0': true, '1,8': true, '2,8': true, '3,8': true };
+    match.water = {};
+    return;
+  }
+  const mountains = {};
+  const water = {};
+  function edgeWeight(c, r) {
+    const edge = (c === 0 || c === 8) ? 6 : (c === 1 || c === 7) ? 3 : 1;
+    return edge * (r <= 2 ? 2 : 3);
+  }
+  growUnmirroredCluster(
+    match, mountains, mountains, water,
+    pickUnmirroredSeed(match, mountains, water, [0, 1, 2], 0, 6, edgeWeight),
+    3 + match.rng.int(3),
+    true
+  );
+  growUnmirroredCluster(
+    match, mountains, mountains, water,
+    pickUnmirroredSeed(match, mountains, water, [8, 7, 6], 0, 7, edgeWeight),
+    2 + match.rng.int(4),
+    true
+  );
+  if (match.rng.next() < 0.35) {
+    growUnmirroredCluster(
+      match, mountains, mountains, water,
+      pickUnmirroredSeed(match, mountains, water, [0, 8, 1, 7], 3, 8, edgeWeight),
+      2 + match.rng.int(3),
+      true
+    );
+  }
+  pruneSingletons(mountains);
+  if (match.rng.next() < 0.55) {
+    function lakeWeight(c, r) {
+      const lr = Math.min(c, BOARD_SIZE - 1 - c);
+      return (lr <= 1 ? 1 : 4) * (r <= 1 ? 1 : 3);
+    }
+    const groups = 1 + match.rng.int(2);
+    let g;
+    for (g = 0; g < groups; g++) {
+      growUnmirroredCluster(
+        match, water, mountains, water,
+        pickUnmirroredSeed(match, mountains, water, [2, 3, 4, 5, 6], 1, 6, lakeWeight),
+        2 + match.rng.int(3),
+        false
+      );
+    }
+    pruneSingletons(water);
+  }
+  if (!campsConnected(match, mountains, water)) {
+    Object.keys(water).forEach(function (key) { delete water[key]; });
+  }
+  if (!campsConnected(match, mountains, water)) {
+    match.mountains = { '0,0': true, '1,0': true, '0,8': true, '2,8': true, '3,7': true };
+    match.water = {};
+    return;
+  }
+  let spawnOpen = 0;
+  let r;
+  let c;
+  for (r = 0; r < ENEMY_ROW_END; r++) {
+    for (c = 0; c < BOARD_SIZE; c++) {
+      if (nexusAt(match, r, c)) continue;
+      if (terrainTaken(r, c, mountains, water)) continue;
+      spawnOpen += 1;
+    }
+  }
+  if (spawnOpen < 4) {
+    match.mountains = { '0,0': true, '1,0': true, '0,8': true, '2,8': true };
     match.water = {};
     return;
   }
