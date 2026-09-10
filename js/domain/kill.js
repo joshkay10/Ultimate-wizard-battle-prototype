@@ -12,6 +12,7 @@ function simKill(match, wizard) {
   wizard.state = 'dead';
   wizard.row = null;
   wizard.col = null;
+  wizard.moveUndo = null;
   if (match.selectedWizardId === wizard.id) match.selectedWizardId = null;
   return ev;
 }
@@ -72,7 +73,17 @@ function applyWindCarry(match, wizard, dr, dc, travelled) {
     if (!trail || trail.element !== 'wind') break;
     const nr = wizard.row + dr;
     const nc = wizard.col + dc;
-    if (crashObstacle(match, nr, nc)) break;
+    const crash = crashObstacle(match, nr, nc);
+    if (crash) {
+      events.push.apply(events, applyCrashDamage(match, wizard, crash, CRASH_DAMAGE));
+      if (crash.kind === 'wizard') {
+        const other = match.wizards[crash.wizardId];
+        if (other && other.state === 'onboard') {
+          events.push.apply(events, simPush(match, other, dr, dc, 1));
+        }
+      }
+      break;
+    }
     wizard.row = nr;
     wizard.col = nc;
     travelled.push({ row: nr, col: nc });

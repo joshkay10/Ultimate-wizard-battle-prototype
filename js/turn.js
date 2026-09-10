@@ -5,6 +5,7 @@ function canAct() {
 async function maybeAutoEndTurn() {
   if (state.gameOverResult || state.animating) return;
   if (state.currentTurn !== 'player') return;
+  if (teamHasMoveUndo(state, 'player')) return;
   if (playerHasLegalAction(state)) return;
   await endTurn();
 }

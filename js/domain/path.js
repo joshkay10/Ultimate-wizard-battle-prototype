@@ -15,9 +15,9 @@ function getMoveTiles(match, wizard) {
         const key = tileKey(nr, nc);
         if (visited[key]) continue;
         if (isBlocked(match, nr, nc)) continue;
+        if (hazardAt(match, nr, nc)) continue;
         visited[key] = true;
         result.push({ row: nr, col: nc });
-        if (hazardAt(match, nr, nc)) continue;
         next.push({ row: nr, col: nc, dist: cell.dist + 1 });
       }
     }
@@ -210,13 +210,13 @@ function pathBFS(match, wizard, targetRow, targetCol) {
         const key = tileKey(nr, nc);
         if (visited[key]) continue;
         if (isBlocked(match, nr, nc)) continue;
+        if (hazardAt(match, nr, nc)) continue;
         visited[key] = true;
         prev[key] = cell;
         if (nr === targetRow && nc === targetCol) {
           found = true;
           break;
         }
-        if (hazardAt(match, nr, nc)) continue;
         next.push({ row: nr, col: nc });
       }
       if (found) break;

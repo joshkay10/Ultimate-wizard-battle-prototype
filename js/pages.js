@@ -31,9 +31,42 @@ function renderTodoPage() {
       '<p class="need-note">Element icons are in. Wizard poses and terrain tiles still help if you have them.</p>' +
       '<ul class="todo-list">' +
         item('<strong>Wizard sprites</strong> if you have them: one pose per kit is enough (Pyre, Rime, Squall, Cairn, Volt, Chrono). Square, transparent. Board tokens and/or card art. Player vs enemy variants are extra, not required.', 'need') +
-        item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat. Magma, ice frost, and voids are painted in code now; sprites can replace them.', 'need') +
+        item('<strong>Terrain tiles</strong> (optional): magma, ice frost, wind, water, mountain, void. 64×64 tiles that can repeat.', 'need') +
       '</ul>' +
-      '<p class="need-note">Not blocking: send sprites when you have them. Code items on this list are done.</p>' +
+
+      '<h2>Loop</h2>' +
+      '<ul class="todo-list">' +
+        item('<strong>Enemy intent</strong> — show what the AI will hit before you move, Into the Breach style.') +
+        item('<strong>Seeded daily / share seed</strong> — one board + enemy roll to race and send.') +
+        item('<strong>Short run</strong> — three fights, pick a spell upgrade between them.') +
+        item('<strong>Draft bigger</strong> — see more spells, lock one per body, leftover become the shop.') +
+        item('<strong>First-fight tutorial</strong> — one scripted board for portal, crash chain, ice slide, undo.') +
+      '</ul>' +
+
+      '<h2>Combat</h2>' +
+      '<ul class="todo-list">' +
+        item('<strong>Pull / grab spells</strong> — yank so chains go both ways.') +
+        item('<strong>Unit statuses</strong> — burn on the body, wet, rooted. Trails stay; this is extra.') +
+        item('<strong>Overwatch</strong> — a spell that fires when someone steps a painted line.') +
+        item('<strong>More bodies</strong> — new kits, not just more spells on the six.') +
+        item('<strong>Hazard paint</strong> — drop a one-tile water or pit.') +
+      '</ul>' +
+
+      '<h2>Board / feel</h2>' +
+      '<ul class="todo-list">' +
+        item('<strong>Speed toggle</strong> — slow / normal / skip FX.') +
+        item('<strong>Turn recap</strong> — tap the log to replay the last push chain.') +
+        item('<strong>Mobile hit targets</strong> — bigger tokens and a fatter action row.') +
+        item('<strong>Colorblind trails</strong> — pattern overlay on fire / ice / wind.') +
+      '</ul>' +
+
+      '<h2>Meta</h2>' +
+      '<ul class="todo-list">' +
+        item('<strong>Hotseat</strong> — pass the same browser, no net.') +
+        item('<strong>Best-of vs a locked AI seed</strong> — for tuning hunter.') +
+        item('<strong>Rules examples</strong> — one still per unique cast on the Rules page.') +
+      '</ul>' +
+      '<p class="need-note">Not blocking: send sprites when you have them.</p>' +
     '</article>'
   );
 }

@@ -55,24 +55,17 @@ function ensureMatch() {
 
 function renderPanel() {
   const wizardCards = Object.values(state.wizards)
-    .filter(w => w.team === 'player' && w.state !== 'dead')
-    .sort((a, b) => {
-      const aUsed = a.state === 'summoned' ? 0 : 1;
-      const bUsed = b.state === 'summoned' ? 0 : 1;
-      if (aUsed !== bUsed) return aUsed - bUsed;
-      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-    })
+    .filter(w => w.team === 'player' && (w.state === 'summoned' || w.state === 'portaling'))
+    .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10))
     .map(wiz => {
       const inHand = wiz.state === 'summoned';
       const arriving = wiz.state === 'portaling';
       const isPicked = wiz.id === state.placingWizardId;
-      const isBoardSelected = wiz.id === state.selectedWizardId;
-      const clickable = inHand ? state.mana >= wiz.cost : wiz.state === 'onboard';
+      const clickable = inHand && state.mana >= wiz.cost;
       const cardClasses = 'wizard-card ' + wiz.element
         + (inHand ? ' in-hand' : ' summoned')
         + (arriving ? ' arriving' : '')
-        + (isPicked ? ' placing' : '')
-        + (isBoardSelected ? ' board-selected' : '');
+        + (isPicked ? ' placing' : '');
 
       return (
         '<div class="' + cardClasses + '">' +
@@ -96,11 +89,10 @@ function renderPanel() {
     })
     .join('');
 
+  const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
     ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows. ' + state.wizards[state.placingWizardId].name + ' arrives at the start of your next turn.</div>'
-    : (state.selectedWizardId && state.wizards[state.selectedWizardId] && state.selectedAction === 'cast'
-      ? '<div class="no-selection-hint"><strong>' + spellLabel(state.wizards[state.selectedWizardId]) + '</strong> — ' + castHintFor(state.wizards[state.selectedWizardId]) + '</div>'
-      : '');
+    : '';
 
   const logLines = recentLogLines(5);
   const logHtml = logLines.length
@@ -109,20 +101,60 @@ function renderPanel() {
     }).join('') + '</ul>'
     : '';
 
+  const handLabel = wizardCards ? '<p class="panel-section-label">in hand</p><div class="wizard-grid">' + wizardCards + '</div>' : '';
+
   return (
     '<div class="panel">' +
       placingHint +
       '<div>' +
-        renderActionRow() +
-        (wizardCards ? '<p class="panel-section-label">wizards</p><div class="wizard-grid">' + wizardCards + '</div>' : '') +
+        renderInspect(selected) +
+        renderActionRow(selected) +
+        handLabel +
         logHtml +
       '</div>' +
     '</div>'
   );
 }
 
-function renderActionRow() {
-  const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+function wizardStatusBits(wiz) {
+  const bits = [];
+  if (wiz.silenceSkip) bits.push('silenced — no attack');
+  else if (wiz.silenced) bits.push('silenced');
+  if (wiz.hasMoved) bits.push('moved');
+  else bits.push('can move');
+  if (wiz.hasAttacked && !wiz.silenceSkip) bits.push('attacked');
+  else if (!wiz.hasAttacked) bits.push('can attack');
+  return bits;
+}
+
+function renderInspect(selected) {
+  if (!selected || selected.state !== 'onboard' || state.placingWizardId) {
+    if (state.selectedWizardId && state.wizards[state.selectedWizardId] && state.selectedAction === 'cast' && !state.placingWizardId) {
+      const wiz = state.wizards[state.selectedWizardId];
+      return '<div class="no-selection-hint"><strong>' + spellLabel(wiz) + '</strong> — ' + castHintFor(wiz) + '</div>';
+    }
+    return '';
+  }
+  const bits = wizardStatusBits(selected);
+  const hint = state.selectedAction === 'cast' && selected.team === 'player'
+    ? '<div class="inspect-hint"><strong>' + spellLabel(selected) + '</strong> — ' + castHintFor(selected) + '</div>'
+    : '';
+  const enemyTag = selected.team === 'enemy' ? ' <span class="arriving-tag">enemy</span>' : '';
+  return (
+    '<div class="inspect ' + selected.element + '">' +
+      '<div class="inspect-icon ' + selected.element + '">' + iconSpan(selected.element, '#ffffff') + '</div>' +
+      '<div class="inspect-copy">' +
+        '<div class="inspect-name">' + selected.name + enemyTag + '</div>' +
+        '<div class="inspect-spell">' + (selected.spellName || selected.element) + ' · ' + selected.hp + '/' + selected.maxHp + ' hp</div>' +
+        '<div class="inspect-status">' + bits.join(' · ') + '</div>' +
+      '</div>' +
+      hint +
+    '</div>'
+  );
+}
+
+function renderActionRow(selected) {
+  selected = selected || (state.selectedWizardId ? state.wizards[state.selectedWizardId] : null);
   const usable = !!(
     selected &&
     selected.state === 'onboard' &&
@@ -131,16 +163,22 @@ function renderActionRow() {
     !state.animating &&
     canAct()
   );
+  const moved = !!(selected && selected.hasMoved);
+  const attacked = !!(selected && selected.hasAttacked);
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
-
+  const undoOk = usable && canUndoMove(selected);
   const castLabel = selected ? spellLabel(selected).toLowerCase() : 'cast';
+  const moveLabel = moved ? 'moved' : 'move';
+  const meleeLabel = attacked ? 'spent' : 'melee';
+  const spentCast = attacked ? 'spent' : castLabel;
 
   return (
     '<div class="action-row">' +
-      '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' move</button>' +
-      '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' melee</button>' +
-      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' ' + castLabel + '</button>' +
+      '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + (moved ? ' spent' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' ' + moveLabel + '</button>' +
+      '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' ' + meleeLabel + '</button>' +
+      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' ' + spentCast + '</button>' +
+      '<button class="action-btn undo" id="undo-move-btn" ' + (undoOk ? '' : 'disabled') + '>undo</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
   );
@@ -185,9 +223,13 @@ function attachHandlers() {
 
   document.querySelectorAll('.action-btn').forEach(el => {
     el.addEventListener('click', () => {
+      if (el.id === 'undo-move-btn') return;
       setAction(el.getAttribute('data-action'));
     });
   });
+
+  const undoBtn = document.getElementById('undo-move-btn');
+  if (undoBtn) undoBtn.addEventListener('click', undoSelectedMove);
 
   const endTurnBtn = document.getElementById('end-turn-btn');
   if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);

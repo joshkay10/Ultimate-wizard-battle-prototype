@@ -392,7 +392,7 @@ html, body {
 
 .action-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) auto;
+  grid-template-columns: repeat(3, 1fr) auto auto;
   gap: 6px;
   margin: 0 0 12px;
 }
@@ -427,6 +427,58 @@ html, body {
 .action-btn.active.melee { border-color: var(--tile-melee-border); background: var(--tile-melee); color: #8a2b23; }
 .action-btn.active.cast { border-color: var(--tile-cast-border); background: var(--tile-cast); color: #7a5411; }
 .action-btn.active.move { border-color: var(--tile-move-border); background: var(--tile-move); color: #2c5a8a; }
+.action-btn.spent {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+.action-btn.undo {
+  min-width: 52px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.inspect {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.inspect.fire { border-color: var(--fire); }
+.inspect.ice { border-color: var(--ice); }
+.inspect.wind { border-color: var(--wind); }
+.inspect.earth { border-color: var(--earth); }
+.inspect.lightning { border-color: var(--lightning); }
+.inspect.temporal { border-color: var(--temporal); }
+.inspect-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inspect-icon.fire { background: var(--fire); color: #fff; }
+.inspect-icon.ice { background: var(--ice); color: #fff; }
+.inspect-icon.wind { background: var(--wind); color: #fff; }
+.inspect-icon.earth { background: var(--earth); color: #fff; }
+.inspect-icon.lightning { background: #8a6a12; color: #fff; }
+.inspect-icon.temporal { background: var(--temporal); color: #fff; }
+.inspect-icon .el-icon { width: 22px; height: 22px; }
+.inspect-name { font-size: 15px; font-weight: 800; }
+.inspect-spell { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.inspect-status { font-size: 11px; font-weight: 700; color: var(--text-faint); margin-top: 2px; }
+.inspect-hint {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--text-dim);
+}
 
 .no-selection-hint {
   font-size: 12px;

@@ -87,7 +87,9 @@ function spawnShelved(team, kind, extra) {
     hasMoved: false,
     hasAttacked: false,
     summoningSickness: false,
-    silenced: false
+    silenced: false,
+    silenceSkip: false,
+    moveUndo: null
   };
   if (extra) Object.keys(extra).forEach(function (k) { w[k] = extra[k]; });
   state.wizards[id] = w;
@@ -184,9 +186,58 @@ async function runSimSelfTests() {
   wallWiz.col = 4;
   wallWiz.hp = 8;
   simAttack(state, batter, 4, 3, 'melee');
-  assert(shoved.row === 4 && shoved.col === 3, 'crash into a wizard should stop the push');
+  assert(shoved.row === 4 && shoved.col === 3, 'first wizard stops on the wizard they hit');
   assert(shoved.hp === 12 - batter.meleeAttack - CRASH_DAMAGE, 'crashed wizard takes hit plus flat crash');
   assert(wallWiz.hp === 8 - CRASH_DAMAGE, 'the wizard they hit takes the same flat crash');
+  assert(wallWiz.row === 4 && wallWiz.col === 6, 'leftover knock slides the last wizard');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const chainAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const chainA = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const chainB = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  const chainC = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'earth');
+  chainAtk.state = 'onboard';
+  chainAtk.row = 4;
+  chainAtk.col = 1;
+  chainA.state = 'onboard';
+  chainA.row = 4;
+  chainA.col = 2;
+  chainA.hp = 12;
+  chainB.state = 'onboard';
+  chainB.row = 4;
+  chainB.col = 3;
+  chainB.hp = 8;
+  chainC.state = 'onboard';
+  chainC.row = 4;
+  chainC.col = 4;
+  chainC.hp = 14;
+  simAttack(state, chainAtk, 4, 2, 'melee');
+  assert(chainA.row === 4 && chainA.col === 2, 'packed first wizard stays');
+  assert(chainB.row === 4 && chainB.col === 3, 'packed middle wizard stays');
+  assert(chainC.row === 4 && chainC.col === 6, 'last wizard in the pile slides leftover pips');
+  assert(chainA.hp === 12 - chainAtk.meleeAttack - CRASH_DAMAGE, 'first collision hurts the lead wizard');
+  assert(chainB.hp === 8 - CRASH_DAMAGE - CRASH_DAMAGE, 'middle wizard is hurt by both collisions');
+  assert(chainC.hp === 14 - CRASH_DAMAGE, 'final wizard takes the last crash');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const edgeAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const edgeHit = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  edgeAtk.state = 'onboard';
+  edgeAtk.row = 4;
+  edgeAtk.col = BOARD_SIZE - 2;
+  edgeHit.state = 'onboard';
+  edgeHit.row = 4;
+  edgeHit.col = BOARD_SIZE - 1;
+  edgeHit.hp = 12;
+  simAttack(state, edgeAtk, 4, BOARD_SIZE - 1, 'melee');
+  assert(edgeHit.row === 4 && edgeHit.col === BOARD_SIZE - 1, 'arena edge does not knock them off the board');
+  assert(edgeHit.hp === 12 - edgeAtk.meleeAttack - CRASH_DAMAGE, 'hitting the arena edge still deals crash');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -220,6 +271,31 @@ async function runSimSelfTests() {
   allyHit.hp = 8;
   simAttack(state, allyAtk, 4, 4, 'melee');
   assert(allyHit.hp < 8, 'friendly fire is allowed');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  const walkerUndo = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  walkerUndo.state = 'onboard';
+  walkerUndo.row = 5;
+  walkerUndo.col = 4;
+  walkerUndo.hasMoved = false;
+  walkerUndo.hasAttacked = false;
+  const undoPath = [{ row: 5, col: 5 }];
+  simMove(state, walkerUndo, undoPath);
+  assert(walkerUndo.row === 5 && walkerUndo.col === 5, 'move lands on the dest tile');
+  assert(walkerUndo.hasMoved, 'move spends the move');
+  assert(canUndoMove(walkerUndo), 'can undo a move before attacking');
+  assert(teamHasMoveUndo(state, 'player'), 'team still has a pending move undo');
+  simUndoMove(state, walkerUndo);
+  assert(walkerUndo.row === 5 && walkerUndo.col === 4, 'undo restores the tile');
+  assert(!walkerUndo.hasMoved, 'undo restores the move');
+  assert(!canUndoMove(walkerUndo), 'undo is spent after undoing');
+
+  simMove(state, walkerUndo, undoPath);
+  simAttack(state, walkerUndo, 5, 6, 'cast');
+  assert(!canUndoMove(walkerUndo), 'cannot undo a move after a spell');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -404,9 +480,9 @@ async function runSimSelfTests() {
   assert(waterCast.some(t => t.row === 7 && t.col === 5), 'cast can target water');
   assert(waterCast.some(t => t.row === 7 && t.col === 7), 'cast continues past water');
   assert(getMeleeTiles(state, flyer).every(t => !waterAt(state, t.row, t.col)), 'melee cannot target water');
-  assert(getMoveTiles(state, flyer).some(t => t.row === 7 && t.col === 5), 'can step onto water');
+  assert(!getMoveTiles(state, flyer).some(t => t.row === 7 && t.col === 5), 'cannot walk onto water');
   const drown = simMove(state, flyer, [{ row: 7, col: 5 }]);
-  assert(flyer.state === 'dead', 'water kills on enter');
+  assert(flyer.state === 'dead', 'water still kills if you are forced onto it');
   assert(drown.some(e => e.type === 'death' && e.cause === 'water'), 'water death is logged');
 
   let waterMaps = 0;
@@ -760,7 +836,7 @@ async function runSimSelfTests() {
   lane.row = 4;
   lane.col = 4;
   const laneMoves = getMoveTiles(state, lane);
-  assert(laneMoves.some(t => t.row === 4 && t.col === 5), 'water is a legal last step');
+  assert(!laneMoves.some(t => t.row === 4 && t.col === 5), 'cannot walk onto water');
   assert(!laneMoves.some(t => t.row === 4 && t.col === 6), 'cannot path through water');
 
   resetMatch(state, 1);
@@ -865,6 +941,7 @@ async function runSimSelfTests() {
     holeWalker.col = crystal.col + 1;
   }
   holeWalker.hasMoved = false;
+  assert(!getMoveTiles(state, holeWalker).some(t => t.row === crystal.row && t.col === crystal.col), 'cannot walk onto a void');
   const fall = simMove(state, holeWalker, [{ row: crystal.row, col: crystal.col }]);
   assert(holeWalker.state === 'dead', 'void kills on enter');
   assert(fall.some(e => e.type === 'death' && e.cause === 'void'), 'void death is logged');

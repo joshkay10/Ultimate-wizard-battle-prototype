@@ -81,16 +81,16 @@ function renderRulesPage() {
       '<h2>Turn</h2>' +
       '<ol>' +
         '<li><strong>Summon</strong> — pay cost, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, with no sickness. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
-        '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, and mountains block. Water and voids kill if you enter.</li>' +
+        '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, mountains, water, and voids block. You cannot walk onto water or a void. Undo a move if that wizard has not attacked yet.</li>' +
         '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the spell says otherwise.</li>' +
-        '<li><strong>End turn</strong> — or it ends on its own when you have nothing left.</li>' +
+        '<li><strong>End turn</strong> — or it ends on its own when you have nothing left. A pending move-undo still counts, so the turn waits until you attack or undo.</li>' +
       '</ol>' +
 
       '<h2>Combat</h2>' +
       '<ul>' +
         '<li>Melee is adjacent (cardinals). Mountains, water, and voids are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
-        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1. Into a nexus = the crystal also takes 1. Water and voids are not walls — you are pushed on and you die.</li>' +
+        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1, even if you do not move. Into a wizard = both take 1, then leftover knock transfers — a packed line can hurt everyone, and the last wizard slides. Into a nexus = the crystal also takes 1. Water and voids are not walls — you slide onto the tile and fall.</li>' +
         '<li>Friendly fire is on. Pulse, jolt, and bursts hit everyone in the area, including you.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +

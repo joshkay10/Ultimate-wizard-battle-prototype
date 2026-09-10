@@ -21,12 +21,12 @@ function placeWizard(row, col) {
 function selectWizard(id) {
   if (state.animating || !canAct()) return;
   const wizard = state.wizards[id];
-  if (!wizard || wizard.state !== 'onboard' || wizard.team !== 'player') return;
+  if (!wizard || wizard.state !== 'onboard') return;
   if (state.selectedWizardId === id) {
     state.selectedWizardId = null;
   } else {
     state.selectedWizardId = id;
-    state.selectedAction = 'move';
+    state.selectedAction = wizard.team === 'player' ? 'move' : null;
   }
   render();
 }
@@ -39,8 +39,20 @@ function deselect() {
 
 function setAction(action) {
   if (!state.selectedWizardId || state.animating || !canAct()) return;
+  const wizard = state.wizards[state.selectedWizardId];
+  if (!wizard || wizard.team !== 'player') return;
   state.selectedAction = action;
   render();
+}
+
+function undoSelectedMove() {
+  if (state.animating || !canAct()) return;
+  const wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  if (!canUndoMove(wizard)) return;
+  present(simUndoMove(state, wizard)).then(function () {
+    state.selectedAction = 'move';
+    afterPlayerAction();
+  });
 }
 
 function handleTileClick(row, col) {
@@ -63,6 +75,11 @@ function handleTileClick(row, col) {
     const occ = wizardAt(state, row, col);
     if (occ && occ.id !== wizard.id) selectWizard(occ.id);
   };
+
+  if (wizard.team !== 'player') {
+    reselectOrBail();
+    return;
+  }
 
   if (state.selectedAction === 'move') {
     if (!canMove(wizard)) { reselectOrBail(); return; }

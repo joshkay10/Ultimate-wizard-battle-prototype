@@ -72,16 +72,16 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 On your turn you may, in any order:
 
 1. **Summon** — pay a wizard’s cost and open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
-2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, and mountains block the path. Water and voids do not block — they kill you if you enter.
+2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
-4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own.
+4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
 
 ## Combat
 
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains, water, and voids are not melee targets.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away (0 push means they stay).
-- **Crash:** if the push hits a wall (edge, mountain, or living nexus), the pushed wizard takes **1** damage. A crash into a **nexus** also deals 1 to the crystal. Leftover push distance does not add more. Water and voids are not walls — you are pushed on and you die.
-- If they crash into **another wizard**, both take that 1. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse, jolt, and bursts hit everyone in the area.
+- **Crash:** if the push hits a wall (edge, mountain, or living nexus), the pushed wizard takes **1** damage — even if they never leave their tile. A crash into a **nexus** also deals 1 to the crystal. Hitting **another wizard** deals 1 to both, then leftover knockback transfers into that wizard: they may crash the next body in line, and the last one slides. A line of five can hurt five. Water and voids are not walls — you are pushed onto the tile and you fall (the token shrinks down). Wind carry into a wall or wizard also crashes.
+- Friendly fire is on — you can melee or cast your own wizards. Pulse, jolt, and bursts hit everyone in the area.
 - HP 0 = dead, token leaves the board.
 - Stream, gust, sheet, draft, pulse, inferno, blizzard, gale, and cinder leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for paint spells — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
   - **Fire:** walking, sliding, or arriving onto it costs 1 damage.

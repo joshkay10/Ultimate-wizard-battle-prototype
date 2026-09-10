@@ -34,6 +34,7 @@ function crashObstacle(match, row, col) {
 
 function applyCrashDamage(match, pushed, crash, amount) {
   const events = [];
+  if (!pushed || pushed.state !== 'onboard') return events;
   pushed.hp -= amount;
   events.push({
     type: 'damage',
@@ -70,11 +71,14 @@ function applyCrashDamage(match, pushed, crash, amount) {
   return events;
 }
 
-function simPush(match, target, dr, dc, amount) {
-  const from = { row: target.row, col: target.col };
-  const planned = getDisplacementPath(match, target, dr, dc, amount);
+function simPush(match, target, dr, dc, amount, depth) {
+  depth = depth || 0;
+  if (!target || target.state !== 'onboard' || !amount || depth > BOARD_SIZE) return [];
+  clearMoveUndo(target);
   const events = [];
   const extra = [];
+  const from = { row: target.row, col: target.col };
+  const planned = getDisplacementPath(match, target, dr, dc, amount);
   const travelled = [];
   for (let i = 0; i < planned.path.length; i++) {
     const step = planned.path[i];
@@ -85,7 +89,7 @@ function simPush(match, target, dr, dc, amount) {
     if (target.state !== 'onboard') break;
   }
   const finished = travelled.length === planned.path.length && target.state === 'onboard';
-  if (finished) {
+  if (finished && !planned.crash) {
     extra.push.apply(extra, applyWindCarry(match, target, dr, dc, travelled));
   }
   events.push({
@@ -97,8 +101,15 @@ function simPush(match, target, dr, dc, amount) {
     crash: planned.crash
   });
   events.push.apply(events, extra);
-  if (finished && planned.crash) {
+  if (target.state !== 'onboard') return events;
+  if (planned.crash) {
     events.push.apply(events, applyCrashDamage(match, target, planned.crash, CRASH_DAMAGE));
+    if (planned.crash.kind === 'wizard' && planned.tilesShort > 0) {
+      const other = match.wizards[planned.crash.wizardId];
+      if (other && other.state === 'onboard') {
+        events.push.apply(events, simPush(match, other, dr, dc, planned.tilesShort, depth + 1));
+      }
+    }
   }
   return events;
 }

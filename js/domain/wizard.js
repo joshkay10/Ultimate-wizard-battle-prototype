@@ -18,7 +18,9 @@ function createWizard(match, typeId, team, spellId) {
     hasMoved: false,
     hasAttacked: false,
     summoningSickness: false,
-    silenced: false
+    silenced: false,
+    silenceSkip: false,
+    moveUndo: null
   };
   applySpellToWizard(wizard, spellById(normalizeSpellId(typeId, spellId)));
   match.wizards[id] = wizard;
@@ -41,16 +43,29 @@ function canAttack(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked);
 }
 
+function clearMoveUndo(wizard) {
+  if (wizard) wizard.moveUndo = null;
+}
+
+function teamHasMoveUndo(match, team) {
+  return Object.values(match.wizards).some(function (wizard) {
+    return wizard.team === team && canUndoMove(wizard);
+  });
+}
+
 function resetActionFlagsFor(match, team) {
   Object.values(match.wizards).forEach(function (wizard) {
     if (wizard.state === 'onboard' && wizard.team === team) {
       wizard.hasMoved = false;
       wizard.summoningSickness = false;
+      wizard.moveUndo = null;
       if (wizard.silenced) {
         wizard.hasAttacked = true;
+        wizard.silenceSkip = true;
         wizard.silenced = false;
       } else {
         wizard.hasAttacked = false;
+        wizard.silenceSkip = false;
       }
     }
   });
@@ -60,6 +75,7 @@ function applySilence(match, wizard) {
   if (!wizard || wizard.state !== 'onboard') return;
   if (wizard.team === match.currentTurn && !wizard.hasAttacked) {
     wizard.hasAttacked = true;
+    wizard.silenceSkip = true;
     wizard.silenced = false;
     return;
   }

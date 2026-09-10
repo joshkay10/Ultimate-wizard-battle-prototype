@@ -44,6 +44,11 @@ function describeEvent(ev) {
     return actorName(ev.wizardId) + ' moves' + (dir ? ' ' + dir : '');
   }
 
+  if (ev.type === 'undoMove') {
+    const dir = ev.from && ev.to ? compassWord(ev.from.row, ev.from.col, ev.to.row, ev.to.col) : '';
+    return actorName(ev.wizardId) + ' undoes the move' + (dir ? ' ' + dir : '');
+  }
+
   if (ev.type === 'attack') {
     if (ev.castKind === 'swap' || ev.castKind === 'raise' || ev.castKind === 'blink') return '';
     const who = actorName(ev.attackerId);

@@ -11,6 +11,7 @@ const boardFx = {
   screenFlash: 0,
   popScale: {},
   fade: {},
+  fall: {},
   lungeReturn: null,
   stream: null,
   gust: null,
@@ -133,7 +134,7 @@ function highlightSet() {
         if (canOpenPortalAt(state, r, c)) tiles.push({ row: r, col: c });
       }
     }
-  } else if (selectedWizard && !state.animating) {
+  } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
     if (state.selectedAction === 'move' && canMove(selectedWizard)) {
       return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
     }
@@ -729,17 +730,35 @@ function drawPuckBody(ctx, cx, cy, r, yours, flash) {
   }
 }
 
+function drawActionPip(ctx, x, y, r, spent, yours) {
+  ctx.beginPath();
+  canvasArc(ctx, x, y, r);
+  if (spent) {
+    ctx.fillStyle = yours ? 'rgba(28,30,27,0.45)' : 'rgba(244,245,242,0.35)';
+    ctx.fill();
+  } else {
+    ctx.fillStyle = yours ? '#f4f5f2' : '#1c1e1b';
+    ctx.fill();
+    ctx.strokeStyle = yours ? 'rgba(28,30,27,0.35)' : 'rgba(244,245,242,0.45)';
+    ctx.lineWidth = Math.max(1, r * 0.35);
+    ctx.stroke();
+  }
+}
+
 function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cx = box.x + box.s / 2;
-  const cy = box.y + box.s / 2;
+  const fall = boardFx.fall[wizard.id] || 0;
+  const cy = box.y + box.s / 2 + fall;
   scale = tokenPopScale(scale);
   const r = box.s * 0.36;
   const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
   const yours = wizard.team !== 'enemy';
+  const spentTurn = wizard.team === state.currentTurn && wizard.hasMoved && wizard.hasAttacked;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
+  if (spentTurn && !flash) ctx.globalAlpha = 0.55;
   drawPuckBody(ctx, cx, cy, r, yours, flash);
   if (!flash) {
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
@@ -756,6 +775,12 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
   }
   ctx.restore();
+  if (!flash && wizard.team === state.currentTurn) {
+    const pipR = Math.max(1.8, box.s * 0.038);
+    const pipY = cy - r * 0.78;
+    drawActionPip(ctx, cx - r * 0.22, pipY, pipR, wizard.hasMoved, yours);
+    drawActionPip(ctx, cx + r * 0.22, pipY, pipR, wizard.hasAttacked, yours);
+  }
   if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - r * 0.14, r * 0.48, elColor);
   if (wizard.silenced && !flash) {
     ctx.save();
@@ -1103,6 +1128,7 @@ function resetBoardFx() {
   boardFx.screenFlash = 0;
   boardFx.popScale = {};
   boardFx.fade = {};
+  boardFx.fall = {};
   boardFx.lungeReturn = null;
   boardFx.stream = null;
   boardFx.gust = null;

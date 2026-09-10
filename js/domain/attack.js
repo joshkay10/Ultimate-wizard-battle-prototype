@@ -2,6 +2,7 @@ function simAttack(match, attacker, row, col, kind) {
   if (!canAttack(attacker) || attacker.row === null) return [];
   const legal = kind === 'cast' ? getCastTiles(match, attacker) : getMeleeTiles(match, attacker);
   if (!legal.some(function (tile) { return tile.row === row && tile.col === col; })) return [];
+  clearMoveUndo(attacker);
 
   if (kind === 'cast' && attacker.castKind === 'pulse') return simPulse(match, attacker, row, col);
   if (kind === 'cast' && attacker.castKind === 'raise') return simRaise(match, attacker, row, col);
