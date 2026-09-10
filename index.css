@@ -714,6 +714,14 @@ html, body {
   margin: 0 0 14px;
 }
 .team-count.ready { color: var(--text); }
+.team-sub {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 16px 0 8px;
+}
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -766,6 +774,36 @@ html, body {
 .team-slot.lightning { border-color: var(--lightning); }
 .team-slot.temporal { border-color: var(--temporal); }
 .team-slot.selected { background: var(--tile-selected); }
+.team-slot.empty {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  background: #fafaf8;
+}
+.team-empty {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+.team-slot-remove {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.team-slot-remove:hover { color: var(--text); }
+.team-kit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .team-slot .team-kit {
   border: 0;
   padding: 4px 4px 4px 2px;

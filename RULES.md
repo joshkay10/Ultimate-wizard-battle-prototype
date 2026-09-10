@@ -4,11 +4,12 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 
 ## Team
 
-- Six kits in the pool. You bring **exactly three**, and each kit brings **one spell** from its element.
+- Six kits in the pool. You bring **exactly four**. Copies are allowed. Each body brings **one spell** from its element — two Rimes can take Pulse and Blizzard.
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
-- The enemy rolls **three kits from the same pool** each match, each with a random spell of their element. New match and rematch both roll a new enemy.
-- The battle top bar names the enemy trio and their spells so you can read the matchup before you portal.
+- The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
+- The battle top bar names the enemy four and their spells so you can read the matchup before you portal.
 - Rime is the only **2-cost** kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.
+- Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
 
@@ -21,7 +22,7 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the three kits you brought.
+Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought.
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
 | --- | --- | --- | --- | --- | --- |

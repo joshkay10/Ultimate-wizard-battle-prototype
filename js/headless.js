@@ -230,9 +230,11 @@ async function runSimSelfTests() {
   assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 3, 'Squall costs 3');
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 3, 'Pyre costs 3');
   assert(WIZARD_TYPES.length === 6, 'kit pool is six');
-  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind', 'default team is Pyre Rime Squall');
-  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind', 'short teams fill from the default');
-  assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal', 'teams stay at three unique kits');
+  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,earth', 'default team is Pyre Rime Squall Cairn');
+  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,earth', 'short teams fill from the default');
+  assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire', 'teams stay at four kits');
+  assert(normalizeTeam(['fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire', 'duplicate kits are allowed');
+  assert(TEAM_SIZE === 4, 'team size is four');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -429,19 +431,19 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(playerEls.join(',') === 'fire,ice,wind', 'roster is fire ice wind');
-  assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 3, 'enemy has three wizards');
+  assert(playerEls.join(',') === 'earth,fire,ice,wind', 'roster is fire ice wind earth');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 4, 'enemy has four wizards');
 
-  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal'], enemyTeam: ['fire', 'ice', 'wind'] });
+  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: ['fire', 'ice', 'wind', 'earth'] });
   state.fxEnabled = false;
   const customEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(customEls.join(',') === 'earth,lightning,temporal', 'resetMatch honors a custom player team');
+  assert(customEls.join(',') === 'earth,fire,lightning,temporal', 'resetMatch honors a custom player team');
   const rolledA = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   const rolledB = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   assert(rolledA.join(',') === rolledB.join(','), 'enemy team roll is seeded');
-  assert(rolledA.length === TEAM_SIZE, 'enemy team is three kits');
+  assert(rolledA.length === TEAM_SIZE, 'enemy team is four kits');
   resetMatch(state, 4, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyTeam.length === 3, 'rolling an enemy team still fields three kits');
+  assert(state.enemyTeam.length === 4, 'rolling an enemy team still fields four kits');
   const seenEnemy = {};
   let variety = 0;
   for (let s = 1; s <= 12; s++) {
@@ -455,8 +457,8 @@ async function runSimSelfTests() {
   assert(variety >= 3, 'enemy teams vary across seeds');
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
-  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind', 'old team arrays become a loadout');
-  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust', 'old team arrays keep default spells');
+  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,earth', 'old three-kit arrays pad to four');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,raise', 'old team arrays keep default spells');
   assert(SPELLS.length === 18, 'spell catalog is eighteen');
   assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
   assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
@@ -471,9 +473,10 @@ async function runSimSelfTests() {
     playerLoadout: [
       { kit: 'fire', spell: 'stream' },
       { kit: 'ice', spell: 'blizzard' },
-      { kit: 'wind', spell: 'gust' }
+      { kit: 'wind', spell: 'gust' },
+      { kit: 'earth', spell: 'raise' }
     ],
-    enemyTeam: ['earth', 'lightning', 'temporal']
+    enemyTeam: ['earth', 'lightning', 'temporal', 'fire']
   });
   state.fxEnabled = false;
   state.mountains = {};
@@ -512,8 +515,28 @@ async function runSimSelfTests() {
   assert(frontNexus.hp === nexusHp, 'blizzard does not chip nexuses');
 
   resetMatch(state, 7, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyLoadout.length === 3, 'rolled enemies also have spells');
+  assert(state.enemyLoadout.length === 4, 'rolled enemies also have spells');
   assert(state.enemyLoadout.every(s => spellById(s.spell) && spellById(s.spell).element === kitById(s.kit).element), 'enemy spells match their element');
+
+  resetMatch(state, 1, {
+    playerLoadout: [
+      { kit: 'ice', spell: 'pulse' },
+      { kit: 'ice', spell: 'blizzard' },
+      { kit: 'ice', spell: 'sheet' },
+      { kit: 'ice', spell: 'pulse' }
+    ],
+    enemyTeam: ['fire', 'fire', 'wind', 'earth']
+  });
+  state.fxEnabled = false;
+  const rimes = Object.values(state.wizards).filter(w => w.team === 'player' && w.element === 'ice');
+  assert(rimes.length === 4, 'four Rimes is a legal team');
+  assert(rimes.map(w => w.spellId).sort().join(',') === 'blizzard,pulse,pulse,sheet', 'duplicate kits keep their own spells');
+  const enemyFires = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.element === 'fire');
+  assert(enemyFires.length === 2, 'enemy can roll duplicate kits');
+
+  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: DEFAULT_TEAM });
+  state.fxEnabled = false;
+  assert(!playerHasLegalAction(state), 'round 1 with no Rime has nothing legal and auto-ends');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

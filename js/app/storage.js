@@ -1,17 +1,28 @@
 const TEAM_STORAGE_KEY = 'wizard-battle-team';
 const LOADOUT_STORAGE_KEY = 'wizard-battle-loadout';
 
-function loadPlayerLoadout() {
-  if (typeof localStorage === 'undefined') return normalizeLoadout(DEFAULT_LOADOUT);
+function readStoredLoadoutRaw() {
+  if (typeof localStorage === 'undefined') return null;
   try {
     const rawLoadout = localStorage.getItem(LOADOUT_STORAGE_KEY);
-    if (rawLoadout) return normalizeLoadout(JSON.parse(rawLoadout));
+    if (rawLoadout) return JSON.parse(rawLoadout);
     const rawTeam = localStorage.getItem(TEAM_STORAGE_KEY);
-    if (!rawTeam) return normalizeLoadout(DEFAULT_LOADOUT);
-    return normalizeLoadout(JSON.parse(rawTeam));
+    if (!rawTeam) return null;
+    return JSON.parse(rawTeam);
   } catch (err) {
-    return normalizeLoadout(DEFAULT_LOADOUT);
+    return null;
   }
+}
+
+function loadStoredLoadoutSlots() {
+  const raw = readStoredLoadoutRaw();
+  if (raw == null) return cloneLoadout(DEFAULT_LOADOUT);
+  const slots = parseLoadoutSlots(raw);
+  return slots.length ? slots : cloneLoadout(DEFAULT_LOADOUT);
+}
+
+function loadPlayerLoadout() {
+  return normalizeLoadout(readStoredLoadoutRaw() || DEFAULT_LOADOUT);
 }
 
 function savePlayerLoadout(raw) {

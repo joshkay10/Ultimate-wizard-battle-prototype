@@ -81,7 +81,7 @@ function renderPanel() {
             '<div class="wizard-card-top">' +
               '<div class="wizard-card-id">' +
                 '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
-                '<div class="wizard-card-element">' + wiz.element + '</div>' +
+                '<div class="wizard-card-element">' + (wiz.spellName || wiz.element) + '</div>' +
               '</div>' +
               '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
             '</div>' +

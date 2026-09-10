@@ -1,4 +1,4 @@
-const TEAM_SIZE = 3;
+const TEAM_SIZE = 4;
 
 const WIZARD_TYPES = [
   { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2 },
@@ -9,7 +9,7 @@ const WIZARD_TYPES = [
   { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 9, cost: 4, meleeAttack: 3, meleeDisplacement: 1 }
 ];
 
-const DEFAULT_TEAM = ['fire', 'ice', 'wind'];
+const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'earth'];
 
 function kitById(id) {
   let i;
@@ -23,11 +23,20 @@ function kitIds() {
   return WIZARD_TYPES.map(function (kit) { return kit.id; });
 }
 
+function validKitIds(ids) {
+  const out = [];
+  let i;
+  for (i = 0; i < (ids || []).length; i++) {
+    if (kitById(ids[i])) out.push(ids[i]);
+  }
+  return out;
+}
+
 function uniqueKitIds(ids) {
   const seen = {};
   const out = [];
   let i;
-  for (i = 0; i < ids.length; i++) {
+  for (i = 0; i < (ids || []).length; i++) {
     const id = ids[i];
     if (!kitById(id) || seen[id]) continue;
     seen[id] = true;
@@ -36,20 +45,22 @@ function uniqueKitIds(ids) {
   return out;
 }
 
-function normalizeTeam(ids) {
-  const unique = uniqueKitIds(ids || []);
-  if (unique.length === TEAM_SIZE) return unique;
-  const filled = unique.slice();
-  const fallback = DEFAULT_TEAM;
+function padKitIds(ids) {
+  const filled = validKitIds(ids).slice(0, TEAM_SIZE);
   let i;
-  for (i = 0; i < fallback.length && filled.length < TEAM_SIZE; i++) {
-    if (filled.indexOf(fallback[i]) === -1) filled.push(fallback[i]);
+  for (i = 0; i < DEFAULT_TEAM.length && filled.length < TEAM_SIZE; i++) {
+    if (filled.indexOf(DEFAULT_TEAM[i]) === -1) filled.push(DEFAULT_TEAM[i]);
   }
-  const all = kitIds();
-  for (i = 0; i < all.length && filled.length < TEAM_SIZE; i++) {
-    if (filled.indexOf(all[i]) === -1) filled.push(all[i]);
+  i = 0;
+  while (filled.length < TEAM_SIZE) {
+    filled.push(DEFAULT_TEAM[i % DEFAULT_TEAM.length]);
+    i += 1;
   }
-  return filled.slice(0, TEAM_SIZE);
+  return filled;
+}
+
+function normalizeTeam(ids) {
+  return padKitIds(ids);
 }
 
 function teamHasKit(ids, id) {
@@ -58,13 +69,13 @@ function teamHasKit(ids, id) {
 
 function pickEnemyTeam(rng, playerTeam) {
   const pool = kitIds();
-  const shuffled = shuffledCopy(rng, pool);
   const enemy = [];
   let i;
-  for (i = 0; i < shuffled.length && enemy.length < TEAM_SIZE; i++) {
-    enemy.push(shuffled[i]);
+  if (!pool.length) return normalizeTeam(playerTeam);
+  for (i = 0; i < TEAM_SIZE; i++) {
+    enemy.push(pool[rng.int(pool.length)]);
   }
-  return normalizeTeam(enemy.length ? enemy : playerTeam);
+  return enemy;
 }
 
 function kitsNamed(ids) {

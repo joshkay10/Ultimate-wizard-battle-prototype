@@ -6,11 +6,12 @@ function renderRulesPage() {
 
       '<h2>Team</h2>' +
       '<ul>' +
-        '<li>Six kits in the pool. You bring <strong>exactly three</strong>, and each kit brings <strong>one spell</strong> from its element.</li>' +
+        '<li>Six kits in the pool. You bring <strong>exactly four</strong>. Copies are allowed. Each body brings <strong>one spell</strong> from its element — two Rimes can take Pulse and Blizzard.</li>' +
         '<li>Pick kits and spells on <a href="' + routeHref('team') + '">Team</a>. That loadout is saved on this device and used for every battle until you change it.</li>' +
-        '<li>The enemy rolls <strong>three kits from the same pool</strong> each match, each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
-        '<li>The battle top bar names the enemy trio and their spells so you can read the matchup before you portal.</li>' +
+        '<li>The enemy rolls <strong>four kits from the same pool</strong> each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
+        '<li>The battle top bar names the enemy four and their spells so you can read the matchup before you portal.</li>' +
         '<li>Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
+        '<li>Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.</li>' +
       '</ul>' +
 
       '<h2>Setup</h2>' +
@@ -24,7 +25,7 @@ function renderRulesPage() {
       '</ul>' +
 
       '<h2>Wizards</h2>' +
-      '<p>Melee is a punch. The spell is what you configured on Team. You only have the three kits you brought.</p>' +
+      '<p>Melee is a punch. The spell is what you configured on Team. You only have the four bodies you brought.</p>' +
       '<div class="table-wrap">' +
         '<table class="rules-table">' +
           '<thead><tr><th>Wizard</th><th>Cost</th><th>Move</th><th>HP</th><th>Melee</th><th>Default spell</th></tr></thead>' +

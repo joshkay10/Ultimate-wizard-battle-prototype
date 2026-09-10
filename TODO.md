@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: six-kit pool with a saved three-wizard team, three nexuses per side, lethal portal contests, real fire/ice/wind trails, portals, mountains, lethal water and voids, unique casts, hop walks, hunter AI, element icons, slower summon curve. This list is only what is next.
+Shipped: six-kit pool with a saved four-wizard team (copies allowed), three nexuses per side, lethal portal contests, real fire/ice/wind trails, portals, mountains, lethal water and voids, unique casts, hop walks, hunter AI, element icons, slower summon curve. This list is only what is next.
 
 ## Need from you
 
