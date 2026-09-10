@@ -1,6 +1,23 @@
 # Wizard Battle — Rules
 
-A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards.
+A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards. The toolbar picks **Defense** (default) or **Vs**.
+
+## Modes
+
+- **Defense** — Into the Breach loop. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. New bodies keep streaming in. You still bring four wizards. Kill their nexuses to win; wiping a wave does not end the fight.
+- **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph.
+
+## Defense enemies
+
+Black discs, white icons, 2–5 HP. Each body has one trick. Red tiles show the strike they will take after your turn.
+
+| Body | HP | Trick |
+| --- | --- | --- |
+| Brute | 4–5 | Melee the adjacent tile in the aimed direction |
+| Charger | 3–4 | Charge up to 3 tiles that way. Hits the first body or nexus. Runs into water or a void and falls |
+| Bomber | 2–3 | Fireball, line 4, first wizard or nexus |
+
+If you push them, they still fire in the **same direction** from the new tile. Incoming marks appear in their back 3 rows and arrive after they execute.
 
 ## Team
 
@@ -92,5 +109,5 @@ On your turn you may, in any order:
 
 Checked after each side’s turn (not on that side’s very first turn):
 
-- You win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
+- You win if **all** enemy nexuses are at 0 HP, or (in Vs) they have no wizards left in hand or on the board. Defense waves do not end when you clear a wave — only the crystals do.
 - Draw if both sides lose at the same time.

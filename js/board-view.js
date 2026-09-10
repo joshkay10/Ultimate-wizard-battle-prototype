@@ -63,10 +63,20 @@ const BOARD_COLORS = {
   iceRim: 'rgba(255,255,255,0.92)',
   iceInner: 'rgba(130, 190, 220, 0.7)',
   token: '#b9bcb5',
+  fireSide: '#8a2a12',
+  iceSide: '#0f4a6e',
+  windSide: '#176644',
+  earthSide: '#4a3a20',
+  lightningSide: '#7a6414',
+  temporalSide: '#3d2a62',
   puckPlayer: '#2e302c',
   puckPlayerSide: '#161815',
   puckEnemy: '#d6d8d2',
   puckEnemySide: '#9a9d96',
+  puckPawn: '#141512',
+  puckPawnSide: '#070806',
+  intent: 'rgba(196, 48, 38, 0.38)',
+  intentEdge: '#c43026',
   enemy: '#1c1e1b',
   text: '#1c1e1b',
   selectedBorder: '#d9b527',
@@ -621,6 +631,82 @@ function drawPortal(ctx, box, portal) {
   ctx.restore();
 }
 
+function drawEmerging(ctx, box, pawn) {
+  const cx = box.x + box.s / 2;
+  const cy = box.y + box.s / 2;
+  const t = performance.now() / 380;
+  ctx.save();
+  ctx.strokeStyle = BOARD_COLORS.intentEdge;
+  ctx.lineWidth = Math.max(2, box.s * 0.05);
+  ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  canvasArc(ctx, cx, cy, box.s * 0.28);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, BOARD_COLORS.intentEdge);
+  ctx.save();
+  ctx.fillStyle = BOARD_COLORS.intentEdge;
+  ctx.globalAlpha = 0.9;
+  ctx.font = '700 ' + Math.max(8, box.s * 0.15) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('in', cx, cy + box.s * 0.36);
+  ctx.restore();
+}
+
+function drawDefenseOverlays(ctx, layout) {
+  if (!state.gameMode || state.gameMode !== 'defense') return;
+  Object.values(state.wizards).forEach(function (pawn) {
+    if (pawn.state === 'emerging' && pawn.row != null) {
+      drawEmerging(ctx, cellRect(layout, pawn.row, pawn.col), pawn);
+    }
+    if (pawn.state !== 'onboard' || !pawn.intent) return;
+    const tiles = defenseIntentTiles(state, pawn);
+    tiles.forEach(function (tile, i) {
+      const box = cellRect(layout, tile.row, tile.col);
+      ctx.save();
+      ctx.fillStyle = BOARD_COLORS.intent;
+      ctx.globalAlpha = i === tiles.length - 1 ? 0.55 : 0.32;
+      roundRect(ctx, box.x + 3, box.y + 3, box.s - 6, box.s - 6, 3);
+      ctx.fill();
+      ctx.restore();
+    });
+    if (!tiles.length) return;
+    const last = tiles[tiles.length - 1];
+    const a = cellRect(layout, pawn.row, pawn.col);
+    const b = cellRect(layout, last.row, last.col);
+    const x0 = a.x + a.s / 2;
+    const y0 = a.y + a.s / 2;
+    const x1 = b.x + b.s / 2;
+    const y1 = b.y + b.s / 2;
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    ctx.save();
+    ctx.strokeStyle = BOARD_COLORS.intentEdge;
+    ctx.fillStyle = BOARD_COLORS.intentEdge;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = Math.max(2.2, a.s * 0.06);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x0 + ux * a.s * 0.28, y0 + uy * a.s * 0.28);
+    ctx.lineTo(x1 - ux * b.s * 0.16, y1 - uy * b.s * 0.16);
+    ctx.stroke();
+    const ah = Math.max(7, b.s * 0.16);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * ah - uy * ah * 0.55, y1 - uy * ah + ux * ah * 0.55);
+    ctx.lineTo(x1 - ux * ah + uy * ah * 0.55, y1 - uy * ah - ux * ah * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
 function drawNexus(ctx, box, hp, flash) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
@@ -690,10 +776,25 @@ function drawNexus(ctx, box, hp, flash) {
   ctx.restore();
 }
 
-function drawPuckBody(ctx, cx, cy, r, yours, flash) {
+function puckStyle(wizard, flash) {
+  if (flash) return { face: '#ffffff', side: '#d0d2cc', icon: '#1c1e1b', hp: '#1c1e1b', dark: false };
+  if (wizard.team === 'player') {
+    const face = BOARD_COLORS[wizard.element] || BOARD_COLORS.puckPlayer;
+    const side = BOARD_COLORS[wizard.element + 'Side'] || BOARD_COLORS.puckPlayerSide;
+    return { face: face, side: side, icon: '#ffffff', hp: '#ffffff', dark: true };
+  }
+  if (wizard.pawnKind) {
+    return { face: BOARD_COLORS.puckPawn, side: BOARD_COLORS.puckPawnSide, icon: '#f4f5f2', hp: '#f4f5f2', dark: true };
+  }
+  const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
+  return { face: BOARD_COLORS.puckEnemy, side: BOARD_COLORS.puckEnemySide, icon: elColor, hp: BOARD_COLORS.text, dark: false };
+}
+
+function drawPuckBody(ctx, cx, cy, r, flash, colors) {
   const depth = Math.max(3.2, r * 0.3);
-  const face = flash ? '#ffffff' : (yours ? BOARD_COLORS.puckPlayer : BOARD_COLORS.puckEnemy);
-  const side = flash ? '#d0d2cc' : (yours ? BOARD_COLORS.puckPlayerSide : BOARD_COLORS.puckEnemySide);
+  const face = colors.face;
+  const side = colors.side;
+  const dark = colors.dark;
 
   if (!flash) {
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -718,11 +819,11 @@ function drawPuckBody(ctx, cx, cy, r, yours, flash) {
     ctx.beginPath();
     canvasArc(ctx, cx, cy, r);
     ctx.clip();
-    ctx.fillStyle = yours ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.62)';
+    ctx.fillStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.62)';
     ctx.beginPath();
     ctx.ellipse(cx - r * 0.2, cy - r * 0.32, r * 0.7, r * 0.4, -0.45, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = yours ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.1)';
+    ctx.fillStyle = dark ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.1)';
     ctx.beginPath();
     ctx.ellipse(cx + r * 0.08, cy + r * 0.46, r * 0.78, r * 0.3, 0.15, 0, Math.PI * 2);
     ctx.fill();
@@ -751,18 +852,18 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const cy = box.y + box.s / 2 + fall;
   scale = tokenPopScale(scale);
   const r = box.s * 0.36;
-  const elColor = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
   const yours = wizard.team !== 'enemy';
+  const colors = puckStyle(wizard, flash);
   const spentTurn = wizard.team === state.currentTurn && wizard.hasMoved && wizard.hasAttacked;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   if (spentTurn && !flash) ctx.globalAlpha = 0.55;
-  drawPuckBody(ctx, cx, cy, r, yours, flash);
-  if (!flash) {
+  drawPuckBody(ctx, cx, cy, r, flash, colors);
+  if (!flash && !yours && !wizard.pawnKind) {
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
-    ctx.strokeStyle = elColor;
+    ctx.strokeStyle = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
     ctx.beginPath();
     canvasArc(ctx, cx, cy, r * 0.86);
     ctx.stroke();
@@ -775,13 +876,13 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
   }
   ctx.restore();
-  if (!flash && wizard.team === state.currentTurn) {
+  if (!flash && wizard.team === state.currentTurn && !wizard.pawnKind) {
     const pipR = Math.max(1.8, box.s * 0.038);
     const pipY = cy - r * 0.78;
     drawActionPip(ctx, cx - r * 0.22, pipY, pipR, wizard.hasMoved, yours);
     drawActionPip(ctx, cx + r * 0.22, pipY, pipR, wizard.hasAttacked, yours);
   }
-  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - r * 0.14, r * 0.48, elColor);
+  if (!flash) drawElementIcon(ctx, wizard.element, cx, cy - r * 0.14, r * 0.48, colors.icon);
   if (wizard.silenced && !flash) {
     ctx.save();
     ctx.strokeStyle = BOARD_COLORS.lightning;
@@ -791,7 +892,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
     ctx.restore();
   }
-  ctx.fillStyle = flash ? '#1c1e1b' : (yours ? '#f4f5f2' : BOARD_COLORS.text);
+  ctx.fillStyle = flash ? '#1c1e1b' : colors.hp;
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1184,6 +1285,7 @@ function drawBoard() {
   }
 
   if (state.portals && Object.keys(state.portals).length) ensureFxLoop();
+  if (state.gameMode === 'defense' && Object.values(state.wizards).some(function (w) { return w.state === 'emerging'; })) ensureFxLoop();
   const marks = highlightSet();
   const highlightKey = {};
   marks.tiles.forEach(t => { highlightKey[t.row + ',' + t.col] = true; });
@@ -1235,6 +1337,8 @@ function drawBoard() {
       if (nex) drawNexus(ctx, box, nex.hp, flashHere);
     }
   }
+
+  drawDefenseOverlays(ctx, layout);
 
   Object.values(state.wizards).forEach(wizard => {
     if (wizard.state !== 'onboard') return;

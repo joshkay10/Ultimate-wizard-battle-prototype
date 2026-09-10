@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: four-wizard loadouts with copies, 18 spells, crash chains, move undo, hand-only cards, board inspect, no walking into water/void, fall shrink, auto-end turn.
+Shipped: Defense/Vs mode switch, ItB telegraphs, crash chains, move undo, four-wizard loadouts.
 
 ## Need from you
 
@@ -11,7 +11,6 @@ Element icons are in (`img/elements.png`, 6×256 white-on-transparent). Wizard p
 
 ## Loop
 
-- [ ] **Enemy intent** — Into the Breach style: show what the AI will hit before you move, so the puzzle is readable.
 - [ ] **Seeded daily / share seed** — one board + enemy roll to race and send to a friend.
 - [ ] **Short run** — three fights in a row, pick a spell upgrade between them (Slay the Spire without the 50-floor slog).
 - [ ] **Draft bigger, bring four** — see six spells per element, lock one per body, leftover become the shop.

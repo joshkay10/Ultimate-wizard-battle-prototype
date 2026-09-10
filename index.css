@@ -109,7 +109,7 @@ html, body {
 /* ---------- Top bar ---------- */
 .topbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
@@ -147,6 +147,25 @@ html, body {
   white-space: nowrap;
 }
 .new-match-btn:active { transform: scale(0.97); }
+
+.mode-select {
+  justify-self: end;
+}
+.mode-select select {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  font: 700 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 22px 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path fill='%231c1e1b' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
 
 /* ---------- Shared token (used in roster cards + selected panel) ---------- */
 .status-token {

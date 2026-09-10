@@ -30,5 +30,6 @@ const state = {
   log: [],
   fxEnabled: true,
   matchId: 0,
-  aiBrain: 'hunter'
+  aiBrain: 'hunter',
+  gameMode: 'defense'
 };

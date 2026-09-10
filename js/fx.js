@@ -138,6 +138,7 @@ async function playAttackGroup(events, start, end, matchId) {
 
 async function playEvent(ev) {
   if (ev.type === 'trail') return;
+  if (ev.type === 'emergeMark') return;
   if (ev.type === 'summon') return playSummon(ev);
   if (ev.type === 'portal') return playPortal(ev);
   if (ev.type === 'portalBlocked') return playPortalBlocked(ev);

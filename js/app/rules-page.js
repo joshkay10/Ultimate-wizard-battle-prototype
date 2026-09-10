@@ -2,7 +2,13 @@ function renderRulesPage() {
   return (
     '<article class="page">' +
       '<h1>Rules</h1>' +
-      '<p class="lede">A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards.</p>' +
+      '<p class="lede">A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards. The toolbar picks <strong>Defense</strong> (default) or <strong>Vs</strong>.</p>' +
+
+      '<h2>Modes</h2>' +
+      '<ul>' +
+        '<li><strong>Defense</strong> — enemies telegraph, then after your turn they execute, move, and telegraph again. Weak black discs (2–5 HP): melee, charge 3, or fireball 4. Pushing them does not change the aimed direction. Charge into water or a void still falls. New bodies keep streaming in. Kill their nexuses to win.</li>' +
+        '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count.</li>' +
+      '</ul>' +
 
       '<h2>Team</h2>' +
       '<ul>' +
@@ -96,7 +102,7 @@ function renderRulesPage() {
       '</ul>' +
 
       '<h2>Winning</h2>' +
-      '<p>Checked after each side’s turn (not on that side’s very first turn). All enemy nexuses at 0, or no wizards left in hand or on the board. Draw if both sides lose at once.</p>' +
+      '<p>Checked after each side’s turn (not on that side’s very first turn). All enemy nexuses at 0, or in Vs no wizards left. Defense waves do not end the fight. Draw if both sides lose at once.</p>' +
     '</article>'
   );
 }

@@ -24,6 +24,11 @@ function rematch() {
   maybeAutoEndTurn();
 }
 
+function setGameMode(mode) {
+  saveGameMode(mode);
+  rematch();
+}
+
 let endingTurn = false;
 
 async function endTurn() {
@@ -39,7 +44,11 @@ async function endTurn() {
 
     await maybeWait(420);
     if (state.matchId !== matchId) return;
-    await runTeamAi('enemy');
+    if (state.gameMode === 'defense') {
+      await present(simDefenseEnemyPhase(state));
+    } else {
+      await runTeamAi('enemy');
+    }
     if (state.matchId !== matchId) return;
     await present(simEndEnemyTurn(state));
     if (state.matchId !== matchId) return;

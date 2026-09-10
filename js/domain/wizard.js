@@ -29,9 +29,10 @@ function createWizard(match, typeId, team, spellId) {
 
 function seedRosters(match, playerLoadout, enemyLoadout) {
   const player = normalizeLoadout(playerLoadout);
-  const enemy = normalizeLoadout(enemyLoadout);
   let i;
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell);
+  if (match.gameMode === 'defense') return;
+  const enemy = normalizeLoadout(enemyLoadout);
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
 }
 
@@ -87,7 +88,8 @@ function teamHasPresence(match, team) {
     return wizard.team === team && (
       wizard.state === 'onboard' ||
       wizard.state === 'summoned' ||
-      wizard.state === 'portaling'
+      wizard.state === 'portaling' ||
+      wizard.state === 'emerging'
     );
   });
 }

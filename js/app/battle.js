@@ -1,7 +1,9 @@
 function battleResetOpts() {
+  const mode = loadGameMode();
   return {
     playerLoadout: loadPlayerLoadout(),
-    rollEnemy: true
+    rollEnemy: mode === 'vs',
+    gameMode: mode
   };
 }
 

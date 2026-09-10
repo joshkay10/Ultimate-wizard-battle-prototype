@@ -25,6 +25,7 @@ const files = [
   'js/domain/move.js',
   'js/domain/attack.js',
   'js/domain/turn-sim.js',
+  'js/domain/defense.js',
   'js/domain/match.js',
   'js/app/present.js',
   'js/log.js',

@@ -118,6 +118,16 @@ function renderPanel() {
 
 function wizardStatusBits(wiz) {
   const bits = [];
+  if (wiz.pawnKind) {
+    bits.push(wiz.pawnKind);
+    if (wiz.intent) {
+      const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
+      bits.push('aims ' + (dir || 'ahead'));
+    } else {
+      bits.push('no telegraph');
+    }
+    return bits;
+  }
   if (wiz.silenceSkip) bits.push('silenced — no attack');
   else if (wiz.silenced) bits.push('silenced');
   if (wiz.hasMoved) bits.push('moved');
@@ -145,7 +155,7 @@ function renderInspect(selected) {
       '<div class="inspect-icon ' + selected.element + '">' + iconSpan(selected.element, '#ffffff') + '</div>' +
       '<div class="inspect-copy">' +
         '<div class="inspect-name">' + selected.name + enemyTag + '</div>' +
-        '<div class="inspect-spell">' + (selected.spellName || selected.element) + ' · ' + selected.hp + '/' + selected.maxHp + ' hp</div>' +
+        '<div class="inspect-spell">' + (selected.pawnKind ? selected.pawnKind + ' · ' : (selected.spellName || selected.element) + ' · ') + selected.hp + '/' + selected.maxHp + ' hp</div>' +
         '<div class="inspect-status">' + bits.join(' · ') + '</div>' +
       '</div>' +
       hint +
@@ -247,6 +257,12 @@ function attachHandlers() {
       rematch();
     });
   }
+  const modeSelect = document.getElementById('game-mode');
+  if (modeSelect) {
+    modeSelect.addEventListener('change', function () {
+      setGameMode(modeSelect.value);
+    });
+  }
 }
 
 function render() {
@@ -269,10 +285,17 @@ function render() {
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
-  const vs = loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ');
+  const vs = state.gameMode === 'vs'
+    ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
+    : '';
+  const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
     '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
+    '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
+      '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
+      '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +
+    '</select></label>' +
     '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();

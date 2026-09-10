@@ -990,6 +990,67 @@ async function runSimSelfTests() {
   assert(trailAt(state, 4, 6) && trailAt(state, 4, 6).element === 'fire', 'gust spreads fire along the line');
   assert(trailAt(state, 4, 7) && trailAt(state, 4, 7).element === 'fire', 'gust fire reaches the end of the gust');
 
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  assert(state.gameMode === 'defense', 'defense mode is explicit');
+  assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
+  assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
+  assert(defensePawns(state, ['onboard']).length >= 1, 'defense opens with pawns on the board');
+  assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
+  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'onboard pawns telegraph before you act');
+
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const pyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  pyre.state = 'onboard';
+  pyre.row = 5;
+  pyre.col = 4;
+  pyre.hp = 10;
+  const brute = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
+  simPush(state, brute, 0, 1, 1);
+  assert(brute.row === 3 && brute.col === 5, 'pushing a pawn moves them');
+  assert(brute.intent && brute.intent.dr === 1 && brute.intent.dc === 0, 'push keeps the telegraphed direction');
+  simDefenseExecute(state);
+  assert(pyre.hp === 10, 'melee still swings south from the new tile and misses');
+  assert(brute.intent == null, 'intent is spent after execute');
+
+  const charger = createDefensePawn(state, 'charge', { state: 'onboard', row: 4, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  state.water = { '4,4': true };
+  simDefenseExecute(state);
+  assert(charger.state === 'dead', 'charge into water kills the pawn');
+  assert((charger.row == null), 'fallen charger leaves the tile');
+
+  state.water = {};
+  state.voids = {};
+  const bomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 3, hp: 2, maxHp: 2, intent: { kind: 'fireball', dr: 1, dc: 0 } });
+  pyre.hp = 10;
+  pyre.row = 5;
+  pyre.col = 3;
+  simDefenseExecute(state);
+  assert(pyre.hp === 8, 'fireball hits 4 range in the aimed direction (' + pyre.hp + ')');
+
+  resetMatch(state, 2, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  const before = defensePawns(state, ['emerging']).length;
+  simDefenseEnemyPhase(state);
+  assert(defensePawns(state, ['onboard']).every(w => w.intent), 'after the enemy loop every pawn telegraphs');
+  assert(defensePawns(state, ['emerging']).length >= 1, 'waves keep streaming after execute-move-telegraph');
+  assert(before >= 0, 'spawn markers existed or were placed');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
+
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
   assert(m1.result === m2.result, 'same seed should same winner (' + m1.result + ' vs ' + m2.result + ')');

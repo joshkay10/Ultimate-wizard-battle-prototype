@@ -41,3 +41,22 @@ function loadPlayerTeam() {
 function savePlayerTeam(ids) {
   return loadoutKitIds(savePlayerLoadout(ids));
 }
+
+const MODE_STORAGE_KEY = 'wizard-battle-mode';
+
+function loadGameMode() {
+  if (typeof localStorage === 'undefined') return 'defense';
+  try {
+    const raw = localStorage.getItem(MODE_STORAGE_KEY);
+    if (raw === 'vs' || raw === 'defense') return raw;
+  } catch (err) {}
+  return 'defense';
+}
+
+function saveGameMode(mode) {
+  mode = mode === 'vs' ? 'vs' : 'defense';
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(MODE_STORAGE_KEY, mode);
+  }
+  return mode;
+}

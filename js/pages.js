@@ -36,7 +36,6 @@ function renderTodoPage() {
 
       '<h2>Loop</h2>' +
       '<ul class="todo-list">' +
-        item('<strong>Enemy intent</strong> — show what the AI will hit before you move, Into the Breach style.') +
         item('<strong>Seeded daily / share seed</strong> — one board + enemy roll to race and send.') +
         item('<strong>Short run</strong> — three fights, pick a spell upgrade between them.') +
         item('<strong>Draft bigger</strong> — see more spells, lock one per body, leftover become the shop.') +

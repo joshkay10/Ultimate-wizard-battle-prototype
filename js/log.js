@@ -32,6 +32,7 @@ function describeEvent(ev) {
     return '';
   }
 
+  if (ev.type === 'emergeMark') return actorName(ev.wizardId) + ' will arrive next';
   if (ev.type === 'portal') return actorName(ev.wizardId) + ' opens a portal — arrives next turn';
   if (ev.type === 'summon') return actorName(ev.wizardId) + ' arrives';
   if (ev.type === 'portalBlocked') {

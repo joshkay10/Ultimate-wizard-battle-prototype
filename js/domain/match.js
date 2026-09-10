@@ -26,6 +26,7 @@ function resetMatch(match, seed, opts) {
   match.enemyMaxMana = STARTING_MANA;
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
+  match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
   match.nexuses = {
     player: makeNexusCamp('player'),
     enemy: makeNexusCamp('enemy')
@@ -33,7 +34,9 @@ function resetMatch(match, seed, opts) {
 
   const playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT);
   let enemyLoadout;
-  if (opts.enemyLoadout) {
+  if (match.gameMode === 'defense') {
+    enemyLoadout = [];
+  } else if (opts.enemyLoadout) {
     enemyLoadout = normalizeLoadout(opts.enemyLoadout);
   } else if (opts.enemyTeam) {
     enemyLoadout = normalizeLoadout(opts.enemyTeam);
@@ -43,10 +46,16 @@ function resetMatch(match, seed, opts) {
     enemyLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   }
   match.playerLoadout = playerLoadout;
-  match.enemyLoadout = enemyLoadout;
   match.playerTeam = loadoutKitIds(playerLoadout);
-  match.enemyTeam = loadoutKitIds(enemyLoadout);
+  if (match.gameMode === 'defense') {
+    match.enemyLoadout = [];
+    match.enemyTeam = [];
+  } else {
+    match.enemyLoadout = enemyLoadout;
+    match.enemyTeam = loadoutKitIds(enemyLoadout);
+  }
 
   generateTerrain(match);
   seedRosters(match, playerLoadout, enemyLoadout);
+  if (match.gameMode === 'defense') seedDefenseOpening(match);
 }

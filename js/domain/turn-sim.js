@@ -4,7 +4,7 @@ function checkWinLoss(match) {
   if (mineDead && enemyDead) return 'draw';
 
   const playerWiped = mineDead || !teamHasPresence(match, 'player');
-  const enemyWiped = enemyDead || !teamHasPresence(match, 'enemy');
+  const enemyWiped = enemyDead || (!isDefenseMode(match) && !teamHasPresence(match, 'enemy'));
 
   if (playerWiped && enemyWiped) return 'draw';
   if (playerWiped) return 'enemy';
