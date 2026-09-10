@@ -2,6 +2,14 @@
 
 A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their wizards.
 
+## Team
+
+- Six kits in the pool. You bring **exactly three**.
+- Pick them on the Team page. That roster is saved on this device and used for every battle until you change it.
+- The enemy rolls **three kits from the same pool** each match. New match and rematch both roll a new enemy team.
+- The battle top bar names the enemy trio so you can read the matchup before you portal.
+- Rime is the only **2-cost** kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.
+
 ## Setup
 
 - Each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
@@ -9,12 +17,11 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 - **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - Terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. The middle band mirrors the same way.
-- Six kits in the pool. You bring **three**. Pick them on the Team page; the choice is saved on this device. The enemy rolls three from the same pool each match.
-- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Mana refills to max at the start of your turn. Rime is the only 2-cost kit, so round 1 is one portal if she is on the team.
+- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn.
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. Casts are unique.
+Melee is a simple adjacent punch for everyone. Casts are unique. You only have the three kits you brought.
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Cast |
 | --- | --- | --- | --- | --- | --- |
@@ -25,15 +32,13 @@ Melee is a simple adjacent punch for everyone. Casts are unique.
 | Volt (lightning) | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
 | Chrono (temporal) | 4 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
-Rime’s extra step is so a back-row arrival can actually threaten midboard. Squall stays the skirmisher at 4. Pyre and Squall cost 3 so they are not round-1 openers.
-
 ## Unique casts
 
 - **Stream / gust** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not.
 - **Pulse** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Survivors are pushed away from Rime.
-- **Raise** — an empty tile in range becomes a temporary mountain.
-- **Bolt** — line, silences the hit wizard, jumps along water, grounds on a raised mountain.
-- **Swap** — trade places with a wizard, or blink to an empty tile.
+- **Raise** — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.
+- **Bolt** — line of 4. Silences the wizard it hits. Jumps along water. Grounds on a raised mountain (no jump).
+- **Swap** — trade places with a wizard, or blink to an empty tile. Landing on water or a void still kills you.
 
 ## Turn
 

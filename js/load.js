@@ -36,6 +36,7 @@
     'js/fx.js',
     'js/router.js',
     'js/app/team-page.js',
+    'js/app/rules-page.js',
     'js/pages.js',
     'js/ui.js',
     'js/headless.js',
