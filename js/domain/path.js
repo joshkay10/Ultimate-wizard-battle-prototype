@@ -129,6 +129,56 @@ function getSwapTiles(match, wizard) {
   return result;
 }
 
+function getBurstArea(row, col, radius) {
+  const tiles = [];
+  const r = radius == null ? 1 : radius;
+  let dr;
+  let dc;
+  for (dr = -r; dr <= r; dr++) {
+    for (dc = -r; dc <= r; dc++) {
+      const nr = row + dr;
+      const nc = col + dc;
+      if (!inBounds(nr, nc)) continue;
+      tiles.push({ row: nr, col: nc });
+    }
+  }
+  return tiles;
+}
+
+function getBurstAimTiles(match, wizard) {
+  const result = [];
+  const range = wizard.castRange || 3;
+  let r;
+  let c;
+  for (r = wizard.row - range; r <= wizard.row + range; r++) {
+    for (c = wizard.col - range; c <= wizard.col + range; c++) {
+      const dist = manhattan(wizard.row, wizard.col, r, c);
+      if (dist < 1 || dist > range) continue;
+      if (!inBounds(r, c)) continue;
+      result.push({ row: r, col: c });
+    }
+  }
+  return result;
+}
+
+function getBlinkTiles(match, wizard) {
+  const result = [];
+  const range = wizard.castRange || 4;
+  let r;
+  let c;
+  for (r = wizard.row - range; r <= wizard.row + range; r++) {
+    for (c = wizard.col - range; c <= wizard.col + range; c++) {
+      const dist = manhattan(wizard.row, wizard.col, r, c);
+      if (dist < 1 || dist > range) continue;
+      if (!inBounds(r, c)) continue;
+      if (wizardAt(match, r, c)) continue;
+      if (isBlocked(match, r, c)) continue;
+      result.push({ row: r, col: c });
+    }
+  }
+  return result;
+}
+
 function getCastTiles(match, wizard) {
   const kind = wizard.castKind || 'stream';
   if (kind === 'pulse') return getPulseTiles(match, wizard);
@@ -136,6 +186,8 @@ function getCastTiles(match, wizard) {
   if (kind === 'raise') return getRaiseTiles(match, wizard);
   if (kind === 'bolt') return getBoltTiles(match, wizard);
   if (kind === 'swap') return getSwapTiles(match, wizard);
+  if (kind === 'blink') return getBlinkTiles(match, wizard);
+  if (kind === 'burst') return getBurstAimTiles(match, wizard);
   return getLineCastTiles(match, wizard, wizard.castRange || 4);
 }
 

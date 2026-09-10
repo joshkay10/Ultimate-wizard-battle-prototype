@@ -172,6 +172,8 @@ function attackScore(wizard, tile, kind, team) {
   if (kind === 'cast' && wizard.castKind === 'pulse') return pulseScore(wizard, team);
   if (kind === 'cast' && wizard.castKind === 'raise') return raiseScore(tile, team);
   if (kind === 'cast' && wizard.castKind === 'swap') return swapScore(wizard, tile, team);
+  if (kind === 'cast' && wizard.castKind === 'blink') return blinkScore(wizard, tile, team);
+  if (kind === 'cast' && wizard.castKind === 'burst') return burstScore(wizard, tile, team);
 
   if (kind === 'cast' && wizard.castKind === 'bolt' && mountainAt(state, tile.row, tile.col)) return 0;
 
@@ -357,6 +359,47 @@ function swapScore(wizard, tile, team) {
     return 40 + (before - after) * 6;
   }
   return 18 + (before - after) * 10;
+}
+
+function blinkScore(wizard, tile, team) {
+  if (wizardAt(state, tile.row, tile.col)) return 0;
+  return swapScore(wizard, tile, team);
+}
+
+function burstScore(wizard, tile, team) {
+  let score = 0;
+  const dmg = wizard.castAttack;
+  const pushAmt = wizard.castDisplacement;
+  getBurstArea(tile.row, tile.col, wizard.burstRadius).forEach(function (t) {
+    const n = nexusAt(state, t.row, t.col);
+    if (n && n.hp > 0) {
+      if (!wizard.spellHitNexus) return;
+      if (n.team === opposingTeam(team)) {
+        const lethal = dmg >= n.hp ? 400 : 0;
+        score += 220 + lethal + (n.maxHp - n.hp) * 8 + dmg;
+      } else {
+        score -= 120;
+      }
+      return;
+    }
+    const w2 = wizardAt(state, t.row, t.col);
+    if (w2) {
+      if (w2.team === opposingTeam(team)) {
+        const lethal = dmg && dmg >= w2.hp ? 180 : 0;
+        score += 90 + lethal + dmg;
+        if (wizard.spellSilence) score += 35;
+        if (pushAmt) {
+          const dir = directionBetween(tile.row, tile.col, t.row, t.col);
+          if ((dir.dr || dir.dc) && hazardAt(state, t.row + dir.dr, t.col + dir.dc)) score += 95;
+        }
+      } else {
+        score -= 55;
+      }
+    } else if (wizard.spellPaint !== false) {
+      score += 4;
+    }
+  });
+  return Math.max(0, score);
 }
 
 function pickMoveTile(wizard, team) {

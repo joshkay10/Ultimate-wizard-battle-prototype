@@ -454,6 +454,67 @@ async function runSimSelfTests() {
   }
   assert(variety >= 3, 'enemy teams vary across seeds');
 
+  const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
+  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind', 'old team arrays become a loadout');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust', 'old team arrays keep default spells');
+  assert(SPELLS.length === 18, 'spell catalog is eighteen');
+  assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
+  assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  const defaultIce = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  assert(defaultIce.spellId === 'pulse' && defaultIce.castKind === 'pulse', 'default Rime still pulses');
+  assert(Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire').spellId === 'stream', 'default Pyre still streams');
+
+  resetMatch(state, 1, {
+    playerLoadout: [
+      { kit: 'fire', spell: 'stream' },
+      { kit: 'ice', spell: 'blizzard' },
+      { kit: 'wind', spell: 'gust' }
+    ],
+    enemyTeam: ['earth', 'lightning', 'temporal']
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.trails = {};
+  const blizzardMage = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  assert(blizzardMage.spellId === 'blizzard' && blizzardMage.castKind === 'burst', 'loadout can give Rime blizzard');
+  blizzardMage.state = 'onboard';
+  blizzardMage.row = 4;
+  blizzardMage.col = 4;
+  const quakeDummy = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'earth');
+  quakeDummy.state = 'onboard';
+  quakeDummy.row = 4;
+  quakeDummy.col = 7;
+  quakeDummy.hp = 14;
+  const blizzardAim = getCastTiles(state, blizzardMage);
+  assert(blizzardAim.some(t => t.row === 4 && t.col === 6), 'blizzard can aim two tiles east');
+  const storm = simAttack(state, blizzardMage, 4, 6, 'cast');
+  assert(storm.some(e => e.type === 'attack' && e.castKind === 'burst' && e.spellId === 'blizzard'), 'blizzard is a burst');
+  assert(quakeDummy.hp === 13, 'blizzard deals 1 in the 3x3');
+  const frozen = [];
+  let rr;
+  let cc;
+  for (rr = 3; rr <= 5; rr++) {
+    for (cc = 5; cc <= 7; cc++) {
+      const trail = trailAt(state, rr, cc);
+      if (trail && trail.element === 'ice') frozen.push(rr + ',' + cc);
+    }
+  }
+  assert(frozen.length === 9, 'blizzard freezes the whole 3x3 (' + frozen.length + ')');
+  assert(!trailAt(state, 4, 4) || trailAt(state, 4, 4).element !== 'ice', 'blizzard does not freeze the caster tile outside the square');
+  const frontNexus = state.nexuses.enemy.find(n => n.row === 2 && n.col === 4);
+  const nexusHp = frontNexus.hp;
+  blizzardMage.hasAttacked = false;
+  simAttack(state, blizzardMage, 3, 4, 'cast');
+  assert(frontNexus.hp === nexusHp, 'blizzard does not chip nexuses');
+
+  resetMatch(state, 7, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
+  assert(state.enemyLoadout.length === 3, 'rolled enemies also have spells');
+  assert(state.enemyLoadout.every(s => spellById(s.spell) && spellById(s.spell).element === kitById(s.kit).element), 'enemy spells match their element');
+
   resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};

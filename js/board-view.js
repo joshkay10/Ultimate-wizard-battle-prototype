@@ -166,11 +166,21 @@ function tileFill(row, col, highlight, kind, castKind) {
   if (highlight) {
     if (kind === 'melee') return BOARD_COLORS.melee;
     if (kind === 'cast') {
-      if (castKind === 'pulse') return '#d7e8f3';
+      if (castKind === 'pulse' || castKind === 'burst') {
+        const el = state.selectedWizardId && state.wizards[state.selectedWizardId]
+          ? state.wizards[state.selectedWizardId].element
+          : null;
+        if (el === 'fire') return '#f4ddd6';
+        if (el === 'wind') return '#d8ebe1';
+        if (el === 'earth') return '#e8ddc8';
+        if (el === 'lightning') return '#f3e9c4';
+        if (el === 'temporal') return '#eadff3';
+        return '#d7e8f3';
+      }
       if (castKind === 'gust') return '#d8ebe1';
       if (castKind === 'raise') return '#e8ddc8';
       if (castKind === 'bolt') return '#f3e9c4';
-      if (castKind === 'swap') return '#eadff3';
+      if (castKind === 'swap' || castKind === 'blink') return '#eadff3';
       if (castKind === 'stream') return '#f4ddd6';
       return BOARD_COLORS.cast;
     }
@@ -1180,10 +1190,11 @@ function drawBoard() {
       if (highlighted) {
         ctx.save();
         ctx.strokeStyle = marks.kind === 'melee' ? BOARD_COLORS.meleeBorder
-          : marks.kind === 'cast' && marks.castKind === 'swap' ? BOARD_COLORS.temporal
+          : marks.kind === 'cast' && (marks.castKind === 'swap' || marks.castKind === 'blink') ? BOARD_COLORS.temporal
           : marks.kind === 'cast' && marks.castKind === 'raise' ? BOARD_COLORS.earth
           : marks.kind === 'cast' && marks.castKind === 'bolt' ? BOARD_COLORS.lightning
           : marks.kind === 'cast' && marks.castKind === 'pulse' ? BOARD_COLORS.ice
+          : marks.kind === 'cast' && marks.castKind === 'burst' ? BOARD_COLORS[(state.selectedWizardId && state.wizards[state.selectedWizardId] && state.wizards[state.selectedWizardId].element) || 'cast']
           : marks.kind === 'cast' && marks.castKind === 'gust' ? BOARD_COLORS.wind
           : marks.kind === 'cast' && marks.castKind === 'stream' ? BOARD_COLORS.fire
           : marks.kind === 'cast' ? BOARD_COLORS.castBorder

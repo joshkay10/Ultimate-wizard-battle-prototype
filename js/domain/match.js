@@ -31,18 +31,22 @@ function resetMatch(match, seed, opts) {
     enemy: makeNexusCamp('enemy')
   };
 
-  const playerTeam = normalizeTeam(opts.playerTeam || DEFAULT_TEAM);
-  let enemyTeam;
-  if (opts.enemyTeam) {
-    enemyTeam = normalizeTeam(opts.enemyTeam);
+  const playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT);
+  let enemyLoadout;
+  if (opts.enemyLoadout) {
+    enemyLoadout = normalizeLoadout(opts.enemyLoadout);
+  } else if (opts.enemyTeam) {
+    enemyLoadout = normalizeLoadout(opts.enemyTeam);
   } else if (opts.rollEnemy) {
-    enemyTeam = pickEnemyTeam(match.rng, playerTeam);
+    enemyLoadout = pickEnemyLoadout(match.rng, playerLoadout);
   } else {
-    enemyTeam = DEFAULT_TEAM.slice();
+    enemyLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   }
-  match.playerTeam = playerTeam;
-  match.enemyTeam = enemyTeam;
+  match.playerLoadout = playerLoadout;
+  match.enemyLoadout = enemyLoadout;
+  match.playerTeam = loadoutKitIds(playerLoadout);
+  match.enemyTeam = loadoutKitIds(enemyLoadout);
 
   generateTerrain(match);
-  seedRosters(match, playerTeam, enemyTeam);
+  seedRosters(match, playerLoadout, enemyLoadout);
 }

@@ -6,10 +6,17 @@ function iconSpan(name, color) {
 }
 
 function castStatText(wiz) {
-  if (wiz.castKind === 'raise') return 'raise';
-  if (wiz.castKind === 'swap') return 'swap';
-  if (wiz.castKind === 'bolt') return wiz.castAttack + '/sil';
+  if (wiz.castKind === 'raise' || wiz.castKind === 'swap' || wiz.castKind === 'blink') {
+    return (wiz.spellName || wiz.castKind).toLowerCase();
+  }
+  if (wiz.spellSilence || wiz.castKind === 'bolt') return wiz.castAttack + '/sil';
+  if (wiz.spellName && !wiz.castAttack && !wiz.castDisplacement) return wiz.spellName.toLowerCase();
   return wiz.castAttack + '/' + wiz.castDisplacement;
+}
+
+function castHintFor(wiz) {
+  if (!wiz) return 'tap a highlighted tile';
+  return CAST_HINT[wiz.spellId] || CAST_HINT[wiz.castKind] || 'tap a highlighted tile';
 }
 
 function ensureShell() {
@@ -92,7 +99,7 @@ function renderPanel() {
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
     ? '<div class="no-selection-hint">tap a highlighted tile in your back 3 rows. ' + state.wizards[state.placingWizardId].name + ' arrives at the start of your next turn.</div>'
     : (state.selectedWizardId && state.wizards[state.selectedWizardId] && state.selectedAction === 'cast'
-      ? '<div class="no-selection-hint"><strong>' + (state.wizards[state.selectedWizardId].castKind || 'cast') + '</strong> — ' + (CAST_HINT[state.wizards[state.selectedWizardId].castKind] || 'tap a highlighted tile') + '</div>'
+      ? '<div class="no-selection-hint"><strong>' + spellLabel(state.wizards[state.selectedWizardId]) + '</strong> — ' + castHintFor(state.wizards[state.selectedWizardId]) + '</div>'
       : '');
 
   const logLines = recentLogLines(5);
@@ -127,7 +134,7 @@ function renderActionRow() {
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
 
-  const castLabel = (selected && selected.castKind) ? selected.castKind : 'cast';
+  const castLabel = selected ? spellLabel(selected).toLowerCase() : 'cast';
 
   return (
     '<div class="action-row">' +
@@ -158,7 +165,7 @@ function renderGameOverOverlay() {
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
         '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
-        '<a class="game-over-team" href="' + routeHref('team') + '">edit team</a>' +
+        '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>' +
       '</div>' +
     '</div>'
   );
@@ -220,7 +227,7 @@ function render() {
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
-  const vs = kitsNamed(state.enemyTeam || []).join(' · ');
+  const vs = loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ');
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
     '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +

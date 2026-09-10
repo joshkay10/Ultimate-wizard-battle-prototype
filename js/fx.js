@@ -154,11 +154,12 @@ function banner(ev, text) {
 }
 
 async function playAttack(ev) {
-  if (ev.kind === 'cast' && ev.castKind) banner(ev, ev.castKind);
+  if (ev.kind === 'cast' && (ev.spellName || ev.castKind)) banner(ev, ev.spellName || ev.castKind);
   if (ev.kind !== 'cast') return playMeleeLunge(ev);
   if (ev.castKind === 'pulse') return playPulseCast(ev);
+  if (ev.castKind === 'burst') return playBurstCast(ev);
   if (ev.castKind === 'raise') return playRaiseCast(ev);
-  if (ev.castKind === 'swap') return playSwapCast(ev);
+  if (ev.castKind === 'swap' || ev.castKind === 'blink') return playSwapCast(ev);
   if (ev.castKind === 'gust') return playGustCast(ev);
   if (ev.castKind === 'bolt') return playBoltCast(ev);
   await playStreamCast(ev);
@@ -430,21 +431,31 @@ async function playBoltCast(ev) {
 }
 
 async function playPulseCast(ev) {
+  return playAreaCast(ev, false);
+}
+
+async function playBurstCast(ev) {
+  return playAreaCast(ev, true);
+}
+
+async function playAreaCast(ev, fromAim) {
   const layout = boardLayout();
   if (!layout) return;
-  const start = cellRect(layout, ev.from.row, ev.from.col);
+  const origin = fromAim ? { row: ev.row, col: ev.col } : ev.from;
+  const start = cellRect(layout, origin.row, origin.col);
   const x0 = start.x + start.s / 2;
   const y0 = start.y + start.s / 2;
-  const color = BOARD_COLORS.ice;
+  const element = ev.element || 'ice';
+  const color = BOARD_COLORS[element] || BOARD_COLORS.ice;
   const tiles = ev.burstTiles || ev.pathTiles || [{ row: ev.row, col: ev.col }];
-  boardFx.charge = { id: ev.attackerId, t: 0, element: 'ice' };
+  boardFx.charge = { id: ev.attackerId, t: 0, element: element };
   spawnBurst(x0, y0, color, 8, 2.2);
   ensureFxLoop();
   boardFx.pulseWave = {
     x: x0,
     y: y0,
     t: 0,
-    maxR: start.s * 1.35,
+    maxR: start.s * (fromAim ? 1.7 : 1.35),
     tiles: tiles.map(function (t) {
       const b = cellRect(layout, t.row, t.col);
       return { x: b.x + b.s / 2, y: b.y + b.s / 2 };
@@ -461,7 +472,7 @@ async function playPulseCast(ev) {
     const b = cellRect(layout, t.row, t.col);
     const cx = b.x + b.s / 2;
     const cy = b.y + b.s / 2;
-    boardFx.rings.push({ row: t.row, col: t.col, t: 0, element: 'ice' });
+    boardFx.rings.push({ row: t.row, col: t.col, t: 0, element: element });
     for (let i = 0; i < 5; i++) {
       boardFx.particles.push({
         x: cx,
@@ -475,7 +486,7 @@ async function playPulseCast(ev) {
       });
     }
   });
-  boardFx.shake = Math.max(boardFx.shake, 5);
+  boardFx.shake = Math.max(boardFx.shake, fromAim ? 7 : 5);
   ensureFxLoop();
   await animate(180, function (t) {
     boardFx.pulseWave.burst = t;

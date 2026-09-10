@@ -58,12 +58,12 @@ function renderElementsPage() {
 
       '<h2>Kits</h2>' +
       '<div class="kit-grid">' +
-        kitCard('fire', 'Pyre', 'Stream', 'Line 4 · paints fire') +
-        kitCard('ice', 'Rime', 'Pulse', '8 neighbors · paints ice') +
-        kitCard('wind', 'Squall', 'Gust', 'Line 3 · 3 push · paints wind · fans fire') +
-        kitCard('earth', 'Cairn', 'Raise', 'Empty tile becomes a mountain') +
-        kitCard('lightning', 'Volt', 'Bolt', 'Line 4 · silence · jumps water · fizzles on raise') +
-        kitCard('temporal', 'Chrono', 'Swap', 'Swap with a wizard, or blink to an empty tile') +
+        kitCard('fire', 'Pyre', 'Stream · Inferno · Cinder', 'Line, 3×3 fire, or one-tile cinder') +
+        kitCard('ice', 'Rime', 'Pulse · Blizzard · Sheet', 'Neighbors, 3×3 freeze, or ice line') +
+        kitCard('wind', 'Squall', 'Gust · Gale · Draft', 'Line shove, 3×3 shove, or long shove') +
+        kitCard('earth', 'Cairn', 'Raise · Quake · Spike', 'Mountain, 3×3 shock, or one-tile smash') +
+        kitCard('lightning', 'Volt', 'Bolt · Arc · Jolt', 'Line silence, 3×3 spark, or neighbor jolt') +
+        kitCard('temporal', 'Chrono', 'Swap · Step · Loop', 'Swap, blink, or long swap') +
       '</div>' +
 
       '<h2>Tile reactions</h2>' +

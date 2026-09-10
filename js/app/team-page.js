@@ -1,48 +1,67 @@
 let teamDraft = null;
 
 function teamDraftList() {
-  if (!teamDraft) teamDraft = loadPlayerTeam().slice();
+  if (!teamDraft) teamDraft = normalizeLoadout(loadPlayerLoadout());
   return teamDraft;
 }
 
-function kitPickerBlurb(kit) {
-  return (CAST_HINT[kit.castKind] || kit.castKind) + ' · cost ' + kit.cost;
+function persistTeamDraft() {
+  const draft = teamDraftList();
+  if (draft.length === TEAM_SIZE) savePlayerLoadout(draft);
+}
+
+function kitSlot(draft, kitId) {
+  let i;
+  for (i = 0; i < draft.length; i++) {
+    if (draft[i].kit === kitId) return draft[i];
+  }
+  return null;
 }
 
 function renderTeamPage() {
   const selected = teamDraftList();
   const cards = WIZARD_TYPES.map(function (kit) {
-    const on = selected.indexOf(kit.id) !== -1;
+    const slot = kitSlot(selected, kit.id);
+    const on = !!slot;
+    const spells = spellsForElement(kit.element).map(function (spell) {
+      const picked = on && slot.spell === spell.id;
+      return (
+        '<button type="button" class="team-spell' + (picked ? ' selected' : '') + '" data-kit-id="' + kit.id + '" data-spell-id="' + spell.id + '"' + (on || selected.length < TEAM_SIZE ? '' : ' disabled') + '>' +
+          '<span class="spell-name">' + spell.name + '</span>' +
+          '<span class="spell-hint">' + spell.hint + '</span>' +
+        '</button>'
+      );
+    }).join('');
     return (
-      '<button type="button" class="team-kit ' + kit.element + (on ? ' selected' : '') + '" data-kit-id="' + kit.id + '">' +
-        '<div class="wizard-card-icon ' + kit.element + '">' + iconSpan(kit.element, '#ffffff') + '</div>' +
-        '<div class="team-kit-copy">' +
-          '<div class="kit-name">' + kit.name + '</div>' +
-          '<div class="kit-cast">' + kit.castKind + '</div>' +
-          '<div class="kit-detail">' + kitPickerBlurb(kit) + '</div>' +
-        '</div>' +
-        '<div class="team-kit-mark">' + (on ? 'in team' : 'tap') + '</div>' +
-      '</button>'
+      '<div class="team-slot ' + kit.element + (on ? ' selected' : '') + '">' +
+        '<button type="button" class="team-kit ' + kit.element + (on ? ' selected' : '') + '" data-kit-toggle="' + kit.id + '">' +
+          '<div class="wizard-card-icon ' + kit.element + '">' + iconSpan(kit.element, '#ffffff') + '</div>' +
+          '<div class="team-kit-copy">' +
+            '<div class="kit-name">' + kit.name + '</div>' +
+            '<div class="kit-cast">' + (on ? ((spellById(slot.spell) || {}).name || slot.spell) : 'pick a spell') + '</div>' +
+            '<div class="kit-detail">cost ' + kit.cost + ' · ' + kit.hp + ' hp · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + '</div>' +
+          '</div>' +
+          '<div class="team-kit-mark">' + (on ? 'in team' : 'tap') + '</div>' +
+        '</button>' +
+        '<div class="team-spells">' + spells + '</div>' +
+      '</div>'
     );
   }).join('');
 
   const ready = selected.length === TEAM_SIZE;
-  const names = selected.map(function (id) {
-    const kit = kitById(id);
-    return kit ? kit.name : id;
-  }).join(' · ');
+  const names = loadoutNamed(selected).join(' · ');
 
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Pick three kits. The enemy brings a different three each match. Your team is saved on this device.</p>' +
+      '<p class="lede">Pick three kits and one spell each. Kits are bodies. Spells are the verbs. The enemy rolls a different three each match. Saved on this device.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
       '<div class="team-grid">' + cards + '</div>' +
       '<div class="team-actions">' +
         '<button type="button" class="end-turn-btn" id="team-fight-btn"' + (ready ? '' : ' disabled') + '>fight</button>' +
-        '<a class="team-reset" href="#" id="team-reset-btn">reset to Pyre, Rime, Squall</a>' +
+        '<a class="team-reset" href="#" id="team-reset-btn">reset to Pyre Stream, Rime Pulse, Squall Gust</a>' +
       '</div>' +
     '</article>'
   );
@@ -50,20 +69,42 @@ function renderTeamPage() {
 
 function toggleTeamKit(id) {
   const draft = teamDraftList();
-  const at = draft.indexOf(id);
+  let at = -1;
+  let i;
+  for (i = 0; i < draft.length; i++) {
+    if (draft[i].kit === id) { at = i; break; }
+  }
   if (at >= 0) {
     draft.splice(at, 1);
   } else if (draft.length < TEAM_SIZE) {
-    draft.push(id);
+    draft.push(emptyLoadoutSlot(id));
   }
-  if (draft.length === TEAM_SIZE) savePlayerTeam(draft);
+  persistTeamDraft();
+  render();
+}
+
+function pickTeamSpell(kitId, spellId) {
+  const draft = teamDraftList();
+  let slot = kitSlot(draft, kitId);
+  if (!slot) {
+    if (draft.length >= TEAM_SIZE) return;
+    slot = emptyLoadoutSlot(kitId);
+    draft.push(slot);
+  }
+  slot.spell = normalizeSpellId(kitId, spellId);
+  persistTeamDraft();
   render();
 }
 
 function bindTeamPage() {
-  document.querySelectorAll('[data-kit-id]').forEach(function (el) {
+  document.querySelectorAll('[data-kit-toggle]').forEach(function (el) {
     el.addEventListener('click', function () {
-      toggleTeamKit(el.getAttribute('data-kit-id'));
+      toggleTeamKit(el.getAttribute('data-kit-toggle'));
+    });
+  });
+  document.querySelectorAll('[data-spell-id]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      pickTeamSpell(el.getAttribute('data-kit-id'), el.getAttribute('data-spell-id'));
     });
   });
   const fight = document.getElementById('team-fight-btn');
@@ -71,7 +112,7 @@ function bindTeamPage() {
     fight.addEventListener('click', function () {
       const draft = teamDraftList();
       if (draft.length !== TEAM_SIZE) return;
-      savePlayerTeam(draft);
+      savePlayerLoadout(draft);
       location.href = routeHref('play');
     });
   }
@@ -79,8 +120,8 @@ function bindTeamPage() {
   if (reset) {
     reset.addEventListener('click', function (ev) {
       ev.preventDefault();
-      teamDraft = DEFAULT_TEAM.slice();
-      savePlayerTeam(teamDraft);
+      teamDraft = normalizeLoadout(DEFAULT_LOADOUT);
+      savePlayerLoadout(teamDraft);
       render();
     });
   }

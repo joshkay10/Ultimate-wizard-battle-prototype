@@ -1,6 +1,6 @@
 function battleResetOpts() {
   return {
-    playerTeam: loadPlayerTeam(),
+    playerLoadout: loadPlayerLoadout(),
     rollEnemy: true
   };
 }

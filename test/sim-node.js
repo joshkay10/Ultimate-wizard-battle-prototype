@@ -6,6 +6,8 @@ const root = path.join(__dirname, '..');
 const files = [
   'js/constants.js',
   'js/domain/kits.js',
+  'js/domain/spells.js',
+  'js/domain/loadout.js',
   'js/domain/geo.js',
   'js/rng.js',
   'js/state.js',

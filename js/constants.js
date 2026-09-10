@@ -35,14 +35,6 @@ const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;
 const FIRE_TRAIL_DAMAGE = 1;
 const STARTING_MANA = 2;
-const CAST_HINT = {
-  stream: 'line of 4 — paints fire',
-  pulse: 'hits every neighbor',
-  gust: 'line of 3 — big push, paints wind',
-  raise: 'empty tile becomes a mountain',
-  bolt: 'line of 4 — silences',
-  swap: 'swap with a wizard, or blink to an empty tile'
-};
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
 const NEXUS_LAYOUT = {
   enemy: [

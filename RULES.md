@@ -4,10 +4,10 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 
 ## Team
 
-- Six kits in the pool. You bring **exactly three**.
-- Pick them on the Team page. That roster is saved on this device and used for every battle until you change it.
-- The enemy rolls **three kits from the same pool** each match. New match and rematch both roll a new enemy team.
-- The battle top bar names the enemy trio so you can read the matchup before you portal.
+- Six kits in the pool. You bring **exactly three**, and each kit brings **one spell** from its element.
+- Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
+- The enemy rolls **three kits from the same pool** each match, each with a random spell of their element. New match and rematch both roll a new enemy.
+- The battle top bar names the enemy trio and their spells so you can read the matchup before you portal.
 - Rime is the only **2-cost** kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.
 
 ## Setup
@@ -21,9 +21,9 @@ A two-player turn game on a 9×9 grid. Destroy all enemy nexuses, or wipe their 
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. Casts are unique. You only have the three kits you brought.
+Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the three kits you brought.
 
-| Wizard | Cost | Move | HP | Melee (dmg / push) | Cast |
+| Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
 | --- | --- | --- | --- | --- | --- |
 | Pyre (fire) | 3 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
 | Rime (ice) | 2 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
@@ -32,13 +32,39 @@ Melee is a simple adjacent punch for everyone. Casts are unique. You only have t
 | Volt (lightning) | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
 | Chrono (temporal) | 4 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
+## Spells
+
+Each kit picks one spell from its element. Burst spells aim a tile in range; the effect is a Chebyshev square around that tile (3×3 when radius is 1, or the single tile when radius is 0). Ice freeze is ice trails — pushes keep sliding.
+
+| Spell | Kit | Shape | What it does |
+| --- | --- | --- | --- |
+| Stream | Pyre | line 4 | 3 dmg / 1 push, paints fire |
+| Inferno | Pyre | 3×3 | 2 dmg, paints fire, skips nexuses |
+| Cinder | Pyre | one tile | 2 dmg, paints fire |
+| Pulse | Rime | neighbors | 2 dmg / 1 out, paints ice |
+| Blizzard | Rime | 3×3 | 1 dmg, freezes ground, skips nexuses |
+| Sheet | Rime | line 4 | 1 dmg, paints ice, no push |
+| Gust | Squall | line 3 | 1 dmg / 3 push, paints wind, fans fire |
+| Gale | Squall | 3×3 | 0 dmg / 1 out, paints wind |
+| Draft | Squall | line 4 | 0 dmg / 4 push, paints wind |
+| Raise | Cairn | empty tile | temporary mountain |
+| Quake | Cairn | 3×3 | 2 dmg / 1 out, hits crystals |
+| Spike | Cairn | one tile | 3 dmg, hits crystals |
+| Bolt | Volt | line 4 | 2 dmg, silence, jumps water |
+| Arc | Volt | 3×3 | 1 dmg, silence |
+| Jolt | Volt | neighbors | 1 dmg, silence |
+| Swap | Chrono | range 3 | swap or blink |
+| Step | Chrono | empty range 4 | blink only |
+| Loop | Chrono | range 5 | long swap or blink |
+
 ## Unique casts
 
-- **Stream / gust** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not.
-- **Pulse** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Survivors are pushed away from Rime.
+- **Stream / gust / sheet / draft** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.
+- **Pulse / jolt** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Pulse survivors are pushed away from the caster.
+- **Burst (inferno, blizzard, gale, quake, arc, cinder, spike)** — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.
 - **Raise** — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.
 - **Bolt** — line of 4. Silences the wizard it hits. Jumps along water. Grounds on a raised mountain (no jump).
-- **Swap** — trade places with a wizard, or blink to an empty tile. Landing on water or a void still kills you.
+- **Swap / loop** — trade places with a wizard, or blink to an empty tile. **Step** is blink only. Landing on water or a void still kills you.
 
 ## Turn
 
@@ -54,9 +80,9 @@ On your turn you may, in any order:
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains, water, and voids are not melee targets.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away (0 push means they stay).
 - **Crash:** if the push hits a wall (edge, mountain, or living nexus), the pushed wizard takes **1** damage. A crash into a **nexus** also deals 1 to the crystal. Leftover push distance does not add more. Water and voids are not walls — you are pushed on and you die.
-- If they crash into **another wizard**, both take that 1. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse hits everyone in the ring.
+- If they crash into **another wizard**, both take that 1. Allies count. Friendly fire is on — you can melee or cast your own wizards. Pulse, jolt, and bursts hit everyone in the area.
 - HP 0 = dead, token leaves the board.
-- Stream, gust, and pulse leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for those kits — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
+- Stream, gust, sheet, draft, pulse, inferno, blizzard, gale, and cinder leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for paint spells — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
   - **Fire:** walking, sliding, or arriving onto it costs 1 damage.
   - **Ice:** a push that enters ice does not spend a knockback pip, so you keep sliding.
   - **Wind:** if you finish a move or push on wind, it carries you one more tile in that direction (and chains if you land on wind again). A gust that hits fire **fans** it — fire paints forward along the gust.

@@ -6,10 +6,10 @@ function renderRulesPage() {
 
       '<h2>Team</h2>' +
       '<ul>' +
-        '<li>Six kits in the pool. You bring <strong>exactly three</strong>.</li>' +
-        '<li>Pick them on <a href="' + routeHref('team') + '">Team</a>. That roster is saved on this device and used for every battle until you change it.</li>' +
-        '<li>The enemy rolls <strong>three kits from the same pool</strong> each match. New match and rematch both roll a new enemy team.</li>' +
-        '<li>The battle top bar names the enemy trio so you can read the matchup before you portal.</li>' +
+        '<li>Six kits in the pool. You bring <strong>exactly three</strong>, and each kit brings <strong>one spell</strong> from its element.</li>' +
+        '<li>Pick kits and spells on <a href="' + routeHref('team') + '">Team</a>. That loadout is saved on this device and used for every battle until you change it.</li>' +
+        '<li>The enemy rolls <strong>three kits from the same pool</strong> each match, each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
+        '<li>The battle top bar names the enemy trio and their spells so you can read the matchup before you portal.</li>' +
         '<li>Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot portal on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
       '</ul>' +
 
@@ -24,10 +24,10 @@ function renderRulesPage() {
       '</ul>' +
 
       '<h2>Wizards</h2>' +
-      '<p>Melee is a punch. Casts are unique. You only have the three kits you brought.</p>' +
+      '<p>Melee is a punch. The spell is what you configured on Team. You only have the three kits you brought.</p>' +
       '<div class="table-wrap">' +
         '<table class="rules-table">' +
-          '<thead><tr><th>Wizard</th><th>Cost</th><th>Move</th><th>HP</th><th>Melee</th><th>Cast</th></tr></thead>' +
+          '<thead><tr><th>Wizard</th><th>Cost</th><th>Move</th><th>HP</th><th>Melee</th><th>Default spell</th></tr></thead>' +
           '<tbody>' +
             '<tr><td>Pyre</td><td>3</td><td>3</td><td>10</td><td>5 / 2</td><td>Stream — line 4, 3 / 1, paints fire</td></tr>' +
             '<tr><td>Rime</td><td>2</td><td>3</td><td>12</td><td>4 / 2</td><td>Pulse — 8 neighbors, 2 / 1 out</td></tr>' +
@@ -39,20 +39,49 @@ function renderRulesPage() {
         '</table>' +
       '</div>' +
 
+      '<h2>Spells</h2>' +
+      '<p>Each kit picks one spell from its element. Burst spells aim a tile in range; the effect is a Chebyshev square around that tile (3×3 when radius is 1, or the single tile when radius is 0). Ice freeze is ice trails — pushes keep sliding.</p>' +
+      '<div class="table-wrap">' +
+        '<table class="rules-table">' +
+          '<thead><tr><th>Spell</th><th>Kit</th><th>Shape</th><th>What it does</th></tr></thead>' +
+          '<tbody>' +
+            '<tr><td>Stream</td><td>Pyre</td><td>line 4</td><td>3 dmg / 1 push, paints fire</td></tr>' +
+            '<tr><td>Inferno</td><td>Pyre</td><td>3×3</td><td>2 dmg, paints fire, skips nexuses</td></tr>' +
+            '<tr><td>Cinder</td><td>Pyre</td><td>one tile</td><td>2 dmg, paints fire</td></tr>' +
+            '<tr><td>Pulse</td><td>Rime</td><td>neighbors</td><td>2 dmg / 1 out, paints ice</td></tr>' +
+            '<tr><td>Blizzard</td><td>Rime</td><td>3×3</td><td>1 dmg, freezes ground, skips nexuses</td></tr>' +
+            '<tr><td>Sheet</td><td>Rime</td><td>line 4</td><td>1 dmg, paints ice, no push</td></tr>' +
+            '<tr><td>Gust</td><td>Squall</td><td>line 3</td><td>1 dmg / 3 push, paints wind, fans fire</td></tr>' +
+            '<tr><td>Gale</td><td>Squall</td><td>3×3</td><td>0 dmg / 1 out, paints wind</td></tr>' +
+            '<tr><td>Draft</td><td>Squall</td><td>line 4</td><td>0 dmg / 4 push, paints wind</td></tr>' +
+            '<tr><td>Raise</td><td>Cairn</td><td>empty tile</td><td>temporary mountain</td></tr>' +
+            '<tr><td>Quake</td><td>Cairn</td><td>3×3</td><td>2 dmg / 1 out, hits crystals</td></tr>' +
+            '<tr><td>Spike</td><td>Cairn</td><td>one tile</td><td>3 dmg, hits crystals</td></tr>' +
+            '<tr><td>Bolt</td><td>Volt</td><td>line 4</td><td>2 dmg, silence, jumps water</td></tr>' +
+            '<tr><td>Arc</td><td>Volt</td><td>3×3</td><td>1 dmg, silence</td></tr>' +
+            '<tr><td>Jolt</td><td>Volt</td><td>neighbors</td><td>1 dmg, silence</td></tr>' +
+            '<tr><td>Swap</td><td>Chrono</td><td>range 3</td><td>swap or blink</td></tr>' +
+            '<tr><td>Step</td><td>Chrono</td><td>empty range 4</td><td>blink only</td></tr>' +
+            '<tr><td>Loop</td><td>Chrono</td><td>range 5</td><td>long swap or blink</td></tr>' +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+
       '<h2>Unique casts</h2>' +
       '<ul>' +
-        '<li><strong>Stream / gust</strong> — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not.</li>' +
-        '<li><strong>Pulse</strong> — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses all count. Survivors are pushed away from Rime.</li>' +
+        '<li><strong>Stream / gust / sheet / draft</strong> — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.</li>' +
+        '<li><strong>Pulse / jolt</strong> — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses all count. Pulse survivors are pushed away from the caster.</li>' +
+        '<li><strong>Burst (inferno, blizzard, gale, quake, arc, cinder, spike)</strong> — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.</li>' +
         '<li><strong>Raise</strong> — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.</li>' +
         '<li><strong>Bolt</strong> — line of 4. Silences the wizard it hits. Jumps along water. Grounds on a raised mountain (no jump).</li>' +
-        '<li><strong>Swap</strong> — trade places with a wizard, or blink to an empty tile. Landing on water or a void still kills you.</li>' +
+        '<li><strong>Swap / loop</strong> — trade places with a wizard, or blink to an empty tile. <strong>Step</strong> is blink only. Landing on water or a void still kills you.</li>' +
       '</ul>' +
 
       '<h2>Turn</h2>' +
       '<ol>' +
         '<li><strong>Summon</strong> — pay cost, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, with no sickness. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
         '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, and mountains block. Water and voids kill if you enter.</li>' +
-        '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the kit says otherwise.</li>' +
+        '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the spell says otherwise.</li>' +
         '<li><strong>End turn</strong> — or it ends on its own when you have nothing left.</li>' +
       '</ol>' +
 
@@ -61,7 +90,7 @@ function renderRulesPage() {
         '<li>Melee is adjacent (cardinals). Mountains, water, and voids are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
         '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1 damage, not more for leftover push. Into a wizard = both take 1. Into a nexus = the crystal also takes 1. Water and voids are not walls — you are pushed on and you die.</li>' +
-        '<li>Friendly fire is on. Rime’s pulse hits everyone in the ring.</li>' +
+        '<li>Friendly fire is on. Pulse, jolt, and bursts hit everyone in the area, including you.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +
 

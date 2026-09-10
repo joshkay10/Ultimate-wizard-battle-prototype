@@ -19,6 +19,8 @@ const state = {
   nexuses: { player: [], enemy: [] },
   playerTeam: [],
   enemyTeam: [],
+  playerLoadout: [],
+  enemyLoadout: [],
   mana: 0,
   maxMana: 0,
   enemyMana: 0,

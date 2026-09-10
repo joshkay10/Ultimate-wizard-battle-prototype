@@ -2,7 +2,7 @@
 
 Prototype. Open `index.html` over HTTP.
 
-Six kits in the pool. You bring three. Pick them on [Team](team.html); the enemy rolls a different three each match.
+Six kits in the pool. You bring three, and each kit brings one spell from its element. Pick them on [Team](team.html); the enemy rolls a different three each match.
 
 - [Battle](index.html)
 - [Team](team.html)

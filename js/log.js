@@ -45,7 +45,7 @@ function describeEvent(ev) {
   }
 
   if (ev.type === 'attack') {
-    if (ev.castKind === 'swap' || ev.castKind === 'raise') return '';
+    if (ev.castKind === 'swap' || ev.castKind === 'raise' || ev.castKind === 'blink') return '';
     const who = actorName(ev.attackerId);
     const dir = ev.from ? compassWord(ev.from.row, ev.from.col, ev.row, ev.col) : '';
     const toward = dir ? ' ' + dir : '';
@@ -54,7 +54,7 @@ function describeEvent(ev) {
       return who + ' punches' + toward;
     }
     if (ev.hit === 'fizzle') return '';
-    const spell = ev.castKind || 'cast';
+    const spell = ev.spellId || ev.castKind || 'cast';
     if (spell === 'pulse') return who + ' pulses';
     if (spell === 'bolt') {
       if (ev.hit === 'nexus') return who + ' bolts ' + nexusOwnerWord(ev);
@@ -62,7 +62,8 @@ function describeEvent(ev) {
     }
     if (spell === 'gust') return who + ' gusts' + toward;
     if (spell === 'stream') return who + ' streams' + toward;
-    return who + ' casts ' + spell + toward;
+    const named = (ev.spellName || spell).toLowerCase();
+    return who + ' casts ' + named + toward;
   }
 
   if (ev.type === 'swap') {

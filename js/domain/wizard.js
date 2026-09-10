@@ -1,20 +1,16 @@
-function createWizard(match, typeId, team) {
+function createWizard(match, typeId, team, spellId) {
   const type = kitById(typeId);
   const id = 'w' + (match.nextId++);
-  match.wizards[id] = {
+  const wizard = {
     id: id,
     name: type.name,
     element: type.element,
-    castKind: type.castKind,
-    castRange: type.castRange,
     moveRange: type.moveRange,
     hp: type.hp,
     maxHp: type.hp,
     cost: type.cost,
     meleeAttack: type.meleeAttack,
     meleeDisplacement: type.meleeDisplacement,
-    castAttack: type.castAttack,
-    castDisplacement: type.castDisplacement,
     team: team || 'player',
     state: 'summoned',
     row: null,
@@ -24,15 +20,17 @@ function createWizard(match, typeId, team) {
     summoningSickness: false,
     silenced: false
   };
+  applySpellToWizard(wizard, spellById(normalizeSpellId(typeId, spellId)));
+  match.wizards[id] = wizard;
   return id;
 }
 
-function seedRosters(match, playerTeam, enemyTeam) {
-  const player = normalizeTeam(playerTeam);
-  const enemy = normalizeTeam(enemyTeam);
+function seedRosters(match, playerLoadout, enemyLoadout) {
+  const player = normalizeLoadout(playerLoadout);
+  const enemy = normalizeLoadout(enemyLoadout);
   let i;
-  for (i = 0; i < player.length; i++) createWizard(match, player[i], 'player');
-  for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i], 'enemy');
+  for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell);
+  for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
 }
 
 function canMove(wizard) {
