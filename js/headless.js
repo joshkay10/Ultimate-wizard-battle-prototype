@@ -370,6 +370,7 @@ async function runSimSelfTests() {
   assert(simMove(state, arriving, [{ row: 6, col: 3 }]).length === 0, 'portaling wizard cannot move');
   simEndPlayerTurn(state);
   assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
+  await runTeamAi('enemy');
   simEndEnemyTurn(state);
   assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
   assert(!portalAt(state, 7, 3), 'portal closes on arrival');

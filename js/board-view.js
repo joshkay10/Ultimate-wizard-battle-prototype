@@ -633,26 +633,27 @@ function drawEmerging(ctx, box, pawn) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   const t = performance.now() / 380;
+  const style = defenseTelegraphStyle(pawn.pawnKind);
   ctx.save();
-  ctx.strokeStyle = BOARD_COLORS.intentEdge;
+  ctx.strokeStyle = style.edge;
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
-  ctx.setLineDash([5, 4]);
+  ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
   ctx.beginPath();
   canvasArc(ctx, cx, cy, box.s * 0.28);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
-  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, BOARD_COLORS.intentEdge);
+  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, style.edge);
   ctx.save();
-  ctx.fillStyle = BOARD_COLORS.intentEdge;
+  ctx.fillStyle = style.edge;
   ctx.globalAlpha = 0.9;
   ctx.font = '700 ' + Math.max(8, box.s * 0.15) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('in', cx, cy + box.s * 0.36);
   ctx.font = '800 ' + Math.max(7, box.s * 0.13) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.fillText(defenseKindLabel(pawn.pawnKind).toUpperCase(), cx, cy - box.s * 0.36);
+  ctx.fillText(style.label, cx, cy - box.s * 0.36);
   ctx.restore();
 }
 
