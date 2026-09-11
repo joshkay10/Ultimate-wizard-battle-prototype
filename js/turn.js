@@ -41,9 +41,7 @@ function setGameMode(mode) {
 let endingTurn = false;
 
 async function presentDefenseEnemyPhase() {
-  const strikers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+  const strikers = defenseActQueue(state);
   let i;
   for (i = 0; i < strikers.length; i++) {
     const pawn = strikers[i];
@@ -61,9 +59,7 @@ async function presentDefenseEnemyPhase() {
     await present(emerged);
     await maybeWait(220);
   }
-  const movers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+  const movers = defenseActQueue(state);
   for (i = 0; i < movers.length; i++) {
     const pawn = movers[i];
     if (pawn.state !== 'onboard') continue;

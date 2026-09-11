@@ -80,9 +80,66 @@ function defenseFieldClear(match) {
   return defensePawns(match, ['onboard', 'emerging']).length === 0;
 }
 
+function defenseEverSpawned(match) {
+  let n = 0;
+  Object.values(match.wizards).forEach(function (w) {
+    if (w.team === 'enemy' && w.pawnKind) n += 1;
+  });
+  return n;
+}
+
+function defenseBudgetLeft(match) {
+  const budget = typeof DEFENSE_SPAWN_BUDGET === 'number' ? DEFENSE_SPAWN_BUDGET : 10;
+  return Math.max(0, budget - defenseEverSpawned(match));
+}
+
+function compareDefenseActOrder(a, b) {
+  const ar = a.row == null ? 99 : a.row;
+  const br = b.row == null ? 99 : b.row;
+  if (ar !== br) return ar - br;
+  const ac = a.col == null ? 99 : a.col;
+  const bc = b.col == null ? 99 : b.col;
+  if (ac !== bc) return ac - bc;
+  if (a.id < b.id) return -1;
+  if (a.id > b.id) return 1;
+  return 0;
+}
+
+function defenseActQueue(match, states) {
+  return defensePawns(match, states || ['onboard']).slice().sort(compareDefenseActOrder);
+}
+
+function defenseStrikeQueue(match) {
+  return defenseActQueue(match).filter(function (pawn) {
+    return !!(pawn && pawn.intent);
+  });
+}
+
+function defenseStrikeIndex(match, pawn) {
+  if (!pawn) return -1;
+  const queue = defenseStrikeQueue(match);
+  let i;
+  for (i = 0; i < queue.length; i++) {
+    if (queue[i].id === pawn.id) return i;
+  }
+  return -1;
+}
+
+function defenseOrdinal(n) {
+  const k = n % 100;
+  if (k >= 11 && k <= 13) return n + 'th';
+  const d = n % 10;
+  if (d === 1) return n + 'st';
+  if (d === 2) return n + 'nd';
+  if (d === 3) return n + 'rd';
+  return n + 'th';
+}
+
 function defenseSpawnCount(match) {
   const living = defensePawns(match, ['onboard', 'emerging']).length;
   if (living === 0) return 0;
+  const budget = defenseBudgetLeft(match);
+  if (budget <= 0) return 0;
   const cap = typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7;
   const room = cap - living;
   if (room <= 0) return 0;
@@ -94,13 +151,13 @@ function defenseSpawnCount(match) {
   if (living <= 2) target += 1;
   if (living >= 5) target = Math.min(target, 1);
   if (living >= 6) target = Math.min(target, 1);
-  if (!rng) return Math.min(target, room);
+  if (!rng) return Math.min(target, room, budget);
   const roll = rng.int(10);
   let n = target;
   if (roll === 0 && t > 1 && living >= 3) n = Math.max(0, target - 1);
   else if (roll >= 8) n = target + 1;
   if (t >= 8 && rng.next() < 0.4) n = Math.max(n, 2);
-  return Math.max(0, Math.min(n, room));
+  return Math.max(0, Math.min(n, room, budget));
 }
 
 function isDefenseSpawnCell(row, col) {
@@ -109,11 +166,49 @@ function isDefenseSpawnCell(row, col) {
   return false;
 }
 
+function defenseSpawnSector(row, col) {
+  if (col <= 2) return 'west';
+  if (col >= BOARD_SIZE - 3) return 'east';
+  return 'north';
+}
+
+function defenseSectorCounts(match) {
+  const counts = { west: 0, north: 0, east: 0 };
+  defensePawns(match, ['onboard', 'emerging']).forEach(function (w) {
+    if (w.row == null || w.col == null) return;
+    counts[defenseSpawnSector(w.row, w.col)] += 1;
+  });
+  return counts;
+}
+
+function pickDefenseSpawnSector(match) {
+  const counts = defenseSectorCounts(match);
+  const names = ['west', 'north', 'east'];
+  let min = Infinity;
+  names.forEach(function (name) {
+    if (counts[name] < min) min = counts[name];
+  });
+  const tied = names.filter(function (name) { return counts[name] === min; });
+  if (!tied.length) return 'north';
+  return tied[match.rng ? match.rng.int(tied.length) : 0];
+}
+
+function nearestDefensePawnDist(match, row, col) {
+  let best = 99;
+  defensePawns(match, ['onboard', 'emerging']).forEach(function (w) {
+    if (w.row == null || w.col == null) return;
+    const d = manhattan(row, col, w.row, w.col);
+    if (d < best) best = d;
+  });
+  return best;
+}
+
 function pickDefenseSpawnTile(match) {
   const used = {};
   defensePawns(match, ['onboard', 'emerging']).forEach(function (w) {
     if (w.row != null) used[tileKey(w.row, w.col)] = true;
   });
+  const sector = pickDefenseSpawnSector(match);
   const candidates = [];
   let r;
   let c;
@@ -122,17 +217,21 @@ function pickDefenseSpawnTile(match) {
       if (!isDefenseSpawnCell(r, c)) continue;
       if (used[tileKey(r, c)]) continue;
       if (!canOpenPortalAt(match, r, c)) continue;
-      let score = (ENEMY_ROW_END - Math.min(r, ENEMY_ROW_END)) * 3;
-      if (c === 0 || c === BOARD_SIZE - 1) score += 2;
-      if (nearNexus(match, r, c)) score -= 8;
-      candidates.push({ row: r, col: c, score: score });
+      const dist = nearestDefensePawnDist(match, r, c);
+      let score = Math.min(dist, 6) * 5;
+      if (defenseSpawnSector(r, c) === sector) score += 14;
+      score += (ENEMY_ROW_END - Math.min(r, ENEMY_ROW_END));
+      if (c === 0 || c === BOARD_SIZE - 1) score += 1;
+      if (nearNexus(match, r, c)) score -= 10;
+      candidates.push({ row: r, col: c, score: score, sector: defenseSpawnSector(r, c) });
     }
   }
   if (!candidates.length) return null;
   candidates.sort(function (a, b) { return b.score - a.score; });
-  const pool = Math.max(4, Math.min(12, candidates.length));
-  const top = candidates.slice(0, pool);
-  return top[match.rng.int(top.length)];
+  const inSector = candidates.filter(function (tile) { return tile.sector === sector; });
+  const poolSrc = inSector.length ? inSector : candidates;
+  const pool = poolSrc.slice(0, Math.max(3, Math.min(6, poolSrc.length)));
+  return pool[match.rng ? match.rng.int(pool.length) : 0];
 }
 
 function pickDefenseKind(match) {
@@ -548,9 +647,7 @@ function simDefenseExecutePawn(match, pawn) {
 
 function simDefenseExecute(match) {
   const events = [];
-  const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+  const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
     events.push.apply(events, simDefenseExecutePawn(match, pawns[i]));
@@ -630,9 +727,7 @@ function simDefenseMovePawn(match, pawn) {
 
 function simDefenseMoveAndTelegraph(match) {
   const events = [];
-  const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+  const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
     events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
@@ -643,9 +738,7 @@ function simDefenseMoveAndTelegraph(match) {
 
 function simDefenseMove(match) {
   const events = [];
-  const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
-    return a.id < b.id ? -1 : 1;
-  });
+  const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
     events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
