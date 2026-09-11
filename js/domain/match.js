@@ -27,11 +27,10 @@ function resetMatch(match, seed, opts) {
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
   match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
+  match.mapId = '';
+  match.mapName = '';
   if (match.gameMode === 'defense') {
-    match.nexuses = {
-      player: makeDefenseNexusCluster(match),
-      enemy: []
-    };
+    match.nexuses = { player: [], enemy: [] };
   } else {
     match.nexuses = {
       player: makeNexusCamp('player'),

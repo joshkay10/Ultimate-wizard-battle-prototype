@@ -31,5 +31,7 @@ const state = {
   fxEnabled: true,
   matchId: 0,
   aiBrain: 'hunter',
-  gameMode: 'defense'
+  gameMode: 'defense',
+  mapId: '',
+  mapName: ''
 };

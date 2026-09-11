@@ -299,12 +299,15 @@ function render() {
     ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
     : '';
   const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
+  const island = state.gameMode === 'defense' && state.mapName
+    ? '<span class="topbar-map">' + state.mapName + '</span>'
+    : '';
   const invaders = state.gameMode === 'defense'
     ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + DEFENSE_SPAWN_BUDGET + ' invaders</span>'
     : '';
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (invaders ? ' &middot; ' + invaders : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
     '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
       '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
       '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +
