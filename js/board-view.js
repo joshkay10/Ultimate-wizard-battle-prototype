@@ -633,24 +633,27 @@ function drawEmerging(ctx, box, pawn) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
   const t = performance.now() / 380;
+  const style = defenseTelegraphStyle(pawn.pawnKind);
   ctx.save();
-  ctx.strokeStyle = BOARD_COLORS.intentEdge;
+  ctx.strokeStyle = style.edge;
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
-  ctx.setLineDash([5, 4]);
+  ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
   ctx.beginPath();
   canvasArc(ctx, cx, cy, box.s * 0.28);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
-  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, BOARD_COLORS.intentEdge);
+  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, style.edge);
   ctx.save();
-  ctx.fillStyle = BOARD_COLORS.intentEdge;
+  ctx.fillStyle = style.edge;
   ctx.globalAlpha = 0.9;
   ctx.font = '700 ' + Math.max(8, box.s * 0.15) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('in', cx, cy + box.s * 0.36);
+  ctx.font = '800 ' + Math.max(7, box.s * 0.13) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText(style.label, cx, cy - box.s * 0.36);
   ctx.restore();
 }
 
@@ -661,14 +664,24 @@ function drawDefenseOverlays(ctx, layout) {
       drawEmerging(ctx, cellRect(layout, pawn.row, pawn.col), pawn);
     }
     if (pawn.state !== 'onboard' || !pawn.intent) return;
+    const style = defenseTelegraphStyle(pawn.pawnKind);
     const tiles = defenseIntentTiles(state, pawn);
     tiles.forEach(function (tile, i) {
       const box = cellRect(layout, tile.row, tile.col);
       ctx.save();
-      ctx.fillStyle = BOARD_COLORS.intent;
-      ctx.globalAlpha = i === tiles.length - 1 ? 0.55 : 0.32;
+      ctx.fillStyle = style.fill;
+      ctx.globalAlpha = i === tiles.length - 1 ? 0.62 : 0.34;
       roundRect(ctx, box.x + 3, box.y + 3, box.s - 6, box.s - 6, 3);
       ctx.fill();
+      if (i === tiles.length - 1) {
+        ctx.strokeStyle = style.edge;
+        ctx.globalAlpha = 0.95;
+        ctx.lineWidth = Math.max(2, box.s * 0.05);
+        ctx.setLineDash(style.dash);
+        roundRect(ctx, box.x + 4, box.y + 4, box.s - 8, box.s - 8, 3);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       ctx.restore();
     });
     if (!tiles.length) return;
@@ -685,22 +698,37 @@ function drawDefenseOverlays(ctx, layout) {
     const ux = dx / len;
     const uy = dy / len;
     ctx.save();
-    ctx.strokeStyle = BOARD_COLORS.intentEdge;
-    ctx.fillStyle = BOARD_COLORS.intentEdge;
-    ctx.globalAlpha = 0.9;
-    ctx.lineWidth = Math.max(2.2, a.s * 0.06);
+    ctx.strokeStyle = style.edge;
+    ctx.fillStyle = style.edge;
+    ctx.globalAlpha = 0.95;
+    ctx.lineWidth = Math.max(style.pip ? 2.4 : 3.4, a.s * (style.pip ? 0.055 : 0.08));
     ctx.lineCap = 'round';
+    ctx.setLineDash(style.dash);
     ctx.beginPath();
-    ctx.moveTo(x0 + ux * a.s * 0.28, y0 + uy * a.s * 0.28);
-    ctx.lineTo(x1 - ux * b.s * 0.16, y1 - uy * b.s * 0.16);
+    ctx.moveTo(x0 + ux * a.s * 0.3, y0 + uy * a.s * 0.3);
+    ctx.lineTo(x1 - ux * b.s * 0.18, y1 - uy * b.s * 0.18);
     ctx.stroke();
-    const ah = Math.max(7, b.s * 0.16);
+    ctx.setLineDash([]);
+    const ah = Math.max(style.pip ? 8 : 9, b.s * 0.18);
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x1 - ux * ah - uy * ah * 0.55, y1 - uy * ah + ux * ah * 0.55);
     ctx.lineTo(x1 - ux * ah + uy * ah * 0.55, y1 - uy * ah - ux * ah * 0.55);
     ctx.closePath();
     ctx.fill();
+    if (pawn.pawnKind === 'fireball') {
+      ctx.beginPath();
+      canvasArc(ctx, x1, y1, Math.max(5, b.s * 0.1));
+      ctx.stroke();
+    }
+    ctx.font = '800 ' + Math.max(8, b.s * 0.16) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = Math.max(3, b.s * 0.06);
+    ctx.strokeStyle = 'rgba(244,245,242,0.92)';
+    ctx.strokeText(style.label, x1, y1 + b.s * 0.34);
+    ctx.fillStyle = style.edge;
+    ctx.fillText(style.label, x1, y1 + b.s * 0.34);
     ctx.restore();
   });
 }
@@ -854,7 +882,9 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const r = box.s * 0.36;
   const yours = wizard.team !== 'enemy';
   const colors = puckStyle(wizard, flash);
-  const spentTurn = wizard.team === state.currentTurn && wizard.hasMoved && wizard.hasAttacked;
+  const spentTurn = wizard.team === state.currentTurn && (
+    wizard.summoningSickness || (wizard.hasMoved && wizard.hasAttacked)
+  );
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
@@ -874,6 +904,17 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.beginPath();
     canvasArc(ctx, cx, cy, r + box.s * 0.08);
     ctx.stroke();
+  }
+  if (!flash && wizard.pawnKind) {
+    const ring = defenseTelegraphStyle(wizard.pawnKind);
+    ctx.save();
+    ctx.lineWidth = Math.max(2.4, box.s * 0.055);
+    ctx.strokeStyle = ring.edge;
+    ctx.setLineDash(ring.dash);
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r * 0.92);
+    ctx.stroke();
+    ctx.restore();
   }
   ctx.restore();
   if (!flash && wizard.team === state.currentTurn && !wizard.pawnKind) {
@@ -897,6 +938,19 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
+  if (!flash && wizard.pawnKind) {
+    const ring = defenseTelegraphStyle(wizard.pawnKind);
+    ctx.save();
+    ctx.font = '800 ' + Math.max(6, box.s * 0.11) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = Math.max(2.2, box.s * 0.04);
+    ctx.strokeStyle = 'rgba(244,245,242,0.95)';
+    ctx.fillStyle = ring.edge;
+    ctx.strokeText(ring.label, cx, cy - r * 0.98);
+    ctx.fillText(ring.label, cx, cy - r * 0.98);
+    ctx.restore();
+  }
 }
 
 function drawChargeGlow(ctx, box, element, t) {

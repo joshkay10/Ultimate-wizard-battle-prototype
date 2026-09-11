@@ -31,6 +31,9 @@ const SUMMON_ROW_START = BOARD_SIZE - 3;
 const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
 const NEXUS_HP = 5;
 const DEFENSE_NEXUS_HP = 2;
+const DEFENSE_NEXUS_MIN = 3;
+const DEFENSE_NEXUS_MAX = 6;
+const DEFENSE_PAWN_CAP = 7;
 const CRASH_DAMAGE = 1;
 const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;

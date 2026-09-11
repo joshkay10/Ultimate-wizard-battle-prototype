@@ -17,16 +17,16 @@ function readStoredLoadoutRaw() {
 function loadStoredLoadoutSlots() {
   const raw = readStoredLoadoutRaw();
   if (raw == null) return cloneLoadout(DEFAULT_LOADOUT);
-  const slots = parseLoadoutSlots(raw);
+  const slots = filterPlayableLoadout(raw);
   return slots.length ? slots : cloneLoadout(DEFAULT_LOADOUT);
 }
 
 function loadPlayerLoadout() {
-  return normalizeLoadout(readStoredLoadoutRaw() || DEFAULT_LOADOUT);
+  return filterPlayableLoadout(readStoredLoadoutRaw() || DEFAULT_LOADOUT);
 }
 
 function savePlayerLoadout(raw) {
-  const loadout = normalizeLoadout(raw);
+  const loadout = filterPlayableLoadout(raw);
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOADOUT_STORAGE_KEY, JSON.stringify(loadout));
     localStorage.setItem(TEAM_STORAGE_KEY, JSON.stringify(loadoutKitIds(loadout)));

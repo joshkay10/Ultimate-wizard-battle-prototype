@@ -1,3 +1,19 @@
+function defenseKindLabel(kind) {
+  if (kind === 'charge') return 'charge';
+  if (kind === 'fireball') return 'shot';
+  return 'melee';
+}
+
+function defenseTelegraphStyle(kind) {
+  if (kind === 'charge') {
+    return { fill: 'rgba(26, 140, 108, 0.42)', edge: '#17a078', label: 'CHARGE', dash: [8, 5], pip: true };
+  }
+  if (kind === 'fireball') {
+    return { fill: 'rgba(214, 52, 36, 0.4)', edge: '#e23b28', label: 'SHOT', dash: [2.5, 4.5], pip: true };
+  }
+  return { fill: 'rgba(186, 78, 22, 0.52)', edge: '#d26518', label: 'MELEE', dash: [], pip: false };
+}
+
 const DEFENSE_PAWN_KINDS = {
   melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 2, range: 1, hpMin: 4, hpMax: 5 },
   charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 2, range: 3, hpMin: 3, hpMax: 4 },
@@ -60,9 +76,32 @@ function defensePawns(match, states) {
   });
 }
 
-function defenseSpawnCount(turnCount) {
-  if (turnCount >= 6) return 2;
-  return 1;
+function defenseSpawnCount(match) {
+  const living = defensePawns(match, ['onboard', 'emerging']).length;
+  const cap = typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7;
+  const room = cap - living;
+  if (room <= 0) return 0;
+  const t = match.turnCount || 1;
+  const rng = match.rng;
+  let target = 1;
+  if (t >= 4) target = 2;
+  if (t >= 8) target = 2;
+  if (living <= 2) target += 1;
+  if (living >= 5) target = Math.min(target, 1);
+  if (living >= 6) target = Math.min(target, 1);
+  if (!rng) return Math.min(target, room);
+  const roll = rng.int(10);
+  let n = target;
+  if (roll === 0 && t > 1 && living >= 3) n = Math.max(0, target - 1);
+  else if (roll >= 8) n = target + 1;
+  if (t >= 8 && rng.next() < 0.4) n = Math.max(n, 2);
+  return Math.max(0, Math.min(n, room));
+}
+
+function isDefenseSpawnCell(row, col) {
+  if (row >= 0 && row < ENEMY_ROW_END) return true;
+  if ((col === 0 || col === BOARD_SIZE - 1) && row <= 5) return true;
+  return false;
 }
 
 function pickDefenseSpawnTile(match) {
@@ -73,28 +112,36 @@ function pickDefenseSpawnTile(match) {
   const candidates = [];
   let r;
   let c;
-  for (r = 0; r < ENEMY_ROW_END; r++) {
+  for (r = 0; r < BOARD_SIZE; r++) {
     for (c = 0; c < BOARD_SIZE; c++) {
+      if (!isDefenseSpawnCell(r, c)) continue;
       if (used[tileKey(r, c)]) continue;
       if (!canOpenPortalAt(match, r, c)) continue;
-      candidates.push({ row: r, col: c, score: r * 4 + (c === CENTER ? 1 : 0) });
+      let score = (ENEMY_ROW_END - Math.min(r, ENEMY_ROW_END)) * 3;
+      if (c === 0 || c === BOARD_SIZE - 1) score += 2;
+      if (nearNexus(match, r, c)) score -= 8;
+      candidates.push({ row: r, col: c, score: score });
     }
   }
   if (!candidates.length) return null;
   candidates.sort(function (a, b) { return b.score - a.score; });
-  const top = candidates.slice(0, Math.min(6, candidates.length));
+  const pool = Math.max(4, Math.min(12, candidates.length));
+  const top = candidates.slice(0, pool);
   return top[match.rng.int(top.length)];
 }
 
 function pickDefenseKind(match) {
-  return DEFENSE_PAWN_ORDER[match.rng.int(DEFENSE_PAWN_ORDER.length)];
+  const roll = match.rng ? match.rng.next() : 0.2;
+  if (roll < 0.46) return 'melee';
+  if (roll < 0.76) return 'charge';
+  return 'fireball';
 }
 
 function markDefenseSpawns(match, count) {
   const events = [];
   let n;
   for (n = 0; n < count; n++) {
-    if (defensePawns(match, ['onboard', 'emerging']).length >= 8) break;
+    if (defensePawns(match, ['onboard', 'emerging']).length >= (typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7)) break;
     const tile = pickDefenseSpawnTile(match);
     if (!tile) break;
     const pawn = createDefensePawn(match, pickDefenseKind(match), {
@@ -115,7 +162,9 @@ function markDefenseSpawns(match, count) {
 }
 
 function seedDefenseOpening(match) {
-  const opening = 2;
+  const rng = match.rng;
+  const opening = rng ? (1 + rng.int(2)) : 1;
+  const incoming = rng ? (1 + rng.int(2)) : 1;
   let i;
   for (i = 0; i < opening; i++) {
     const tile = pickDefenseSpawnTile(match);
@@ -123,11 +172,11 @@ function seedDefenseOpening(match) {
     createDefensePawn(match, pickDefenseKind(match), {
       state: 'onboard',
       row: tile.row,
-      col: tile.col
+      col: tile.col,
+      intent: null
     });
   }
-  assignDefenseIntents(match);
-  markDefenseSpawns(match, 1);
+  markDefenseSpawns(match, incoming);
 }
 
 function cardinalToward(row, col, tRow, tCol) {
@@ -138,7 +187,22 @@ function cardinalToward(row, col, tRow, tCol) {
   return { dr: 0, dc: Math.sign(dc) };
 }
 
+function nearestDefenseNexus(match, row, col) {
+  let best = null;
+  let bestD = Infinity;
+  livingNexuses(match, 'player').forEach(function (n) {
+    const d = manhattan(row, col, n.row, n.col);
+    if (d < bestD) {
+      bestD = d;
+      best = n;
+    }
+  });
+  return best;
+}
+
 function nearestDefensePrey(match, row, col) {
+  const nexus = nearestDefenseNexus(match, row, col);
+  if (nexus) return { row: nexus.row, col: nexus.col, kind: 'nexus' };
   let best = null;
   let bestD = Infinity;
   Object.values(match.wizards).forEach(function (w) {
@@ -149,67 +213,105 @@ function nearestDefensePrey(match, row, col) {
       best = { row: w.row, col: w.col, kind: 'wizard' };
     }
   });
-  livingNexuses(match, 'player').forEach(function (n) {
-    const d = manhattan(row, col, n.row, n.col);
-    if (d < bestD) {
-      bestD = d;
-      best = { row: n.row, col: n.col, kind: 'nexus' };
-    }
-  });
   return best;
 }
 
-function scoreDefenseDir(match, pawn, dr, dc) {
+function defenseShotScore(match, pawn, row, col, dr, dc) {
   const spec = defensePawnSpec(pawn.pawnKind);
-  let r = pawn.row;
-  let c = pawn.col;
+  let r = row;
+  let c = col;
   let i;
   for (i = 1; i <= spec.range; i++) {
     const nr = r + dr;
     const nc = c + dc;
-    if (!inBounds(nr, nc)) return i === 1 ? -20 : 1;
-    if (mountainAt(match, nr, nc)) return i === 1 ? -15 : 2;
+    if (!inBounds(nr, nc)) return 0;
+    if (mountainAt(match, nr, nc)) return 0;
     const victim = wizardAt(match, nr, nc);
     const nex = nexusAt(match, nr, nc);
-    if (victim) {
-      if (victim.team === 'player') return 200 - i * 8;
-      return -8;
-    }
     if (nex) {
-      if (nex.team === 'player') return 160 - i * 6;
-      return -12;
+      if (nex.team === 'player') return 800 - i * 10 + (nex.maxHp - nex.hp) * 60;
+      return -20;
     }
-    if (pawn.pawnKind === 'charge' && hazardAt(match, nr, nc)) return 12 - i;
-    if (pawn.pawnKind !== 'fireball' && hazardAt(match, nr, nc)) break;
+    if (victim) {
+      if (victim.team === 'player') return 70 - i * 6;
+      return -40;
+    }
+    if (pawn.pawnKind === 'charge' && hazardAt(match, nr, nc)) return 8;
+    if (pawn.pawnKind !== 'fireball' && hazardAt(match, nr, nc)) return 0;
     r = nr;
     c = nc;
     if (pawn.pawnKind === 'melee') break;
   }
-  return 4;
+  return 0;
 }
 
-function pickDefenseIntent(match, pawn) {
-  const spec = defensePawnSpec(pawn.pawnKind);
-  let best = null;
-  let bestScore = -Infinity;
+function bestDefenseShot(match, pawn, row, col) {
+  let best = { score: 0, dr: 1, dc: 0 };
   let d;
   for (d = 0; d < CARDINALS.length; d++) {
     const dr = CARDINALS[d][0];
     const dc = CARDINALS[d][1];
-    const score = scoreDefenseDir(match, pawn, dr, dc);
-    if (score > bestScore) {
-      bestScore = score;
-      best = { kind: spec.id, dr: dr, dc: dc };
-    }
+    const score = defenseShotScore(match, pawn, row, col, dr, dc);
+    if (score > best.score) best = { score: score, dr: dr, dc: dc };
   }
-  if (bestScore < 20) {
-    const prey = nearestDefensePrey(match, pawn.row, pawn.col);
+  return best;
+}
+
+function scoreDefenseTile(match, pawn, row, col) {
+  const shot = bestDefenseShot(match, pawn, row, col);
+  const nexus = nearestDefenseNexus(match, row, col);
+  const dist = nexus ? manhattan(row, col, nexus.row, nexus.col) : 12;
+  const nexusShot = shot.score >= 400;
+  let score;
+  if (nexusShot) score = 9000 + shot.score - dist * 4;
+  else score = (18 - dist) * 110;
+  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: nexusShot };
+}
+
+function pickScoredOption(rng, options) {
+  if (!options.length) return null;
+  options.sort(function (a, b) { return b.score - a.score; });
+  const best = options[0].score;
+  const floor = best - Math.max(12, Math.abs(best) * 0.12);
+  const top = options.filter(function (opt) { return opt.score >= floor; }).slice(0, 3);
+  if (!rng || top.length === 1) return top[0];
+  return top[rng.int(top.length)];
+}
+
+function scoreDefenseDir(match, pawn, dr, dc) {
+  return defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
+}
+
+function pickDefenseIntent(match, pawn) {
+  const spec = defensePawnSpec(pawn.pawnKind);
+  const options = [];
+  let d;
+  for (d = 0; d < CARDINALS.length; d++) {
+    const dr = CARDINALS[d][0];
+    const dc = CARDINALS[d][1];
+    const score = defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
+    options.push({ kind: spec.id, dr: dr, dc: dc, score: score, nexusShot: score >= 400 });
+  }
+  const nexusHits = options.filter(function (opt) { return opt.nexusShot; });
+  const pool = nexusHits.length ? nexusHits : options;
+  const hit = pickScoredOption(match.rng, pool);
+  if (nexusHits.length && hit) {
+    return { kind: spec.id, dr: hit.dr, dc: hit.dc };
+  }
+  if (hit && hit.score >= 40) {
+    const prey = nearestDefenseNexus(match, pawn.row, pawn.col);
     if (prey) {
       const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
-      best = { kind: spec.id, dr: dir.dr, dc: dir.dc };
+      return { kind: spec.id, dr: dir.dr, dc: dir.dc };
     }
+    return { kind: spec.id, dr: hit.dr, dc: hit.dc };
   }
-  return best || { kind: spec.id, dr: 1, dc: 0 };
+  const prey = nearestDefensePrey(match, pawn.row, pawn.col);
+  if (prey) {
+    const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
+    return { kind: spec.id, dr: dir.dr, dc: dir.dc };
+  }
+  return (hit && { kind: spec.id, dr: hit.dr, dc: hit.dc }) || { kind: spec.id, dr: 1, dc: 0 };
 }
 
 function assignDefenseIntents(match) {
@@ -437,7 +539,7 @@ function simDefenseEmerge(match) {
       return;
     }
     pawn.state = 'onboard';
-    pawn.hasMoved = true;
+    pawn.hasMoved = false;
     pawn.intent = null;
     events.push({ type: 'summon', wizardId: pawn.id, row: row, col: col, element: pawn.element });
     events.push.apply(events, applyTileEnter(match, pawn));
@@ -454,23 +556,28 @@ function simDefenseMove(match) {
   for (i = 0; i < pawns.length; i++) {
     const pawn = pawns[i];
     if (pawn.state !== 'onboard' || pawn.hasMoved) continue;
-    const prey = nearestDefensePrey(match, pawn.row, pawn.col);
-    if (!prey) {
-      pawn.hasMoved = true;
-      continue;
-    }
-    const tiles = getMoveTiles(match, pawn);
-    let best = null;
-    let bestD = manhattan(pawn.row, pawn.col, prey.row, prey.col);
-    tiles.forEach(function (tile) {
-      const d = manhattan(tile.row, tile.col, prey.row, prey.col);
-      if (d < bestD) {
-        bestD = d;
-        best = tile;
-      }
+    const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
+    const options = [{
+      row: pawn.row,
+      col: pawn.col,
+      stay: true,
+      score: stay.score,
+      nexusShot: stay.nexusShot
+    }];
+    getMoveTiles(match, pawn).forEach(function (tile) {
+      const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
+      options.push({
+        row: tile.row,
+        col: tile.col,
+        stay: false,
+        score: scored.score,
+        nexusShot: scored.nexusShot
+      });
     });
-    if (best) {
-      const path = pathBFS(match, pawn, best.row, best.col);
+    const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
+    const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
+    if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
+      const path = pathBFS(match, pawn, picked.row, picked.col);
       if (path && path.length) events.push.apply(events, simMove(match, pawn, path));
     }
     pawn.hasMoved = true;
@@ -484,7 +591,7 @@ function simDefenseEnemyPhase(match) {
   events.push.apply(events, simDefenseEmerge(match));
   events.push.apply(events, simDefenseMove(match));
   assignDefenseIntents(match);
-  events.push.apply(events, markDefenseSpawns(match, defenseSpawnCount(match.turnCount)));
+  events.push.apply(events, markDefenseSpawns(match, defenseSpawnCount(match)));
   return events;
 }
 

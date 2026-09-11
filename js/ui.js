@@ -91,7 +91,7 @@ function renderPanel() {
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' drops in immediately.' : ' arrives at the start of your next turn.') + '</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' arrives next turn with a burst, then is spent.') + '</div>'
     : '';
 
   const logLines = recentLogLines(5);
@@ -119,16 +119,19 @@ function renderPanel() {
 function wizardStatusBits(wiz) {
   const bits = [];
   if (wiz.pawnKind) {
-    bits.push(wiz.pawnKind);
     if (wiz.intent) {
       const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
-      bits.push('aims ' + (dir || 'ahead'));
+      bits.push(defenseKindLabel(wiz.pawnKind) + (dir ? ' ' + dir : ''));
     } else {
       bits.push('no telegraph');
     }
     return bits;
   }
-  if (wiz.silenceSkip) bits.push('silenced — no attack');
+  if (wiz.summoningSickness) {
+    bits.push('summoning sickness');
+    bits.push('burst spent');
+    return bits;
+  }
   else if (wiz.silenced) bits.push('silenced');
   if (wiz.hasMoved) bits.push('moved');
   else bits.push('can move');
@@ -155,7 +158,7 @@ function renderInspect(selected) {
       '<div class="inspect-icon ' + selected.element + '">' + iconSpan(selected.element, '#ffffff') + '</div>' +
       '<div class="inspect-copy">' +
         '<div class="inspect-name">' + selected.name + enemyTag + '</div>' +
-        '<div class="inspect-spell">' + (selected.pawnKind ? selected.pawnKind + ' · ' : (selected.spellName || selected.element) + ' · ') + selected.hp + '/' + selected.maxHp + ' hp</div>' +
+        '<div class="inspect-spell">' + (selected.pawnKind ? defenseKindLabel(selected.pawnKind) + ' ' + (selected.castRange || 1) + ' · ' : (selected.spellName || selected.element) + ' · ') + selected.hp + '/' + selected.maxHp + ' hp</div>' +
         '<div class="inspect-status">' + bits.join(' · ') + '</div>' +
       '</div>' +
       hint +
@@ -173,15 +176,16 @@ function renderActionRow(selected) {
     !state.animating &&
     canAct()
   );
-  const moved = !!(selected && selected.hasMoved);
-  const attacked = !!(selected && selected.hasAttacked);
+  const sick = !!(selected && selected.summoningSickness);
+  const moved = !!(selected && (selected.hasMoved || sick));
+  const attacked = !!(selected && (selected.hasAttacked || sick));
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
   const undoOk = usable && canUndoMove(selected);
   const castLabel = selected ? spellLabel(selected).toLowerCase() : 'cast';
-  const moveLabel = moved ? 'moved' : 'move';
-  const meleeLabel = attacked ? 'spent' : 'melee';
-  const spentCast = attacked ? 'spent' : castLabel;
+  const moveLabel = sick ? 'sick' : (moved ? 'moved' : 'move');
+  const meleeLabel = sick ? 'sick' : (attacked ? 'spent' : 'melee');
+  const spentCast = sick ? 'sick' : (attacked ? 'spent' : castLabel);
 
   return (
     '<div class="action-row">' +

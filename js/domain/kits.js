@@ -1,4 +1,5 @@
 const TEAM_SIZE = 4;
+const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];
 
 const WIZARD_TYPES = [
   { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2 },
@@ -9,7 +10,15 @@ const WIZARD_TYPES = [
   { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 9, cost: 4, meleeAttack: 3, meleeDisplacement: 1 }
 ];
 
-const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'earth'];
+const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'ice'];
+
+function kitPlayable(id) {
+  return PLAYABLE_KIT_IDS.indexOf(id) !== -1;
+}
+
+function playableKits() {
+  return WIZARD_TYPES.filter(function (kit) { return kitPlayable(kit.id); });
+}
 
 function kitById(id) {
   let i;
@@ -47,9 +56,17 @@ function uniqueKitIds(ids) {
 
 function padKitIds(ids) {
   const filled = validKitIds(ids).slice(0, TEAM_SIZE);
+  const used = {};
+  const seen = {};
   let i;
+  for (i = 0; i < filled.length; i++) used[filled[i]] = (used[filled[i]] || 0) + 1;
   for (i = 0; i < DEFAULT_TEAM.length && filled.length < TEAM_SIZE; i++) {
-    if (filled.indexOf(DEFAULT_TEAM[i]) === -1) filled.push(DEFAULT_TEAM[i]);
+    const id = DEFAULT_TEAM[i];
+    seen[id] = (seen[id] || 0) + 1;
+    if ((used[id] || 0) < seen[id]) {
+      filled.push(id);
+      used[id] = (used[id] || 0) + 1;
+    }
   }
   i = 0;
   while (filled.length < TEAM_SIZE) {
@@ -68,7 +85,7 @@ function teamHasKit(ids, id) {
 }
 
 function pickEnemyTeam(rng, playerTeam) {
-  const pool = kitIds();
+  const pool = PLAYABLE_KIT_IDS.slice();
   const enemy = [];
   let i;
   if (!pool.length) return normalizeTeam(playerTeam);

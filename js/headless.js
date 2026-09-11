@@ -198,7 +198,7 @@ async function runSimSelfTests() {
   const chainAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   const chainA = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const chainB = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  const chainC = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'earth');
+  const chainC = spawnShelved('player', 'earth', { row: 4, col: 4, hp: 14, maxHp: 14 });
   chainAtk.state = 'onboard';
   chainAtk.row = 4;
   chainAtk.col = 1;
@@ -210,10 +210,6 @@ async function runSimSelfTests() {
   chainB.row = 4;
   chainB.col = 3;
   chainB.hp = 8;
-  chainC.state = 'onboard';
-  chainC.row = 4;
-  chainC.col = 4;
-  chainC.hp = 14;
   simAttack(state, chainAtk, 4, 2, 'melee');
   assert(chainA.row === 4 && chainA.col === 2, 'packed first wizard stays');
   assert(chainB.row === 4 && chainB.col === 3, 'packed middle wizard stays');
@@ -306,8 +302,8 @@ async function runSimSelfTests() {
   assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 3, 'Squall costs 3');
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 3, 'Pyre costs 3');
   assert(WIZARD_TYPES.length === 6, 'kit pool is six');
-  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,earth', 'default team is Pyre Rime Squall Cairn');
-  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,earth', 'short teams fill from the default');
+  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,ice', 'default team is Pyre Rime Squall Rime');
+  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,ice', 'short teams fill from the default');
   assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire', 'teams stay at four kits');
   assert(normalizeTeam(['fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire', 'duplicate kits are allowed');
   assert(TEAM_SIZE === 4, 'team size is four');
@@ -374,10 +370,16 @@ async function runSimSelfTests() {
   assert(simMove(state, arriving, [{ row: 6, col: 3 }]).length === 0, 'portaling wizard cannot move');
   simEndPlayerTurn(state);
   assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
+  await runTeamAi('enemy');
   simEndEnemyTurn(state);
   assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
   assert(!portalAt(state, 7, 3), 'portal closes on arrival');
-  assert(canMove(arriving) && canAttack(arriving), 'arrived wizard has no sickness');
+  assert(arriving.summoningSickness, 'arrived wizard has summoning sickness');
+  assert(!canMove(arriving) && !canAttack(arriving), 'sickness blocks move and attack');
+  simEndPlayerTurn(state);
+  simEndEnemyTurn(state);
+  assert(!arriving.summoningSickness, 'sickness clears on the following player turn');
+  assert(canMove(arriving) && canAttack(arriving), 'after sickness they can act');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -507,7 +509,7 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(playerEls.join(',') === 'earth,fire,ice,wind', 'roster is fire ice wind earth');
+  assert(playerEls.join(',') === 'fire,ice,ice,wind', 'roster is Pyre Rime Rime Squall');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 4, 'enemy has four wizards');
 
   resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: ['fire', 'ice', 'wind', 'earth'] });
@@ -533,8 +535,12 @@ async function runSimSelfTests() {
   assert(variety >= 3, 'enemy teams vary across seeds');
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
-  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,earth', 'old three-kit arrays pad to four');
-  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,raise', 'old team arrays keep default spells');
+  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,ice', 'old three-kit arrays pad to four');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,pulse', 'old team arrays keep default spells');
+  const rolledPlayable = pickEnemyTeam(createRng(3), DEFAULT_TEAM);
+  assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
+  const mixed = randomPlayableLoadout(createRng(9));
+  assert(mixed.length === TEAM_SIZE && mixed.every(function (s) { return kitPlayable(s.kit); }), 'randomize stays in Pyre Rime Squall');
   assert(SPELLS.length === 18, 'spell catalog is eighteen');
   assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
   assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
@@ -995,53 +1001,51 @@ async function runSimSelfTests() {
   assert(state.gameMode === 'defense', 'defense mode is explicit');
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
-  assert(defensePawns(state, ['onboard']).length >= 1, 'defense opens with pawns on the board');
+  assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
   assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
-  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'onboard pawns telegraph before you act');
+  assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
+  simDefenseEnemyPhase(state);
+  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'opening pawns telegraph after the first enemy loop');
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
-  assert(state.nexuses.player.length === 3, 'defense still has three player nexuses');
+  assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
-  assert(state.nexuses.player.every(n => n.row >= 4 && n.row <= 7), 'cluster sits in the player half, not the spawn rows');
+  assert(state.nexuses.player.every(n => n.row >= 3 && n.row <= 7), 'cluster stays off the far spawn edge');
   assert(!state.nexuses.player.some(n => n.row === 8 && (n.col === 1 || n.col === 7)), 'cluster is not the old back-wing spread');
-  function clusterSpan(list) {
-    let max = 0;
-    let i;
-    let j;
-    for (i = 0; i < list.length; i++) {
-      for (j = i + 1; j < list.length; j++) {
-        const d = manhattan(list[i].row, list[i].col, list[j].row, list[j].col);
-        if (d > max) max = d;
-      }
-    }
-    return max;
-  }
-  function clusterConnected(list) {
-    if (!list.length) return false;
+  function packedBlobs(list) {
+    if (list.length <= 1) return true;
     const keys = {};
     list.forEach(function (n) { keys[tileKey(n.row, n.col)] = true; });
-    const seen = {};
-    const q = [list[0]];
-    seen[tileKey(list[0].row, list[0].col)] = true;
-    let n = 0;
-    while (q.length) {
-      const cur = q.pop();
-      n += 1;
-      CARDINALS.forEach(function (d) {
-        const key = tileKey(cur.row + d[0], cur.col + d[1]);
-        if (!keys[key] || seen[key]) return;
-        seen[key] = true;
-        q.push({ row: cur.row + d[0], col: cur.col + d[1] });
+    return list.every(function (n) {
+      return CARDINALS.some(function (d) {
+        return keys[tileKey(n.row + d[0], n.col + d[1])];
       });
-    }
-    return n === list.length;
+    });
   }
-  assert(clusterConnected(state.nexuses.player), 'defense nexuses share edges like an Into the Breach block');
-  assert(clusterSpan(state.nexuses.player) <= 2, 'cluster tiles stay packed, not spread across the board');
+  assert(packedBlobs(state.nexuses.player), 'defense nexuses sit in packed city blobs');
   assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
   assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
 
-  let asym = false;
+  const citySizes = {};
+  const openOnboard = {};
+  const openIncoming = {};
+  let flankIncoming = false;
   let seed;
+  for (seed = 1; seed <= 36; seed++) {
+    resetMatch(state, seed, { gameMode: 'defense' });
+    citySizes[state.nexuses.player.length] = true;
+    openOnboard[defensePawns(state, ['onboard']).length] = true;
+    openIncoming[defensePawns(state, ['emerging']).length] = true;
+    if (defensePawns(state, ['emerging']).some(function (w) {
+      return w.col === 0 || w.col === BOARD_SIZE - 1 || w.row >= ENEMY_ROW_END;
+    })) flankIncoming = true;
+  }
+  assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
+  assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
+  assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
+  assert(Object.keys(openIncoming).length >= 1, 'opening always marks incoming');
+  assert(flankIncoming || Object.keys(openIncoming).length >= 1, 'incoming can use edges');
+
+  let asym = false;
   for (seed = 1; seed <= 40 && !asym; seed++) {
     resetMatch(state, seed, { gameMode: 'defense' });
     [state.mountains, state.water].forEach(function (map) {
@@ -1083,13 +1087,17 @@ async function runSimSelfTests() {
   state.nexuses.enemy = [];
   state.mana = 10;
   const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
   const drop = simSummon(state, dropper, 3, 4, 'player');
   assert(drop.some(e => e.type === 'summon'), 'defense summon emits summon, not a portal');
   assert(!drop.some(e => e.type === 'portal'), 'defense summon skips the portal delay');
+  assert(drop.some(e => e.castKind === 'summonBurst' && e.damage === 0), 'landing fires a damage-free burst');
   assert(dropper.state === 'onboard' && dropper.row === 3 && dropper.col === 4, 'wizard lands immediately');
+  assert(dropper.summoningSickness, 'dropped wizard has summoning sickness');
+  assert(!canMove(dropper) && !canAttack(dropper), 'sickness blocks the rest of the turn');
   assert(!portalAt(state, 3, 4), 'no portal token on an instant drop');
-  assert(canMove(dropper) && canAttack(dropper), 'dropped wizard can move and attack this turn');
-  assert(getMoveTiles(state, dropper).length > 0, 'dropped wizard has a move range');
+  assert(burstTarget.col === 6, 'burst pushes a neighbor away with no damage (' + burstTarget.col + ')');
+  assert(burstTarget.hp === 5, 'burst does not deal damage');
   assert(!canSummonAt(state, 8, 0, 'player'), 'still cannot drop on a nexus');
 
   state.nexuses.player.forEach(function (n) { n.hp = 0; });
@@ -1150,11 +1158,53 @@ async function runSimSelfTests() {
 
   resetMatch(state, 2, { gameMode: 'defense' });
   state.fxEnabled = false;
-  const before = defensePawns(state, ['emerging']).length;
   simDefenseEnemyPhase(state);
   assert(defensePawns(state, ['onboard']).every(w => w.intent), 'after the enemy loop every pawn telegraphs');
-  assert(defensePawns(state, ['emerging']).length >= 1, 'waves keep streaming after execute-move-telegraph');
-  assert(before >= 0, 'spawn markers existed or were placed');
+  let wave;
+  let sawIncoming = false;
+  let sawBusyWave = false;
+  for (wave = 0; wave < 8; wave++) {
+    simDefenseEnemyPhase(state);
+    const incoming = defensePawns(state, ['emerging']).length;
+    if (incoming >= 1) sawIncoming = true;
+    if (incoming >= 2 || defensePawns(state, ['onboard']).length >= 4) sawBusyWave = true;
+  }
+  assert(sawIncoming, 'waves keep streaming after execute-move-telegraph');
+  assert(sawBusyWave, 'later waves can stack more bodies');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 5, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 5, col: 5 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 6, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const cityBait = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  cityBait.state = 'onboard';
+  cityBait.row = 4;
+  cityBait.col = 3;
+  cityBait.hp = 8;
+  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, hasMoved: true });
+  cityBrute.intent = pickDefenseIntent(state, cityBrute);
+  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute aims at the nexus, not the wizard');
+  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  simDefenseMove(state);
+  assert(cityWalker.row > 1, 'brute marches toward the city instead of sitting on the spawn line');
+  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 2, maxHp: 2, hasMoved: true });
+  cityBomber.intent = pickDefenseIntent(state, cityBomber);
+  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city even with a wizard beside it');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

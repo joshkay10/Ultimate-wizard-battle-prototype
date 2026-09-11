@@ -16,61 +16,86 @@ function makeNexusCamp(team, hp) {
   });
 }
 
-function defenseNexusShapes() {
+function defenseNexusCellOk(row, col, used) {
+  if (!inBounds(row, col)) return false;
+  if (row < 3 || row > 7) return false;
+  if (used && used[tileKey(row, col)]) return false;
+  return true;
+}
+
+function growDefenseNexusBlob(match, size, used) {
+  const rng = match.rng;
+  let attempt;
+  for (attempt = 0; attempt < 50; attempt++) {
+    const originRow = rng ? (4 + rng.int(4)) : 5;
+    const originCol = rng ? (1 + rng.int(7)) : 4;
+    if (!defenseNexusCellOk(originRow, originCol, used)) continue;
+    const body = [{ row: originRow, col: originCol }];
+    const local = {};
+    local[tileKey(originRow, originCol)] = true;
+    let guard = 0;
+    while (body.length < size && guard++ < 48) {
+      const from = body[rng ? rng.int(body.length) : 0];
+      const opts = [];
+      CARDINALS.forEach(function (d) {
+        const nr = from.row + d[0];
+        const nc = from.col + d[1];
+        if (!defenseNexusCellOk(nr, nc, used)) return;
+        if (local[tileKey(nr, nc)]) return;
+        opts.push({ row: nr, col: nc });
+      });
+      if (!opts.length) break;
+      const next = opts[rng ? rng.int(opts.length) : 0];
+      local[tileKey(next.row, next.col)] = true;
+      body.push(next);
+    }
+    if (body.length === size) return body;
+  }
+  return null;
+}
+
+function fallbackDefenseNexusTiles() {
   return [
-    [[0, 0], [0, 1], [1, 0]],
-    [[0, 0], [0, 1], [1, 1]],
-    [[0, 0], [1, 0], [1, 1]],
-    [[0, 0], [1, 0], [1, -1]],
-    [[0, 0], [0, 1], [0, 2]],
-    [[0, 0], [1, 0], [2, 0]]
+    { row: 5, col: 3 },
+    { row: 5, col: 4 },
+    { row: 6, col: 4 }
   ];
 }
 
 function makeDefenseNexusCluster(match) {
   const rng = match.rng;
-  const shapes = defenseNexusShapes();
-  let attempt;
-  for (attempt = 0; attempt < 40; attempt++) {
-    const shape = shapes[rng ? rng.int(shapes.length) : attempt % shapes.length];
-    const originRow = rng ? (4 + rng.int(4)) : 5;
-    const originCol = rng ? (2 + rng.int(5)) : 4;
-    const tiles = [];
-    let ok = true;
-    let i;
-    for (i = 0; i < shape.length; i++) {
-      const row = originRow + shape[i][0];
-      const col = originCol + shape[i][1];
-      if (!inBounds(row, col) || row < 4 || row > 7) {
-        ok = false;
-        break;
-      }
-      tiles.push({ row: row, col: col });
+  const min = typeof DEFENSE_NEXUS_MIN === 'number' ? DEFENSE_NEXUS_MIN : 3;
+  const max = typeof DEFENSE_NEXUS_MAX === 'number' ? DEFENSE_NEXUS_MAX : 6;
+  const count = rng ? (min + rng.int(max - min + 1)) : min;
+  const used = {};
+  let tiles = [];
+  const twoBlobs = !!(rng && count >= 5 && rng.next() < 0.42);
+  if (twoBlobs) {
+    const sizeA = 2 + rng.int(count - 3);
+    const sizeB = count - sizeA;
+    const blobA = growDefenseNexusBlob(match, sizeA, used);
+    if (blobA) {
+      blobA.forEach(function (t) {
+        used[tileKey(t.row, t.col)] = true;
+        tiles.push(t);
+      });
     }
-    if (!ok) continue;
-    const seen = {};
-    for (i = 0; i < tiles.length; i++) {
-      const key = tileKey(tiles[i].row, tiles[i].col);
-      if (seen[key]) {
-        ok = false;
-        break;
-      }
-      seen[key] = true;
+    const blobB = growDefenseNexusBlob(match, sizeB, used);
+    if (blobB) {
+      blobB.forEach(function (t) { tiles.push(t); });
     }
-    if (!ok) continue;
-    return tiles.map(function (tile, idx) {
-      return makeNexus({
-        id: 'player-cluster-' + idx,
-        row: tile.row,
-        col: tile.col
-      }, 'player', DEFENSE_NEXUS_HP);
-    });
+  } else {
+    const blob = growDefenseNexusBlob(match, count, used);
+    if (blob) tiles = blob;
   }
-  return [
-    makeNexus({ id: 'player-cluster-0', row: 5, col: 3 }, 'player', DEFENSE_NEXUS_HP),
-    makeNexus({ id: 'player-cluster-1', row: 5, col: 4 }, 'player', DEFENSE_NEXUS_HP),
-    makeNexus({ id: 'player-cluster-2', row: 6, col: 4 }, 'player', DEFENSE_NEXUS_HP)
-  ];
+  if (tiles.length < min) tiles = fallbackDefenseNexusTiles();
+  return tiles.map(function (tile, idx) {
+    return makeNexus({
+      id: 'player-cluster-' + idx,
+      row: tile.row,
+      col: tile.col
+    }, 'player', DEFENSE_NEXUS_HP);
+  });
 }
 
 function allNexuses(match) {

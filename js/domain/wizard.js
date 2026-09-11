@@ -37,11 +37,11 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
 }
 
 function canMove(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness);
 }
 
 function canAttack(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness);
 }
 
 function clearMoveUndo(wizard) {

@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: Defense holdout (2 HP nexus cluster, instant drop anywhere, unmirrored map), Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts.
+Shipped: Defense holdout (2 HP nexus city, instant drop anywhere, unmirrored map), Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts.
 
 ## Need from you
 

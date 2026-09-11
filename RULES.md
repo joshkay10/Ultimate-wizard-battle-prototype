@@ -4,7 +4,7 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **cluster of three nexuses (2 HP each)**. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. New bodies keep streaming in. You still bring four wizards. Drop a wizard **anywhere** on an open tile — they land **immediately** and can move and attack that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute**, **move**, and **telegraph** again. They hunt the city first. New bodies stream in at a varying rate (quiet turns and busy turns, cap 7). **1–2** pawns can already be on the board at the start, with **no telegraph yet**. You still bring four wizards from Pyre, Rime, and Squall. Drop a wizard **anywhere** on an open tile — they land **immediately**, burst (push only), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -17,11 +17,11 @@ Black discs, white icons, 2–5 HP. Each body has one trick. Red tiles show the 
 | Charger | 3–4 | Charge up to 3 tiles that way. Hits the first body or nexus. Runs into water or a void and falls |
 | Bomber | 2–3 | Fireball, line 4, first wizard or nexus |
 
-If you push them, they still fire in the **same direction** from the new tile. Incoming marks appear in their back 3 rows and arrive after they execute.
+If you push them, they still fire in the **same direction** from the new tile. Incoming marks appear on the far edge and flanks and arrive after they execute. They hunt your nexuses: a crystal shot beats a wizard shot, and they march on the city if they cannot hit a crystal this turn. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **1–2** of them can already be on the board with **no telegraph yet** — they aim after the first enemy phase.
 
 ## Team
 
-- Six kits in the pool. You bring **exactly four**. Copies are allowed. Each body brings **one spell** from its element — two Rimes can take Pulse and Blizzard.
+- Six kits in the pool. **Pyre, Rime, and Squall are live.** Cairn, Volt, and Chrono are on the bench. You bring **exactly four** from the live three (copies allowed). Team has a **randomize** button that rolls four bodies from those three.
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
@@ -30,7 +30,7 @@ If you push them, they still fire in the **same direction** from the new tile. I
 
 ## Setup
 
-- **Defense** — only your camp. Three nexuses at **2 HP**, packed in a connected cluster (L or I, Into the Breach city-block style) in the lower-middle of the board. No enemy crystals.
+- **Defense** — only your camp. **3–6 nexuses** at **2 HP**, packed in one or two connected city blobs (Into the Breach style) in the lower-middle of the board. No enemy crystals. Opening: **1–2** pawns already on the board with no telegraph yet, plus incoming marks. Later incoming counts vary by seed.
 - **Vs** — each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
 - **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
@@ -90,8 +90,8 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 On your turn you may, in any order:
 
 1. **Summon** — pay a wizard’s cost.
-   - **Defense:** drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately** and can move and attack this turn.
-   - **Vs:** open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, ready to move and attack (no summoning sickness). If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
+   - **Defense:** drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
+   - **Vs:** open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, also bursts, then is sick that turn. If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
 2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
 4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
