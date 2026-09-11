@@ -163,7 +163,7 @@ function markDefenseSpawns(match, count) {
 
 function seedDefenseOpening(match) {
   const rng = match.rng;
-  const opening = rng ? (1 + rng.int(3)) : 2;
+  const opening = rng ? (1 + rng.int(2)) : 1;
   const incoming = rng ? (1 + rng.int(2)) : 1;
   let i;
   for (i = 0; i < opening; i++) {
@@ -172,10 +172,10 @@ function seedDefenseOpening(match) {
     createDefensePawn(match, pickDefenseKind(match), {
       state: 'onboard',
       row: tile.row,
-      col: tile.col
+      col: tile.col,
+      intent: null
     });
   }
-  assignDefenseIntents(match);
   markDefenseSpawns(match, incoming);
 }
 

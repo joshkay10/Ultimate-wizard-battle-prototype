@@ -1001,9 +1001,11 @@ async function runSimSelfTests() {
   assert(state.gameMode === 'defense', 'defense mode is explicit');
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
-  assert(defensePawns(state, ['onboard']).length >= 1, 'defense opens with pawns on the board');
+  assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
   assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
-  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'onboard pawns telegraph before you act');
+  assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
+  simDefenseEnemyPhase(state);
+  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'opening pawns telegraph after the first enemy loop');
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
   assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
@@ -1039,6 +1041,7 @@ async function runSimSelfTests() {
   }
   assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
   assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
+  assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
   assert(Object.keys(openIncoming).length >= 1, 'opening always marks incoming');
   assert(flankIncoming || Object.keys(openIncoming).length >= 1, 'incoming can use edges');
 

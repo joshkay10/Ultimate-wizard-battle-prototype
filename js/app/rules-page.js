@@ -6,7 +6,7 @@ function renderRulesPage() {
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute, move, and telegraph again. They hunt the city first. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. Incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute, move, and telegraph again. They hunt the city first. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. Opening puts 1–2 pawns on the board with no telegraph yet, plus incoming marks. Later incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
         '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
 
@@ -22,7 +22,7 @@ function renderRulesPage() {
 
       '<h2>Setup</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — only your camp. <strong>3–6 nexuses</strong> at <strong>2 HP</strong>, packed in one or two city blobs. No enemy crystals. Opening wave and later incoming counts vary.</li>' +
+        '<li><strong>Defense</strong> — only your camp. <strong>3–6 nexuses</strong> at <strong>2 HP</strong>, packed in one or two city blobs. No enemy crystals. Opening: 1–2 pawns on the board with no telegraph yet, plus incoming marks. Later incoming counts vary.</li>' +
         '<li><strong>Vs</strong> — each side has <strong>three nexuses</strong> (5 HP): two back wings and one forward center, vertically mirrored. Drop all three to win that way.</li>' +
         '<li><strong>Mountains</strong> block walk, summon, melee, cast, and push.</li>' +
         '<li><strong>Water</strong> shows up on some maps. Step, slide, or get pushed on and you die. No summoning onto it. Line spells fly over.</li>' +
