@@ -15,9 +15,9 @@ function defenseTelegraphStyle(kind) {
 }
 
 const DEFENSE_PAWN_KINDS = {
-  melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 2, range: 1, hpMin: 4, hpMax: 5 },
-  charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 2, range: 3, hpMin: 3, hpMax: 4 },
-  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 2, range: 4, hpMin: 2, hpMax: 3 }
+  melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 1, range: 1, hpMin: 3, hpMax: 3, displacement: 0 },
+  charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 1, range: 3, hpMin: 4, hpMax: 4, displacement: 1 },
+  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 1, range: 4, hpMin: 3, hpMax: 3, displacement: 0 }
 };
 
 const DEFENSE_PAWN_ORDER = ['melee', 'charge', 'fireball'];
@@ -45,9 +45,9 @@ function createDefensePawn(match, kind, extra) {
     maxHp: hp,
     cost: 0,
     meleeAttack: spec.attack,
-    meleeDisplacement: 0,
+    meleeDisplacement: spec.displacement || 0,
     castAttack: spec.attack,
-    castDisplacement: 0,
+    castDisplacement: spec.displacement || 0,
     castRange: spec.range,
     castKind: spec.id === 'fireball' ? 'stream' : (spec.id === 'charge' ? 'gust' : 'melee'),
     spellName: spec.name,
@@ -140,17 +140,14 @@ function defenseSpawnCount(match) {
   if (living === 0) return 0;
   const budget = defenseBudgetLeft(match);
   if (budget <= 0) return 0;
-  const cap = typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7;
+  const cap = typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 5;
   const room = cap - living;
   if (room <= 0) return 0;
   const t = match.turnCount || 1;
   const rng = match.rng;
-  let target = 1;
-  if (t >= 4) target = 2;
-  if (t >= 8) target = 2;
-  if (living <= 2) target += 1;
-  if (living >= 5) target = Math.min(target, 1);
-  if (living >= 6) target = Math.min(target, 1);
+  let target = 2;
+  if (living >= 3) target = 1;
+  if (t >= 4) target = Math.max(target, 1);
   if (!rng) return Math.min(target, room, budget);
   const roll = rng.int(10);
   let n = target;
@@ -161,9 +158,9 @@ function defenseSpawnCount(match) {
 }
 
 function isDefenseSpawnCell(row, col) {
-  if (row >= 0 && row < ENEMY_ROW_END) return true;
-  if ((col === 0 || col === BOARD_SIZE - 1) && row <= 5) return true;
-  return false;
+  if (!inBounds(row, col)) return false;
+  if (row >= BOARD_SIZE - 2) return false;
+  return true;
 }
 
 function defenseSpawnSector(row, col) {
@@ -220,9 +217,7 @@ function pickDefenseSpawnTile(match) {
       const dist = nearestDefensePawnDist(match, r, c);
       let score = Math.min(dist, 6) * 5;
       if (defenseSpawnSector(r, c) === sector) score += 14;
-      score += (ENEMY_ROW_END - Math.min(r, ENEMY_ROW_END));
-      if (c === 0 || c === BOARD_SIZE - 1) score += 1;
-      if (nearNexus(match, r, c)) score -= 10;
+      if (nearNexus(match, r, c)) score -= 3;
       candidates.push({ row: r, col: c, score: score, sector: defenseSpawnSector(r, c) });
     }
   }
@@ -230,7 +225,8 @@ function pickDefenseSpawnTile(match) {
   candidates.sort(function (a, b) { return b.score - a.score; });
   const inSector = candidates.filter(function (tile) { return tile.sector === sector; });
   const poolSrc = inSector.length ? inSector : candidates;
-  const pool = poolSrc.slice(0, Math.max(3, Math.min(6, poolSrc.length)));
+  const best = poolSrc[0].score;
+  const pool = poolSrc.filter(function (tile) { return tile.score >= best - 8; });
   return pool[match.rng ? match.rng.int(pool.length) : 0];
 }
 
@@ -245,7 +241,7 @@ function markDefenseSpawns(match, count) {
   const events = [];
   let n;
   for (n = 0; n < count; n++) {
-    if (defensePawns(match, ['onboard', 'emerging']).length >= (typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7)) break;
+    if (defensePawns(match, ['onboard', 'emerging']).length >= (typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 5)) break;
     const tile = pickDefenseSpawnTile(match);
     if (!tile) break;
     const pawn = createDefensePawn(match, pickDefenseKind(match), {
@@ -303,10 +299,15 @@ function nearestDefenseNexus(match, row, col) {
 }
 
 function nearestDefensePrey(match, row, col) {
-  const nexus = nearestDefenseNexus(match, row, col);
-  if (nexus) return { row: nexus.row, col: nexus.col, kind: 'nexus' };
   let best = null;
   let bestD = Infinity;
+  livingNexuses(match, 'player').forEach(function (n) {
+    const d = manhattan(row, col, n.row, n.col);
+    if (d < bestD) {
+      bestD = d;
+      best = { row: n.row, col: n.col, kind: 'nexus' };
+    }
+  });
   Object.values(match.wizards).forEach(function (w) {
     if (w.team !== 'player' || w.state !== 'onboard') return;
     const d = manhattan(row, col, w.row, w.col);
@@ -316,6 +317,17 @@ function nearestDefensePrey(match, row, col) {
     }
   });
   return best;
+}
+
+function defenseClaimedTiles(match, exceptId) {
+  const keys = {};
+  defensePawns(match, ['onboard']).forEach(function (pawn) {
+    if (!pawn || pawn.id === exceptId || !pawn.intent) return;
+    defenseIntentTiles(match, pawn).forEach(function (tile) {
+      keys[tileKey(tile.row, tile.col)] = true;
+    });
+  });
+  return keys;
 }
 
 function defenseShotScore(match, pawn, row, col, dr, dc) {
@@ -331,14 +343,14 @@ function defenseShotScore(match, pawn, row, col, dr, dc) {
     const victim = wizardAt(match, nr, nc);
     const nex = nexusAt(match, nr, nc);
     if (nex) {
-      if (nex.team === 'player') return 800 - i * 10 + (nex.maxHp - nex.hp) * 60;
+      if (nex.team === 'player') return 50 - i;
       return -20;
     }
     if (victim) {
-      if (victim.team === 'player') return 70 - i * 6;
-      return -40;
+      if (victim.team === 'player') return 50 - i;
+      return -25;
     }
-    if (hazardAt(match, nr, nc)) return pawn.pawnKind === 'fireball' ? 0 : (pawn.pawnKind === 'charge' ? -200 : 0);
+    if (hazardAt(match, nr, nc) && pawn.pawnKind === 'charge') return -200;
     r = nr;
     c = nc;
     if (pawn.pawnKind === 'melee') break;
@@ -373,18 +385,19 @@ function bestDefenseShot(match, pawn, row, col) {
 
 function scoreDefenseTile(match, pawn, row, col) {
   const shot = bestDefenseShot(match, pawn, row, col);
-  const nexus = nearestDefenseNexus(match, row, col);
-  const dist = nexus ? manhattan(row, col, nexus.row, nexus.col) : 12;
-  const nexusShot = shot.score >= 400;
+  const prey = nearestDefensePrey(match, row, col);
+  const dist = prey ? manhattan(row, col, prey.row, prey.col) : 12;
+  const claimed = defenseClaimedTiles(match, pawn.id);
   let score;
-  if (nexusShot) score = 9000 + shot.score - dist * 4;
-  else score = (18 - dist) * 110;
+  if (shot.score > 0) score = 2000 + shot.score - dist * 2;
+  else score = (18 - dist) * 40;
+  if (claimed[tileKey(row, col)]) score -= 120;
+  if (hazardAt(match, row, col)) score -= 800;
   if (pawn.pawnKind === 'charge') {
-    const toward = nexus ? cardinalToward(row, col, nexus.row, nexus.col) : null;
-    if (toward && defenseChargeWouldFall(match, row, col, toward.dr, toward.dc)) score -= 2800;
-    if (shot.score > 0 && !defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score += 180;
+    if (shot.score > 0 && defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score -= 2800;
+    if (shot.score > 0 && !defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score += 80;
   }
-  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: nexusShot };
+  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: shot.score > 0 };
 }
 
 function pickScoredOption(rng, options) {
@@ -429,20 +442,10 @@ function pickDefenseIntent(match, pawn) {
     const dr = CARDINALS[d][0];
     const dc = CARDINALS[d][1];
     const score = defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
-    options.push({ kind: spec.id, dr: dr, dc: dc, score: score, nexusShot: score >= 400 });
+    options.push({ kind: spec.id, dr: dr, dc: dc, score: score });
   }
-  const nexusHits = options.filter(function (opt) { return opt.nexusShot; });
-  const pool = nexusHits.length ? nexusHits : options;
-  const hit = pickScoredOption(match.rng, pool);
-  if (nexusHits.length && hit) {
-    return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: hit.dr, dc: hit.dc });
-  }
-  if (hit && hit.score >= 40) {
-    const prey = nearestDefenseNexus(match, pawn.row, pawn.col);
-    if (prey) {
-      const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
-      return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: dir.dr, dc: dir.dc });
-    }
+  const hit = pickScoredOption(match.rng, options);
+  if (hit && hit.score > 0) {
     return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: hit.dr, dc: hit.dc });
   }
   const prey = nearestDefensePrey(match, pawn.row, pawn.col);
@@ -610,8 +613,12 @@ function simPawnCharge(match, pawn) {
       events[0].row = nr;
       events[0].col = nc;
       events[0].hit = victim ? 'wizard' : 'nexus';
-      if (victim) events.push.apply(events, hurtWizardAmount(match, victim, pawn.meleeAttack, 'pawn', nr, nc));
-      else events.push.apply(events, hurtNexus(match, nex, pawn.meleeAttack, 'pawn'));
+      if (victim) {
+        events.push.apply(events, hurtWizardAmount(match, victim, pawn.meleeAttack, 'pawn', nr, nc));
+        if (victim.state === 'onboard' && (pawn.meleeDisplacement || 0) > 0) {
+          events.push.apply(events, simPush(match, victim, dr, dc, pawn.meleeDisplacement));
+        }
+      } else events.push.apply(events, hurtNexus(match, nex, pawn.meleeAttack, 'pawn'));
       break;
     }
     pawn.row = nr;

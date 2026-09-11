@@ -6,9 +6,22 @@ function renderRulesPage() {
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute every strike <strong>north to south, then west to east</strong> (numbered on the telegraph), then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. A match has <strong>10 invaders</strong> total (opening counts). At most 7 on the board at once. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming shows after the first enemy phase, and prefers an empty flank or the far edge. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You win if you wipe every pawn (on the board and incoming). New bodies only stream in if someone is still standing and the 10 are not all out. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute every strike <strong>north to south, then west to east</strong> (numbered on the telegraph), then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. A wizard shot and a city shot are worth the same. They will not aim a charge into water or a void; you can still shove them into one. Black discs: Brute melee 1 (3 HP), Charger ram 1 then push 1 (4 HP), Bomber line 4 for 1 (3 HP) — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. A match has <strong>10 invaders</strong> total (opening counts). At most <strong>5</strong> on the board at once. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming holes open after the first enemy phase on open field ground — not the last two rows, not city, water, or mountains. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You win if you wipe every pawn (on the board and incoming). New bodies only stream in if someone is still standing and the 10 are not all out. You lose if the cluster falls or your wizards are wiped.</li>' +
         '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
+
+      '<h2>Defense enemies</h2>' +
+      '<p>Black discs. Each body is one Into the Breach archetype, 1 damage. A wizard and a nexus are worth the same shot.</p>' +
+      '<div class="table-wrap">' +
+        '<table class="rules-table">' +
+          '<thead><tr><th>Body</th><th>HP</th><th>Move</th><th>Trick</th></tr></thead>' +
+          '<tbody>' +
+            '<tr><td>Brute</td><td>3</td><td>3</td><td>Melee the adjacent tile (Scorpion)</td></tr>' +
+            '<tr><td>Charger</td><td>4</td><td>3</td><td>Charge 3, 1 dmg, then push 1 if they live. Dies in water (Beetle)</td></tr>' +
+            '<tr><td>Bomber</td><td>3</td><td>2</td><td>Line 4, 1 dmg, first wizard or nexus (Firefly)</td></tr>' +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
 
       '<h2>Team</h2>' +
       '<ul>' +
@@ -22,7 +35,7 @@ function renderRulesPage() {
 
       '<h2>Setup</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — only your camp. <strong>3–6 nexuses</strong> at <strong>2 HP</strong>, packed in one or two city blobs. No enemy crystals. Opening: 1–2 pawns on the board with no telegraph and no incoming marks. Incoming shows after the first enemy phase. <strong>10 invaders</strong> in a match, 7 on the board at once.</li>' +
+        '<li><strong>Defense</strong> — only your camp. <strong>3–6 nexuses</strong> at <strong>2 HP</strong>, packed in one or two city blobs. No enemy crystals. Opening: 1–2 pawns on the board with no telegraph and no incoming marks. Incoming holes show after the first enemy phase on open field ground, not the last two rows. <strong>10 invaders</strong> in a match, <strong>5</strong> on the board at once.</li>' +
         '<li><strong>Vs</strong> — each side has <strong>three nexuses</strong> (5 HP): two back wings and one forward center, vertically mirrored. Drop all three to win that way.</li>' +
         '<li><strong>Mountains</strong> block walk, summon, melee, cast, and push.</li>' +
         '<li><strong>Water</strong> shows up on some maps. Step, slide, or get pushed on and you die. No summoning onto it. Line spells fly over.</li>' +
