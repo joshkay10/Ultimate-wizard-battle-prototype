@@ -31,6 +31,29 @@ function setGameMode(mode) {
 
 let endingTurn = false;
 
+async function presentDefenseEnemyPhase() {
+  const strikes = simDefenseExecute(state);
+  if (strikes.length) {
+    await present(strikes);
+    await maybeWait(560);
+  }
+  const emerged = simDefenseEmerge(state);
+  if (emerged.length) {
+    await present(emerged);
+    await maybeWait(480);
+  }
+  const moves = simDefenseMove(state);
+  if (moves.length) {
+    await present(moves);
+    await maybeWait(560);
+  }
+  assignDefenseIntents(state);
+  if (typeof render === 'function') render();
+  await maybeWait(500);
+  const marks = markDefenseSpawns(state, defenseSpawnCount(state));
+  if (marks.length) await present(marks);
+}
+
 async function endTurn() {
   if (endingTurn || state.animating || state.gameOverResult) return;
   if (!canAct()) return;
@@ -42,10 +65,10 @@ async function endTurn() {
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
 
-    await maybeWait(420);
+    await maybeWait(500);
     if (state.matchId !== matchId) return;
     if (state.gameMode === 'defense') {
-      await present(simDefenseEnemyPhase(state));
+      await presentDefenseEnemyPhase();
     } else {
       await runTeamAi('enemy');
     }

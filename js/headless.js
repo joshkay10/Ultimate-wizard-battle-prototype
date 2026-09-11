@@ -1002,10 +1002,11 @@ async function runSimSelfTests() {
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
   assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
-  assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
+  assert(defensePawns(state, ['emerging']).length === 0, 'turn 1 has no incoming spawn marks');
   assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
   simDefenseEnemyPhase(state);
   assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'opening pawns telegraph after the first enemy loop');
+  assert(defensePawns(state, ['emerging']).length >= 1, 'incoming marks appear after the first enemy loop');
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
   assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
@@ -1027,14 +1028,14 @@ async function runSimSelfTests() {
 
   const citySizes = {};
   const openOnboard = {};
-  const openIncoming = {};
   let flankIncoming = false;
   let seed;
   for (seed = 1; seed <= 36; seed++) {
     resetMatch(state, seed, { gameMode: 'defense' });
     citySizes[state.nexuses.player.length] = true;
     openOnboard[defensePawns(state, ['onboard']).length] = true;
-    openIncoming[defensePawns(state, ['emerging']).length] = true;
+    assert(defensePawns(state, ['emerging']).length === 0, 'no seed opens with incoming marks');
+    simDefenseEnemyPhase(state);
     if (defensePawns(state, ['emerging']).some(function (w) {
       return w.col === 0 || w.col === BOARD_SIZE - 1 || w.row >= ENEMY_ROW_END;
     })) flankIncoming = true;
@@ -1042,8 +1043,7 @@ async function runSimSelfTests() {
   assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
   assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
   assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
-  assert(Object.keys(openIncoming).length >= 1, 'opening always marks incoming');
-  assert(flankIncoming || Object.keys(openIncoming).length >= 1, 'incoming can use edges');
+  assert(flankIncoming, 'incoming after the first enemy loop can use edges');
 
   let asym = false;
   for (seed = 1; seed <= 40 && !asym; seed++) {
@@ -1064,8 +1064,9 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   state.voids = {};
+  simDefenseEnemyPhase(state);
   const incoming = defensePawns(state, ['emerging'])[0];
-  assert(incoming && incoming.row != null, 'incoming marker has a tile');
+  assert(incoming && incoming.row != null, 'incoming marker has a tile after the first enemy loop');
   assert(!canSummonAt(state, incoming.row, incoming.col, 'player'), 'cannot drop on an emerging pawn');
   const midTiles = getPlayerSummonTiles(state).filter(function (t) { return t.row < SUMMON_ROW_START; });
   assert(midTiles.length > 0, 'defense can drop outside the back 3 rows');

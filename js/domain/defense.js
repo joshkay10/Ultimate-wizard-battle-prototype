@@ -164,7 +164,6 @@ function markDefenseSpawns(match, count) {
 function seedDefenseOpening(match) {
   const rng = match.rng;
   const opening = rng ? (1 + rng.int(2)) : 1;
-  const incoming = rng ? (1 + rng.int(2)) : 1;
   let i;
   for (i = 0; i < opening; i++) {
     const tile = pickDefenseSpawnTile(match);
@@ -176,7 +175,6 @@ function seedDefenseOpening(match) {
       intent: null
     });
   }
-  markDefenseSpawns(match, incoming);
 }
 
 function cardinalToward(row, col, tRow, tCol) {
