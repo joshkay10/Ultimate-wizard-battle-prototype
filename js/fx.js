@@ -100,7 +100,7 @@ async function playEvents(events) {
         while (j < events.length && !fxGroupStop(events[j].type)) j++;
         await playAttackGroup(events, i, j, matchId);
         if (j < events.length) {
-          const gap = ev.type === 'move' ? 760 : (ev.type === 'attack' ? 540 : 360);
+          const gap = ev.type === 'move' ? 1100 : (ev.type === 'attack' ? 640 : 400);
           await sleep(gap);
         }
         i = j;
@@ -814,7 +814,7 @@ async function playMove(ev) {
   if (!layout) return;
   wakeWizardAt(ev.wizardId, ev.from.row, ev.from.col);
   const w0 = state.wizards[ev.wizardId];
-  const stepMs = w0 && w0.pawnKind ? 380 : (w0 && w0.team === 'enemy' ? 260 : 150);
+  const stepMs = w0 && w0.pawnKind ? 520 : (w0 && w0.team === 'enemy' ? 280 : 150);
   let r = ev.from.row;
   let c = ev.from.col;
   boardFx.override[ev.wizardId] = boxToOv(cellRect(layout, r, c));
@@ -823,7 +823,7 @@ async function playMove(ev) {
     await lerpOverride(ev.wizardId, r, c, step.row, step.col, stepMs, { bounce: true });
     r = step.row;
     c = step.col;
-    await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 240 : 40);
+    await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 400 : 40);
   }
   const w = state.wizards[ev.wizardId];
   if (w && w.state === 'onboard') {
@@ -831,7 +831,7 @@ async function playMove(ev) {
     w.col = c;
   }
   delete boardFx.override[ev.wizardId];
-  await sleep(w0 && w0.pawnKind ? 160 : 80);
+  await sleep(w0 && w0.pawnKind ? 280 : 80);
 }
 
 async function playUndoMove(ev) {
