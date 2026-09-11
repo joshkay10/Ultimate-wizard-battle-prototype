@@ -76,8 +76,13 @@ function defensePawns(match, states) {
   });
 }
 
+function defenseFieldClear(match) {
+  return defensePawns(match, ['onboard', 'emerging']).length === 0;
+}
+
 function defenseSpawnCount(match) {
   const living = defensePawns(match, ['onboard', 'emerging']).length;
+  if (living === 0) return 0;
   const cap = typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 7;
   const room = cap - living;
   if (room <= 0) return 0;

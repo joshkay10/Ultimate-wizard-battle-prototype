@@ -207,7 +207,7 @@ function renderGameOverOverlay() {
   } else if (state.gameOverResult === 'player') {
     heading = 'you win';
     sub = state.gameMode === 'defense'
-      ? 'you held the cluster'
+      ? 'the field is clear'
       : 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
     heading = 'you lose';

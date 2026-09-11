@@ -12,6 +12,15 @@ async function maybeAutoEndTurn() {
 
 async function afterPlayerAction() {
   if (typeof render === 'function') render();
+  if (!state.gameOverResult && isDefenseMode(state)) {
+    const result = checkWinLoss(state);
+    if (result) {
+      state.gameOverResult = result;
+      await present([{ type: 'gameOver', result: result }]);
+      if (typeof render === 'function') render();
+      return;
+    }
+  }
   await maybeAutoEndTurn();
 }
 
