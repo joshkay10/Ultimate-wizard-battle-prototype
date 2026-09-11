@@ -1055,7 +1055,13 @@ async function playSummon(ev) {
     spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS[ev.element] || '#fff', 18, 4);
   }
   boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
-  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'arrives', t: 0, element: ev.element });
+  boardFx.popups.push({
+    row: ev.row,
+    col: ev.col,
+    text: w && w.pawnKind ? 'in' : 'arrives',
+    t: 0,
+    element: ev.element
+  });
   boardFx.popScale[ev.wizardId] = 0.2;
   ensureFxLoop();
   await animate(340, function (t) {
