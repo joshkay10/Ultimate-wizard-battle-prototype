@@ -121,6 +121,8 @@ function wizardStatusBits(wiz) {
   if (wiz.pawnKind) {
     if (wiz.intent) {
       const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
+      const strikeAt = defenseStrikeIndex(state, wiz);
+      if (strikeAt >= 0) bits.push(defenseOrdinal(strikeAt + 1) + ' to strike');
       bits.push(defenseKindLabel(wiz.pawnKind) + (dir ? ' ' + dir : ''));
     } else {
       bits.push('no telegraph');
@@ -297,9 +299,12 @@ function render() {
     ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
     : '';
   const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
+  const invaders = state.gameMode === 'defense'
+    ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + DEFENSE_SPAWN_BUDGET + ' invaders</span>'
+    : '';
   document.getElementById('topbar').innerHTML =
     '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (invaders ? ' &middot; ' + invaders : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
     '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
       '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
       '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +

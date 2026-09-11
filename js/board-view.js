@@ -726,9 +726,11 @@ function drawDefenseOverlays(ctx, layout) {
     ctx.textBaseline = 'middle';
     ctx.lineWidth = Math.max(3, b.s * 0.06);
     ctx.strokeStyle = 'rgba(244,245,242,0.92)';
-    ctx.strokeText(style.label, x1, y1 + b.s * 0.34);
+    const strikeAt = defenseStrikeIndex(state, pawn);
+    const telLabel = (strikeAt >= 0 ? (strikeAt + 1) + ' ' : '') + style.label;
+    ctx.strokeText(telLabel, x1, y1 + b.s * 0.34);
     ctx.fillStyle = style.edge;
-    ctx.fillText(style.label, x1, y1 + b.s * 0.34);
+    ctx.fillText(telLabel, x1, y1 + b.s * 0.34);
     ctx.restore();
   });
 }
@@ -947,8 +949,10 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.lineWidth = Math.max(2.2, box.s * 0.04);
     ctx.strokeStyle = 'rgba(244,245,242,0.95)';
     ctx.fillStyle = ring.edge;
-    ctx.strokeText(ring.label, cx, cy - r * 0.98);
-    ctx.fillText(ring.label, cx, cy - r * 0.98);
+    const strikeAt = wizard.intent ? defenseStrikeIndex(state, wizard) : -1;
+    const tokenLabel = (strikeAt >= 0 ? (strikeAt + 1) + ' ' : '') + ring.label;
+    ctx.strokeText(tokenLabel, cx, cy - r * 0.98);
+    ctx.fillText(tokenLabel, cx, cy - r * 0.98);
     ctx.restore();
   }
 }

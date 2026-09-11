@@ -1223,6 +1223,81 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
+  state.water = {};
+  state.mountains = {};
+  state.voids = {};
+  const openCount = defenseEverSpawned(state);
+  assert(openCount === 1 || openCount === 2, 'opening counts toward the match budget');
+  assert(defenseBudgetLeft(state) === DEFENSE_SPAWN_BUDGET - openCount, 'budget leftover after opening');
+  let fillGuard = 0;
+  while (defenseBudgetLeft(state) > 0 && fillGuard++ < 24) {
+    const livingNow = defensePawns(state, ['onboard', 'emerging']).length;
+    if (livingNow >= DEFENSE_PAWN_CAP) {
+      const extra = defensePawns(state, ['onboard', 'emerging'])[0];
+      extra.state = 'dead';
+      extra.row = null;
+      extra.col = null;
+      extra.intent = null;
+    }
+    const n = defenseSpawnCount(state);
+    if (n <= 0) break;
+    markDefenseSpawns(state, n);
+    simDefenseEmerge(state);
+  }
+  assert(defenseEverSpawned(state) === DEFENSE_SPAWN_BUDGET, 'a match never queues more than 10 invaders');
+  assert(defenseBudgetLeft(state) === 0, 'budget is spent after 10');
+  assert(defenseSpawnCount(state) === 0, 'no further marks once the 10 are out');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  const southStriker = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 }
+  });
+  const eastStriker = createDefensePawn(state, 'charge', {
+    state: 'onboard', row: 1, col: 6, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 1, dc: 0 }
+  });
+  const northStriker = createDefensePawn(state, 'fireball', {
+    state: 'onboard', row: 1, col: 2, hp: 3, maxHp: 3, intent: { kind: 'fireball', dr: 1, dc: 0 }
+  });
+  const strikeQueue = defenseStrikeQueue(state);
+  assert(strikeQueue[0].id === northStriker.id, 'north-west strikes first');
+  assert(strikeQueue[1].id === eastStriker.id, 'same row, west before east');
+  assert(strikeQueue[2].id === southStriker.id, 'south strikes last');
+  assert(defenseStrikeIndex(state, northStriker) === 0, 'north is 1st on the telegraph');
+  const executed = simDefenseExecute(state);
+  assert(executed.filter(function (e) { return e.type === 'attack'; }).map(function (e) { return e.attackerId; }).join(',') ===
+    [northStriker.id, eastStriker.id, southStriker.id].join(','), 'execute uses the numbered order');
+
+  let splitOpen = 0;
+  let multiSector = 0;
+  let spreadSeed;
+  for (spreadSeed = 1; spreadSeed <= 36; spreadSeed++) {
+    resetMatch(state, spreadSeed, { gameMode: 'defense' });
+    const openPawns = defensePawns(state, ['onboard']);
+    const openSectors = {};
+    openPawns.forEach(function (p) { openSectors[defenseSpawnSector(p.row, p.col)] = true; });
+    if (openPawns.length >= 2 && Object.keys(openSectors).length >= 2) splitOpen += 1;
+    simDefenseEnemyPhase(state);
+    const after = {};
+    defensePawns(state, ['onboard', 'emerging']).forEach(function (p) {
+      if (p.row == null) return;
+      after[defenseSpawnSector(p.row, p.col)] = true;
+    });
+    if (Object.keys(after).length >= 2) multiSector += 1;
+  }
+  assert(splitOpen >= 6, 'two-pawn openings often land in different sectors (' + splitOpen + ')');
+  assert(multiSector >= 24, 'the first wave is not all piled on one edge (' + multiSector + ')');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
   Object.values(state.wizards).forEach(function (w) {
     if (w.team === 'enemy') {
       w.state = 'dead';
