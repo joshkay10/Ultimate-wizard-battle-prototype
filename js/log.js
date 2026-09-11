@@ -68,6 +68,7 @@ function describeEvent(ev) {
       return who + ' bolts' + toward;
     }
     if (spell === 'gust') return who + ' gusts' + toward;
+    if (spell === 'charge' || ev.castKind === 'charge') return who + ' charges' + toward;
     if (spell === 'stream') return who + ' streams' + toward;
     const named = (ev.spellName || spell).toLowerCase();
     return who + ' casts ' + named + toward;

@@ -49,7 +49,7 @@ function createDefensePawn(match, kind, extra) {
     castAttack: spec.attack,
     castDisplacement: 0,
     castRange: spec.range,
-    castKind: spec.id === 'fireball' ? 'stream' : (spec.id === 'charge' ? 'gust' : 'melee'),
+    castKind: spec.id === 'fireball' ? 'stream' : (spec.id === 'charge' ? 'charge' : 'melee'),
     spellName: spec.name,
     team: 'enemy',
     state: 'emerging',
@@ -485,14 +485,15 @@ function simPawnCharge(match, pawn) {
   events.push({
     type: 'attack',
     kind: 'cast',
-    castKind: 'gust',
+    castKind: 'charge',
     attackerId: pawn.id,
     from: from,
     row: pawn.row + dr,
     col: pawn.col + dc,
     hit: 'none',
     spellName: 'Charge',
-    element: 'wind'
+    element: 'wind',
+    pawnKind: 'charge'
   });
   for (i = 1; i <= 3; i++) {
     if (pawn.state !== 'onboard') break;
@@ -519,13 +520,16 @@ function simPawnCharge(match, pawn) {
     if (pawn.state !== 'onboard') break;
   }
   if (path.length) {
+    events[0].chargeDash = true;
     events.splice(1, 0, {
       type: 'push',
       wizardId: pawn.id,
       from: from,
       path: path,
       tilesShort: 0,
-      crash: null
+      crash: null,
+      chargeDash: true,
+      impact: { row: events[0].row, col: events[0].col, hit: events[0].hit }
     });
   }
   return events;
