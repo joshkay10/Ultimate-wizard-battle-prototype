@@ -18,7 +18,8 @@ const boardFx = {
   bolt: null,
   pulseWave: null,
   raiseSpike: null,
-  charge: null
+  charge: null,
+  strikeTiles: null
 };
 
 const BOARD_COLORS = {
@@ -735,6 +736,27 @@ function drawDefenseOverlays(ctx, layout) {
   });
 }
 
+function drawStrikeTiles(ctx, layout) {
+  const flash = boardFx.strikeTiles;
+  if (!flash || !flash.tiles || !flash.tiles.length) return;
+  flash.tiles.forEach(function (tile, i) {
+    const box = cellRect(layout, tile.row, tile.col);
+    ctx.save();
+    ctx.fillStyle = flash.fill || 'rgba(28, 30, 27, 0.28)';
+    ctx.globalAlpha = i === flash.tiles.length - 1 ? 0.72 : 0.4;
+    roundRect(ctx, box.x + 3, box.y + 3, box.s - 6, box.s - 6, 3);
+    ctx.fill();
+    if (i === flash.tiles.length - 1) {
+      ctx.strokeStyle = flash.edge || '#1c1e1b';
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = Math.max(2.4, box.s * 0.055);
+      roundRect(ctx, box.x + 4, box.y + 4, box.s - 8, box.s - 8, 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+}
+
 function drawNexus(ctx, box, hp, flash, maxHp) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
@@ -1295,6 +1317,7 @@ function resetBoardFx() {
   boardFx.pulseWave = null;
   boardFx.raiseSpike = null;
   boardFx.charge = null;
+  boardFx.strikeTiles = null;
 }
 
 function ensureFxLoop() {
@@ -1397,6 +1420,7 @@ function drawBoard() {
   }
 
   drawDefenseOverlays(ctx, layout);
+  drawStrikeTiles(ctx, layout);
 
   Object.values(state.wizards).forEach(wizard => {
     if (wizard.state !== 'onboard') return;

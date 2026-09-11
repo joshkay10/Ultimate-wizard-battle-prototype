@@ -41,25 +41,15 @@ function setGameMode(mode) {
 let endingTurn = false;
 
 async function presentDefenseEnemyPhase() {
-  resetActionFlagsFor(state, 'enemy');
-  stampDefenseStrikeOrder(state);
-  const strikers = defenseActQueue(state);
-  let i;
-  for (i = 0; i < strikers.length; i++) {
-    const strike = simDefenseBeat(state, 'strike', strikers[i]);
-    if (strike.length) await present(strike);
+  const iter = defenseEnemyPhaseParts(state);
+  let step = iter.next();
+  while (!step.done) {
+    const part = step.value;
+    if (part.events.length) await present(part.events);
+    else if (part.kind === 'walk' && typeof render === 'function') render();
+    if (part.kind === 'strike' && part.events.length) await maybeWait(90);
+    step = iter.next();
   }
-  const emerged = simDefenseBeat(state, 'emerge');
-  if (emerged.length) await present(emerged);
-  const movers = defenseActQueue(state);
-  for (i = 0; i < movers.length; i++) {
-    if (movers[i].state !== 'onboard') continue;
-    const walk = simDefenseBeat(state, 'walk', movers[i]);
-    if (walk.length) await present(walk);
-    else if (typeof render === 'function') render();
-  }
-  const marks = simDefenseBeat(state, 'mark');
-  if (marks.length) await present(marks);
 }
 
 async function endTurn() {

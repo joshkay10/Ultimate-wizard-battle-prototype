@@ -152,6 +152,7 @@ async function playEvents(events) {
     boardFx.pulseWave = null;
     boardFx.raiseSpike = null;
     boardFx.charge = null;
+    boardFx.strikeTiles = null;
     boardFx.override = {};
     boardFx.ghosts = [];
     boardFx.fall = {};
@@ -256,13 +257,22 @@ function banner(ev, text) {
   ensureFxLoop();
 }
 
+function pinStrikeTiles(ev, attacker) {
+  if (!ev.tiles || !ev.tiles.length) return;
+  const style = attacker && attacker.pawnKind && typeof defenseTelegraphStyle === 'function'
+    ? defenseTelegraphStyle(attacker.pawnKind)
+    : { fill: 'rgba(28, 30, 27, 0.28)', edge: '#1c1e1b' };
+  boardFx.strikeTiles = { tiles: ev.tiles, fill: style.fill, edge: style.edge };
+}
+
 async function playAttack(ev) {
   const attacker = ev.attackerId ? state.wizards[ev.attackerId] : null;
+  pinStrikeTiles(ev, attacker);
   if (attacker && attacker.pawnKind && ev.strikeOrder != null && ev.from) {
     boardFx.popups.push({
       row: ev.from.row,
       col: ev.from.col,
-      text: String(ev.strikeOrder + 1),
+      text: '#' + (ev.strikeOrder + 1),
       t: 0,
       element: attacker.element
     });
@@ -306,10 +316,11 @@ async function playMeleeLunge(ev) {
   };
   const cx = to.x + to.s / 2;
   const cy = to.y + to.s / 2;
-  spawnBurst(cx, cy, BOARD_COLORS[ev.element] || '#fff', 14, 4.2);
-  spawnBurst(cx, cy, '#ffffff', 6, 2.6);
+  spawnBurst(cx, cy, BOARD_COLORS[ev.element] || '#fff', slow ? 18 : 14, slow ? 5.2 : 4.2);
+  spawnBurst(cx, cy, '#ffffff', slow ? 8 : 6, slow ? 3.2 : 2.6);
   boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
-  boardFx.shake = Math.max(boardFx.shake, 5);
+  boardFx.shake = Math.max(boardFx.shake, slow ? 7 : 5);
+  if (slow) boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.18);
   ensureFxLoop();
   await animate(slow ? 120 : 110, function (t) { boardFx.slash.t = t; });
   boardFx.slash = null;
