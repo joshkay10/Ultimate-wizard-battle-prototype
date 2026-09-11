@@ -163,7 +163,7 @@ async function runSimSelfTests() {
   const hp0 = gale.hp;
   simAttack(state, ember, 0, 6, 'melee');
   assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
-  assert(gale.hp === hp0 - ember.meleeAttack - CRASH_DAMAGE, 'blocked push should deal flat crash damage');
+  assert(gale.hp === hp0 - ember.meleeAttack - 2, 'blocked 2-pip push smashes for leftover 2');
   const slammed = nexusAt(state, 0, 7);
   assert(slammed && slammed.hp === NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
 
@@ -187,8 +187,8 @@ async function runSimSelfTests() {
   wallWiz.hp = 8;
   simAttack(state, batter, 4, 3, 'melee');
   assert(shoved.row === 4 && shoved.col === 3, 'first wizard stops on the wizard they hit');
-  assert(shoved.hp === 12 - batter.meleeAttack - CRASH_DAMAGE, 'crashed wizard takes hit plus flat crash');
-  assert(wallWiz.hp === 8 - CRASH_DAMAGE, 'the wizard they hit takes the same flat crash');
+  assert(shoved.hp === 12 - batter.meleeAttack - 2, 'crashed wizard takes hit plus leftover smash');
+  assert(wallWiz.hp === 8 - 2, 'the wizard they hit takes the same smash');
   assert(wallWiz.row === 4 && wallWiz.col === 6, 'leftover knock slides the last wizard');
 
   resetMatch(state, 1);
@@ -214,9 +214,9 @@ async function runSimSelfTests() {
   assert(chainA.row === 4 && chainA.col === 2, 'packed first wizard stays');
   assert(chainB.row === 4 && chainB.col === 3, 'packed middle wizard stays');
   assert(chainC.row === 4 && chainC.col === 6, 'last wizard in the pile slides leftover pips');
-  assert(chainA.hp === 12 - chainAtk.meleeAttack - CRASH_DAMAGE, 'first collision hurts the lead wizard');
-  assert(chainB.hp === 8 - CRASH_DAMAGE - CRASH_DAMAGE, 'middle wizard is hurt by both collisions');
-  assert(chainC.hp === 14 - CRASH_DAMAGE, 'final wizard takes the last crash');
+  assert(chainA.hp === 12 - chainAtk.meleeAttack - 2, 'first collision smashes leftover 2 into the lead wizard');
+  assert(chainB.hp === 8 - 2 - 2, 'middle wizard is smashed by both collisions');
+  assert(chainC.hp === 14 - 2, 'final wizard takes the last smash');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -233,7 +233,7 @@ async function runSimSelfTests() {
   edgeHit.hp = 12;
   simAttack(state, edgeAtk, 4, BOARD_SIZE - 1, 'melee');
   assert(edgeHit.row === 4 && edgeHit.col === BOARD_SIZE - 1, 'arena edge does not knock them off the board');
-  assert(edgeHit.hp === 12 - edgeAtk.meleeAttack - CRASH_DAMAGE, 'hitting the arena edge still deals crash');
+  assert(edgeHit.hp === 12 - edgeAtk.meleeAttack - 2, 'hitting the arena edge smashes leftover pips');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -250,7 +250,57 @@ async function runSimSelfTests() {
   pinned.hp = 12;
   simAttack(state, gustCrash, 4, 3, 'cast');
   assert(pinned.row === 4 && pinned.col === 3, 'gust crash does not move the target');
-  assert(pinned.hp === 12 - gustCrash.castAttack - CRASH_DAMAGE, 'crash is 1 even when three pips are leftover');
+  assert(pinned.hp === 12 - gustCrash.castAttack - 3, 'leftover gust pips smash instead of a flat 1');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = { '4,5': true };
+  state.water = {};
+  const bumpAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const bumpHit = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  bumpAtk.state = 'onboard';
+  bumpAtk.row = 4;
+  bumpAtk.col = 2;
+  bumpHit.state = 'onboard';
+  bumpHit.row = 4;
+  bumpHit.col = 3;
+  bumpHit.hp = 12;
+  simAttack(state, bumpAtk, 4, 3, 'melee');
+  assert(bumpHit.row === 4 && bumpHit.col === 4, 'one free tile still slides');
+  assert(bumpHit.hp === 12 - bumpAtk.meleeAttack - 1, 'a one-pip leftover crash stays 1');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const overkillPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  overkillPyre.state = 'onboard';
+  overkillPyre.row = 4;
+  overkillPyre.col = 2;
+  overkillPyre.hasMoved = true;
+  const overkillPawn = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 4, col: 3, hp: 3, maxHp: 3, intent: null
+  });
+  const overkillHit = simAttack(state, overkillPyre, 4, 3, 'melee');
+  const overkillDmg = overkillHit.find(function (e) { return e.type === 'damage' && e.targetId === overkillPawn.id && e.cause === 'melee'; });
+  assert(overkillDmg && overkillDmg.overkill === 2, '5 into 3 pops 2 overkill');
+  assert(overkillPawn.state === 'dead', 'overkill still kills');
+  assert(overkillHit.some(function (e) { return e.type === 'push' && e.wizardId === overkillPawn.id && e.path && e.path.length === 2; }), 'overkill still slams the body');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

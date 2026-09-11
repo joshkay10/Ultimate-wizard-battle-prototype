@@ -100,7 +100,8 @@ On your turn you may, in any order:
 
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains, water, and voids are not melee targets.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away (0 push means they stay).
-- **Crash:** if the push hits a wall (edge, mountain, or living nexus), the pushed wizard takes **1** damage — even if they never leave their tile. A crash into a **nexus** also deals 1 to the crystal. Hitting **another wizard** deals 1 to both, then leftover knockback transfers into that wizard: they may crash the next body in line, and the last one slides. A line of five can hurt five. Water and voids are not walls — you are pushed onto the tile and you fall (the token shrinks down). Wind carry into a wall or wizard also crashes.
+- **Crash:** if the push hits a wall (edge, mountain, or living nexus), leftover knockback **smashes**. Crash damage on a wizard is the leftover pips (at least 1). Pin them with a 3-pip gust and they take 3, not a flat 1. Hitting **another wizard** smashes both, then leftover knock transfers — a packed line can hurt everyone, and the last wizard slides. A crash into a **nexus** still deals **1** to the crystal, so leftover force does not delete the city. Water and voids are not walls — you are pushed onto the tile and you fall (the token shrinks down). Wind carry into a wall or wizard also crashes.
+- A hit that deals more than remaining HP still **pushes the body**. Overflow pops as overkill. Mega damage bowls; it does not delete the slam.
 - Friendly fire is on — you can melee or cast your own wizards. Pulse, jolt, and bursts hit everyone in the area.
 - HP 0 = dead, token leaves the board.
 - Stream, gust, sheet, draft, pulse, inferno, blizzard, gale, and cinder leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for paint spells — that is how you paint the ground. Trails last about one round (through the opponent’s turn).

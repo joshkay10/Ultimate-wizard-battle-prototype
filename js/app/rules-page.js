@@ -110,7 +110,8 @@ function renderRulesPage() {
       '<ul>' +
         '<li>Melee is adjacent (cardinals). Mountains, water, and voids are not melee targets.</li>' +
         '<li>Hit, then push. 0 push means they stay.</li>' +
-        '<li><strong>Crash:</strong> into a wall (edge, mountain, living nexus) = 1, even if you do not move. Into a wizard = both take 1, then leftover knock transfers — a packed line can hurt everyone, and the last wizard slides. Into a nexus = the crystal also takes 1. Water and voids are not walls — you slide onto the tile and fall.</li>' +
+        '<li><strong>Crash:</strong> leftover knockback <strong>smashes</strong>. A wizard takes the leftover pips (at least 1) — pin with a 3-pip gust and they take 3, not a flat 1. Into a wizard = both smash, then leftover knock transfers. Into a nexus the crystal still takes 1, so leftover force does not delete the city. Water and voids are not walls — you slide on and fall.</li>' +
+        '<li>A hit that deals more than remaining HP still <strong>pushes the body</strong>. Overflow pops as overkill.</li>' +
         '<li>Friendly fire is on. Pulse, jolt, and bursts hit everyone in the area, including you.</li>' +
         '<li>See <a href="' + routeHref('elements') + '">Elements</a> for trails and matchups.</li>' +
       '</ul>' +

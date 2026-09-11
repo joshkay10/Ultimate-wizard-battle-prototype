@@ -888,13 +888,22 @@ async function playGround(ev) {
 
 async function playDamage(ev) {
   const falling = ev.cause === 'water' || ev.cause === 'void';
-  const killish = ev.amount >= 5 || ev.cause === 'collision' || ev.cause === 'crash';
-  boardFx.popups.push({ row: ev.row, col: ev.col, text: falling ? (ev.cause === 'water' ? 'splash' : 'fall') : ('-' + ev.amount), t: 0 });
+  const smash = ev.cause === 'crash' && ev.amount >= 2;
+  const over = !falling && (ev.overkill || 0) > 0;
+  const killish = ev.amount >= 5 || ev.cause === 'collision' || smash || over;
+  boardFx.popups.push({
+    row: ev.row,
+    col: ev.col,
+    text: falling ? (ev.cause === 'water' ? 'splash' : 'fall') : ('-' + ev.amount),
+    t: 0
+  });
+  if (smash) boardFx.popups.push({ row: ev.row, col: ev.col, text: 'smash', t: 0, element: 'earth' });
+  if (over) boardFx.popups.push({ row: ev.row, col: ev.col, text: '+' + ev.overkill, t: 0, element: 'fire' });
   boardFx.flash = falling ? null : { row: ev.row, col: ev.col };
-  boardFx.screenFlash = falling ? 0.12 : (ev.targetKind === 'nexus' ? 0.55 : (killish ? 0.48 : 0.38));
-  boardFx.shake = falling ? 4 : (ev.targetKind === 'nexus' ? 12 : (ev.cause === 'collision' || ev.cause === 'crash' ? 11 : 8));
+  boardFx.screenFlash = falling ? 0.12 : (ev.targetKind === 'nexus' ? 0.55 : (smash ? 0.62 : (killish ? 0.48 : 0.38)));
+  boardFx.shake = falling ? 4 : (ev.targetKind === 'nexus' ? 12 : (smash ? 10 + ev.amount * 2 : (ev.cause === 'collision' || ev.cause === 'crash' ? 11 : 8)));
   if (!falling && ev.targetKind === 'wizard' && ev.targetId) {
-    boardFx.popScale[ev.targetId] = 1.24;
+    boardFx.popScale[ev.targetId] = smash || over ? 1.38 : 1.24;
   }
   const layout = boardLayout();
   if (layout && !falling) {
@@ -910,7 +919,7 @@ async function playDamage(ev) {
     const n = nexusById(state, ev.targetId);
     if (n) n.hp = Math.max(0, n.hp - ev.amount);
   }
-  const stop = ev.cause === 'collision' || ev.cause === 'crash' ? 180 : (ev.targetKind === 'nexus' ? 200 : 160);
+  const stop = smash || over ? 220 : (ev.cause === 'collision' || ev.cause === 'crash' ? 180 : (ev.targetKind === 'nexus' ? 200 : 160));
   await sleep(stop);
   if (ev.targetId) delete boardFx.popScale[ev.targetId];
   boardFx.flash = null;
