@@ -31,6 +31,48 @@ function setGameMode(mode) {
 
 let endingTurn = false;
 
+async function presentDefenseEnemyPhase() {
+  const strikers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
+  let i;
+  for (i = 0; i < strikers.length; i++) {
+    const pawn = strikers[i];
+    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
+    const strike = simDefenseExecutePawn(state, pawn);
+    if (!strike.length) {
+      if (typeof releaseDisc === 'function') releaseDisc(pawn);
+      continue;
+    }
+    await present(strike);
+    await maybeWait(640);
+  }
+  const emerged = simDefenseEmerge(state);
+  if (emerged.length) {
+    await present(emerged);
+    await maybeWait(480);
+  }
+  const movers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
+  for (i = 0; i < movers.length; i++) {
+    const pawn = movers[i];
+    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
+    const walk = simDefenseMovePawn(state, pawn);
+    if (!walk.length) {
+      if (typeof releaseDisc === 'function') releaseDisc(pawn);
+      continue;
+    }
+    await present(walk);
+    await maybeWait(720);
+  }
+  assignDefenseIntents(state);
+  if (typeof render === 'function') render();
+  await maybeWait(500);
+  const marks = markDefenseSpawns(state, defenseSpawnCount(state));
+  if (marks.length) await present(marks);
+}
+
 async function endTurn() {
   if (endingTurn || state.animating || state.gameOverResult) return;
   if (!canAct()) return;
@@ -42,10 +84,10 @@ async function endTurn() {
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
 
-    await maybeWait(420);
+    await maybeWait(500);
     if (state.matchId !== matchId) return;
     if (state.gameMode === 'defense') {
-      await present(simDefenseEnemyPhase(state));
+      await presentDefenseEnemyPhase();
     } else {
       await runTeamAi('enemy');
     }

@@ -28,7 +28,7 @@ async function hunterRunTurn(team) {
   for (const wizard of wizards) {
     if (wizard.state !== 'onboard') continue;
     await present(teamWizardAct(wizard, team));
-    await maybeWait(280);
+    await maybeWait(420);
   }
 }
 
@@ -72,7 +72,7 @@ async function teamSummonPhase(team) {
     const events = simSummon(state, wizard, tile.row, tile.col, team);
     if (!events.length) break;
     await present(events);
-    await maybeWait(240);
+    await maybeWait(360);
   }
 }
 

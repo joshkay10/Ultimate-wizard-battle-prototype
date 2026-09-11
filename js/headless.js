@@ -1002,10 +1002,11 @@ async function runSimSelfTests() {
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
   assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
-  assert(defensePawns(state, ['emerging']).length >= 1, 'defense marks at least one incoming');
+  assert(defensePawns(state, ['emerging']).length === 0, 'turn 1 has no incoming spawn marks');
   assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
   simDefenseEnemyPhase(state);
   assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'opening pawns telegraph after the first enemy loop');
+  assert(defensePawns(state, ['emerging']).length >= 1, 'incoming marks appear after the first enemy loop');
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
   assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
@@ -1027,14 +1028,14 @@ async function runSimSelfTests() {
 
   const citySizes = {};
   const openOnboard = {};
-  const openIncoming = {};
   let flankIncoming = false;
   let seed;
   for (seed = 1; seed <= 36; seed++) {
     resetMatch(state, seed, { gameMode: 'defense' });
     citySizes[state.nexuses.player.length] = true;
     openOnboard[defensePawns(state, ['onboard']).length] = true;
-    openIncoming[defensePawns(state, ['emerging']).length] = true;
+    assert(defensePawns(state, ['emerging']).length === 0, 'no seed opens with incoming marks');
+    simDefenseEnemyPhase(state);
     if (defensePawns(state, ['emerging']).some(function (w) {
       return w.col === 0 || w.col === BOARD_SIZE - 1 || w.row >= ENEMY_ROW_END;
     })) flankIncoming = true;
@@ -1042,8 +1043,7 @@ async function runSimSelfTests() {
   assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
   assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
   assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
-  assert(Object.keys(openIncoming).length >= 1, 'opening always marks incoming');
-  assert(flankIncoming || Object.keys(openIncoming).length >= 1, 'incoming can use edges');
+  assert(flankIncoming, 'incoming after the first enemy loop can use edges');
 
   let asym = false;
   for (seed = 1; seed <= 40 && !asym; seed++) {
@@ -1064,8 +1064,9 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   state.voids = {};
+  simDefenseEnemyPhase(state);
   const incoming = defensePawns(state, ['emerging'])[0];
-  assert(incoming && incoming.row != null, 'incoming marker has a tile');
+  assert(incoming && incoming.row != null, 'incoming marker has a tile after the first enemy loop');
   assert(!canSummonAt(state, incoming.row, incoming.col, 'player'), 'cannot drop on an emerging pawn');
   const midTiles = getPlayerSummonTiles(state).filter(function (t) { return t.row < SUMMON_ROW_START; });
   assert(midTiles.length > 0, 'defense can drop outside the back 3 rows');
@@ -1155,6 +1156,53 @@ async function runSimSelfTests() {
   pyre.col = 3;
   simDefenseExecute(state);
   assert(pyre.hp === 8, 'fireball hits 4 range in the aimed direction (' + pyre.hp + ')');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const prey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  prey.state = 'onboard';
+  prey.row = 5;
+  prey.col = 4;
+  prey.hp = 2;
+  const firstSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
+  const secondSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 5, col: 5, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 0, dc: -1 } });
+  const killHit = simDefenseExecutePawn(state, firstSwing);
+  assert(prey.state === 'dead', 'first melee fully resolves the kill before the next pawn acts');
+  assert(killHit.some(e => e.type === 'death' && e.wizardId === prey.id), 'first strike emits the death');
+  const emptySwing = simDefenseExecutePawn(state, secondSwing);
+  assert(emptySwing.some(e => e.type === 'attack' && e.hit === 'none'), 'second melee finds the corpse gone');
+  assert(!emptySwing.some(e => e.type === 'damage'), 'second strike deals no leftover damage');
+
+  const lanePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  lanePrey.state = 'onboard';
+  lanePrey.row = 5;
+  lanePrey.col = 2;
+  lanePrey.hp = 2;
+  state.water = { '5,3': true };
+  const laneBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 2, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
+  const laneCharge = createDefensePawn(state, 'charge', { state: 'onboard', row: 5, col: 0, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  simDefenseExecutePawn(state, laneBrute);
+  assert(lanePrey.state === 'dead', 'opening strike clears the charge lane');
+  simDefenseExecutePawn(state, laneCharge);
+  assert(laneCharge.state === 'dead', 'charger then runs the empty lane into water');
+  assert((laneCharge.row == null), 'fallen charger leaves the board after the kill resolved');
 
   resetMatch(state, 2, { gameMode: 'defense' });
   state.fxEnabled = false;
