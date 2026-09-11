@@ -489,6 +489,16 @@ function simPawnCharge(match, pawn) {
   return events;
 }
 
+function simDefenseExecutePawn(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return [];
+  let events;
+  if (pawn.pawnKind === 'fireball') events = simPawnFireball(match, pawn);
+  else if (pawn.pawnKind === 'charge') events = simPawnCharge(match, pawn);
+  else events = simPawnMelee(match, pawn);
+  pawn.intent = null;
+  return events || [];
+}
+
 function simDefenseExecute(match) {
   const events = [];
   const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
@@ -496,12 +506,7 @@ function simDefenseExecute(match) {
   });
   let i;
   for (i = 0; i < pawns.length; i++) {
-    const pawn = pawns[i];
-    if (pawn.state !== 'onboard' || !pawn.intent) continue;
-    if (pawn.pawnKind === 'fireball') events.push.apply(events, simPawnFireball(match, pawn));
-    else if (pawn.pawnKind === 'charge') events.push.apply(events, simPawnCharge(match, pawn));
-    else events.push.apply(events, simPawnMelee(match, pawn));
-    pawn.intent = null;
+    events.push.apply(events, simDefenseExecutePawn(match, pawns[i]));
   }
   return events;
 }
@@ -545,6 +550,37 @@ function simDefenseEmerge(match) {
   return events;
 }
 
+function simDefenseMovePawn(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
+  const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
+  const options = [{
+    row: pawn.row,
+    col: pawn.col,
+    stay: true,
+    score: stay.score,
+    nexusShot: stay.nexusShot
+  }];
+  getMoveTiles(match, pawn).forEach(function (tile) {
+    const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
+    options.push({
+      row: tile.row,
+      col: tile.col,
+      stay: false,
+      score: scored.score,
+      nexusShot: scored.nexusShot
+    });
+  });
+  const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
+  const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
+  const events = [];
+  if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
+    const path = pathBFS(match, pawn, picked.row, picked.col);
+    if (path && path.length) events.push.apply(events, simMove(match, pawn, path));
+  }
+  pawn.hasMoved = true;
+  return events;
+}
+
 function simDefenseMove(match) {
   const events = [];
   const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
@@ -552,33 +588,7 @@ function simDefenseMove(match) {
   });
   let i;
   for (i = 0; i < pawns.length; i++) {
-    const pawn = pawns[i];
-    if (pawn.state !== 'onboard' || pawn.hasMoved) continue;
-    const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
-    const options = [{
-      row: pawn.row,
-      col: pawn.col,
-      stay: true,
-      score: stay.score,
-      nexusShot: stay.nexusShot
-    }];
-    getMoveTiles(match, pawn).forEach(function (tile) {
-      const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
-      options.push({
-        row: tile.row,
-        col: tile.col,
-        stay: false,
-        score: scored.score,
-        nexusShot: scored.nexusShot
-      });
-    });
-    const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
-    const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
-    if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
-      const path = pathBFS(match, pawn, picked.row, picked.col);
-      if (path && path.length) events.push.apply(events, simMove(match, pawn, path));
-    }
-    pawn.hasMoved = true;
+    events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
   }
   return events;
 }

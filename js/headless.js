@@ -1157,6 +1157,53 @@ async function runSimSelfTests() {
   simDefenseExecute(state);
   assert(pyre.hp === 8, 'fireball hits 4 range in the aimed direction (' + pyre.hp + ')');
 
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const prey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  prey.state = 'onboard';
+  prey.row = 5;
+  prey.col = 4;
+  prey.hp = 2;
+  const firstSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
+  const secondSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 5, col: 5, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 0, dc: -1 } });
+  const killHit = simDefenseExecutePawn(state, firstSwing);
+  assert(prey.state === 'dead', 'first melee fully resolves the kill before the next pawn acts');
+  assert(killHit.some(e => e.type === 'death' && e.wizardId === prey.id), 'first strike emits the death');
+  const emptySwing = simDefenseExecutePawn(state, secondSwing);
+  assert(emptySwing.some(e => e.type === 'attack' && e.hit === 'none'), 'second melee finds the corpse gone');
+  assert(!emptySwing.some(e => e.type === 'damage'), 'second strike deals no leftover damage');
+
+  const lanePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  lanePrey.state = 'onboard';
+  lanePrey.row = 5;
+  lanePrey.col = 2;
+  lanePrey.hp = 2;
+  state.water = { '5,3': true };
+  const laneBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 2, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
+  const laneCharge = createDefensePawn(state, 'charge', { state: 'onboard', row: 5, col: 0, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  simDefenseExecutePawn(state, laneBrute);
+  assert(lanePrey.state === 'dead', 'opening strike clears the charge lane');
+  simDefenseExecutePawn(state, laneCharge);
+  assert(laneCharge.state === 'dead', 'charger then runs the empty lane into water');
+  assert((laneCharge.row == null), 'fallen charger leaves the board after the kill resolved');
+
   resetMatch(state, 2, { gameMode: 'defense' });
   state.fxEnabled = false;
   simDefenseEnemyPhase(state);

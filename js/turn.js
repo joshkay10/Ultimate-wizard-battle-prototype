@@ -32,20 +32,31 @@ function setGameMode(mode) {
 let endingTurn = false;
 
 async function presentDefenseEnemyPhase() {
-  const strikes = simDefenseExecute(state);
-  if (strikes.length) {
-    await present(strikes);
-    await maybeWait(560);
+  const strikers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
+  let i;
+  for (i = 0; i < strikers.length; i++) {
+    const strike = simDefenseExecutePawn(state, strikers[i]);
+    if (!strike.length) continue;
+    await present(strike);
+    if (typeof render === 'function') render();
+    await maybeWait(820);
   }
   const emerged = simDefenseEmerge(state);
   if (emerged.length) {
     await present(emerged);
     await maybeWait(480);
   }
-  const moves = simDefenseMove(state);
-  if (moves.length) {
-    await present(moves);
-    await maybeWait(560);
+  const movers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
+  for (i = 0; i < movers.length; i++) {
+    const walk = simDefenseMovePawn(state, movers[i]);
+    if (!walk.length) continue;
+    await present(walk);
+    if (typeof render === 'function') render();
+    await maybeWait(900);
   }
   assignDefenseIntents(state);
   if (typeof render === 'function') render();
