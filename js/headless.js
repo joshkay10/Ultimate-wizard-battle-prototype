@@ -1156,7 +1156,7 @@ async function runSimSelfTests() {
   pyre.row = 5;
   pyre.col = 3;
   simDefenseExecute(state);
-  assert(pyre.hp === 8, 'fireball hits 4 range in the aimed direction (' + pyre.hp + ')');
+  assert(pyre.hp === 9, 'fireball hits 4 range for 1 in the aimed direction (' + pyre.hp + ')');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1181,7 +1181,7 @@ async function runSimSelfTests() {
   prey.state = 'onboard';
   prey.row = 5;
   prey.col = 4;
-  prey.hp = 2;
+  prey.hp = 1;
   const firstSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
   const secondSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 5, col: 5, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 0, dc: -1 } });
   const killHit = simDefenseExecutePawn(state, firstSwing);
@@ -1195,7 +1195,7 @@ async function runSimSelfTests() {
   lanePrey.state = 'onboard';
   lanePrey.row = 5;
   lanePrey.col = 2;
-  lanePrey.hp = 2;
+  lanePrey.hp = 1;
   state.water = { '5,3': true };
   const laneBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 2, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
   const laneCharge = createDefensePawn(state, 'charge', { state: 'onboard', row: 5, col: 0, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
@@ -1278,12 +1278,19 @@ async function runSimSelfTests() {
 
   let splitOpen = 0;
   let multiSector = 0;
+  let midFieldSpawn = 0;
+  let campSpawn = 0;
+  let overCap = 0;
   let spreadSeed;
   for (spreadSeed = 1; spreadSeed <= 36; spreadSeed++) {
     resetMatch(state, spreadSeed, { gameMode: 'defense' });
     const openPawns = defensePawns(state, ['onboard']);
     const openSectors = {};
-    openPawns.forEach(function (p) { openSectors[defenseSpawnSector(p.row, p.col)] = true; });
+    openPawns.forEach(function (p) {
+      openSectors[defenseSpawnSector(p.row, p.col)] = true;
+      if (p.row >= BOARD_SIZE - 2) campSpawn += 1;
+      if (p.row >= 3 && p.row <= 6) midFieldSpawn += 1;
+    });
     if (openPawns.length >= 2 && Object.keys(openSectors).length >= 2) splitOpen += 1;
     simDefenseEnemyPhase(state);
     const after = {};
@@ -1291,10 +1298,19 @@ async function runSimSelfTests() {
       if (p.row == null) return;
       after[defenseSpawnSector(p.row, p.col)] = true;
     });
+    defensePawns(state, ['emerging']).forEach(function (p) {
+      if (p.row == null) return;
+      if (p.row >= BOARD_SIZE - 2) campSpawn += 1;
+      if (p.row >= 3 && p.row <= 6) midFieldSpawn += 1;
+    });
     if (Object.keys(after).length >= 2) multiSector += 1;
+    if (defensePawns(state, ['onboard', 'emerging']).length > DEFENSE_PAWN_CAP) overCap += 1;
   }
   assert(splitOpen >= 6, 'two-pawn openings often land in different sectors (' + splitOpen + ')');
   assert(multiSector >= 24, 'the first wave is not all piled on one edge (' + multiSector + ')');
+  assert(campSpawn === 0, 'holes never open on the last two rows');
+  assert(midFieldSpawn >= 8, 'holes can sit on open mid-field ground (' + midFieldSpawn + ')');
+  assert(overCap === 0, 'living plus incoming never exceed 5');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1320,15 +1336,23 @@ async function runSimSelfTests() {
   cityBait.row = 4;
   cityBait.col = 3;
   cityBait.hp = 8;
-  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, hasMoved: true });
+  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBrute.intent = pickDefenseIntent(state, cityBrute);
-  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute aims at the nexus, not the wizard');
-  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  assert(
+    defenseShotScore(state, cityBrute, 4, 4, 1, 0) === defenseShotScore(state, cityBrute, 4, 4, 0, -1),
+    'a wizard and a nexus are worth the same strike'
+  );
+  assert(
+    (cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0) ||
+    (cityBrute.intent.dr === 0 && cityBrute.intent.dc === -1),
+    'adjacent brute aims at the city or the wizard, not empty air'
+  );
+  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
   simDefenseMove(state);
-  assert(cityWalker.row > 1, 'brute marches toward the city instead of sitting on the spawn line');
-  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 2, maxHp: 2, hasMoved: true });
+  assert(cityWalker.row > 1, 'brute marches toward the nearest prey instead of sitting on the spawn line');
+  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBomber.intent = pickDefenseIntent(state, cityBomber);
-  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city even with a wizard beside it');
+  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city when that is the only shot');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1357,6 +1381,36 @@ async function runSimSelfTests() {
   state.water['3,3'] = true;
   simDefenseExecutePawn(state, shovedCharger);
   assert(shovedCharger.state === 'dead', 'an already-aimed charge into water still falls');
+
+  state.water = {};
+  state.voids = {};
+  const rammed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  rammed.state = 'onboard';
+  rammed.row = 4;
+  rammed.col = 5;
+  rammed.hp = 10;
+  const beetle = createDefensePawn(state, 'charge', { state: 'onboard', row: 4, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  simDefenseExecutePawn(state, beetle);
+  assert(rammed.hp === 9, 'charger deals 1 like a Beetle ram (' + rammed.hp + ')');
+  assert(rammed.state === 'onboard' && rammed.col === 6, 'charger then pushes the living wizard one tile');
+
+  rammed.state = 'dead';
+  rammed.row = null;
+  rammed.col = null;
+  const claimedStand = createDefensePawn(state, 'melee', { state: 'onboard', row: 2, col: 2, hp: 3, maxHp: 3, intent: null });
+  const claimedWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 2, col: 6, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const freeStand = scoreDefenseTile(state, claimedWalker, 3, 2);
+  claimedStand.intent = { kind: 'melee', dr: 1, dc: 0 };
+  const busyStand = scoreDefenseTile(state, claimedWalker, 3, 2);
+  assert(defenseClaimedTiles(state, claimedWalker.id)[tileKey(3, 2)], 'an earlier melee claims the tile it aims at');
+  assert(busyStand.score === freeStand.score - 120, 'later pawns pay 120 to stand on that telegraph');
+  claimedStand.state = 'dead';
+  claimedStand.row = null;
+  claimedStand.col = null;
+  claimedStand.intent = null;
+  claimedWalker.state = 'dead';
+  claimedWalker.row = null;
+  claimedWalker.col = null;
 
   const firstAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 2, hp: 5, maxHp: 5, hasMoved: false, intent: null });
   const laterAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 6, hp: 5, maxHp: 5, hasMoved: false, intent: null });
