@@ -37,11 +37,15 @@ async function presentDefenseEnemyPhase() {
   });
   let i;
   for (i = 0; i < strikers.length; i++) {
-    const strike = simDefenseExecutePawn(state, strikers[i]);
-    if (!strike.length) continue;
+    const pawn = strikers[i];
+    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
+    const strike = simDefenseExecutePawn(state, pawn);
+    if (!strike.length) {
+      if (typeof releaseDisc === 'function') releaseDisc(pawn);
+      continue;
+    }
     await present(strike);
-    if (typeof render === 'function') render();
-    await maybeWait(820);
+    await maybeWait(640);
   }
   const emerged = simDefenseEmerge(state);
   if (emerged.length) {
@@ -52,11 +56,15 @@ async function presentDefenseEnemyPhase() {
     return a.id < b.id ? -1 : 1;
   });
   for (i = 0; i < movers.length; i++) {
-    const walk = simDefenseMovePawn(state, movers[i]);
-    if (!walk.length) continue;
+    const pawn = movers[i];
+    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
+    const walk = simDefenseMovePawn(state, pawn);
+    if (!walk.length) {
+      if (typeof releaseDisc === 'function') releaseDisc(pawn);
+      continue;
+    }
     await present(walk);
-    if (typeof render === 'function') render();
-    await maybeWait(900);
+    await maybeWait(720);
   }
   assignDefenseIntents(state);
   if (typeof render === 'function') render();

@@ -38,6 +38,31 @@ function fxGroupStop(type) {
   return fxGroupStart(type) || type === 'portal' || type === 'emergeMark' || type === 'turnEnd' || type === 'turnStart' || type === 'gameOver';
 }
 
+function holdDiscAt(wizard, row, col) {
+  if (!wizard || row == null || col == null) return;
+  if (typeof boardLayout !== 'function' || typeof cellRect !== 'function') return;
+  const layout = boardLayout();
+  if (!layout || !boardFx || !boardFx.override) return;
+  boardFx.override[wizard.id] = boxToOv(cellRect(layout, row, col));
+}
+
+function releaseDisc(wizard) {
+  if (!wizard || !boardFx || !boardFx.override) return;
+  delete boardFx.override[wizard.id];
+}
+
+function pinRewindHolds(events) {
+  if (!events) return;
+  let i;
+  for (i = 0; i < events.length; i++) {
+    const ev = events[i];
+    if ((ev.type === 'move' || ev.type === 'push') && ev.from && ev.wizardId) {
+      const w = state.wizards[ev.wizardId];
+      if (w) holdDiscAt(w, ev.from.row, ev.from.col);
+    }
+  }
+}
+
 function rewindForFx(events) {
   let i;
   for (i = events.length - 1; i >= 0; i--) {
@@ -90,7 +115,8 @@ async function playEvents(events) {
   const matchId = state.matchId;
   try {
     rewindForFx(events);
-    if (typeof render === 'function') render();
+    pinRewindHolds(events);
+    if (typeof drawBoard === 'function') drawBoard();
     let i = 0;
     while (i < events.length) {
       if (state.matchId !== matchId) return;
@@ -147,13 +173,13 @@ function wakeWizardAt(id, row, col) {
 async function playAttackGroup(events, start, end, matchId) {
   const layout = boardLayout();
   const restored = [];
+  const relocated = {};
   for (let k = start; k < end; k++) {
     const ev = events[k];
+    if ((ev.type === 'push' || ev.type === 'move') && ev.wizardId) relocated[ev.wizardId] = true;
     if (ev.type === 'push' && layout) {
       const w = state.wizards[ev.wizardId];
-      if (w && w.state === 'onboard') {
-        boardFx.override[w.id] = boxToOv(cellRect(layout, ev.from.row, ev.from.col));
-      }
+      if (w && w.state === 'onboard') holdDiscAt(w, ev.from.row, ev.from.col);
     }
     if (ev.type === 'swap' && layout) {
       const a = state.wizards[ev.aId];
@@ -171,9 +197,7 @@ async function playAttackGroup(events, start, end, matchId) {
         );
         const at = motion && motion.from ? motion.from : { row: ev.row, col: ev.col };
         wakeWizardAt(corpse.id, at.row, at.col);
-        if (layout && at.row != null) {
-          boardFx.override[corpse.id] = boxToOv(cellRect(layout, at.row, at.col));
-        }
+        holdDiscAt(corpse, at.row, at.col);
         restored.push(corpse);
       }
     }
@@ -183,6 +207,7 @@ async function playAttackGroup(events, start, end, matchId) {
     if (matchId != null && state.matchId !== matchId) return;
     await playEvent(events[k]);
   }
+  if (boardFx.lungeReturn && relocated[boardFx.lungeReturn.id]) boardFx.lungeReturn = null;
   await returnLunge();
 
   restored.forEach(buryWizard);
@@ -226,6 +251,8 @@ function banner(ev, text) {
 async function playAttack(ev) {
   if (ev.kind === 'cast' && (ev.spellName || ev.castKind)) banner(ev, ev.spellName || ev.castKind);
   if (ev.kind !== 'cast') return playMeleeLunge(ev);
+  const attacker = ev.attackerId ? state.wizards[ev.attackerId] : null;
+  if (ev.castKind === 'gust' && attacker && attacker.pawnKind === 'charge') return playChargeCast(ev);
   if (ev.castKind === 'pulse' || ev.castKind === 'summonBurst') return playPulseCast(ev);
   if (ev.castKind === 'burst') return playBurstCast(ev);
   if (ev.castKind === 'raise') return playRaiseCast(ev);
@@ -276,7 +303,14 @@ async function playMeleeLunge(ev) {
 async function returnLunge() {
   const l = boardFx.lungeReturn;
   if (!l) return;
-  await animate(90, function (t) {
+  const w = state.wizards[l.id];
+  const layout = typeof boardLayout === 'function' ? boardLayout() : null;
+  if (w && w.state === 'onboard' && layout && w.row != null) {
+    const home = cellRect(layout, w.row, w.col);
+    l.to = { x: home.x, y: home.y, s: home.s };
+  }
+  const slow = !!(w && w.pawnKind);
+  await animate(slow ? 160 : 90, function (t) {
     const k = easeInOut(t);
     boardFx.override[l.id] = {
       x: l.from.x + (l.to.x - l.from.x) * k,
@@ -387,21 +421,75 @@ async function playStreamCast(ev) {
   ensureFxLoop();
   await sleep(60);
 
-  const recoilX = (x0 - x1) / (dist || 1) * 10;
-  const recoilY = (y0 - y1) / (dist || 1) * 10;
-  await animate(140, function (t) {
-    const k = 1 - t;
-    boardFx.override[ev.attackerId] = {
-      x: line.start.x + recoilX * k,
-      y: line.start.y + recoilY * k,
-      s: line.start.s
-    };
-    boardFx.stream.fade = t;
-    boardFx.popScale[ev.attackerId] = 1.18 - t * 0.18;
-  });
-  delete boardFx.override[ev.attackerId];
+  const attacker = ev.attackerId ? state.wizards[ev.attackerId] : null;
+  if (attacker && attacker.pawnKind) {
+    await animate(140, function (t) {
+      boardFx.stream.fade = t;
+      boardFx.popScale[ev.attackerId] = 1.18 - t * 0.18;
+    });
+  } else {
+    const recoilX = (x0 - x1) / (dist || 1) * 10;
+    const recoilY = (y0 - y1) / (dist || 1) * 10;
+    await animate(140, function (t) {
+      const k = 1 - t;
+      boardFx.override[ev.attackerId] = {
+        x: line.start.x + recoilX * k,
+        y: line.start.y + recoilY * k,
+        s: line.start.s
+      };
+      boardFx.stream.fade = t;
+      boardFx.popScale[ev.attackerId] = 1.18 - t * 0.18;
+    });
+    delete boardFx.override[ev.attackerId];
+  }
   delete boardFx.popScale[ev.attackerId];
   boardFx.stream = null;
+  boardFx.charge = null;
+}
+
+async function playChargeCast(ev) {
+  const line = lineEnds(ev);
+  if (!line) return;
+  const x0 = line.x0;
+  const y0 = line.y0;
+  const x1 = line.x1;
+  const y1 = line.y1;
+  const dist = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const ux = (x1 - x0) / dist;
+  const uy = (y1 - y0) / dist;
+  const color = BOARD_COLORS.wind;
+  boardFx.charge = { id: ev.attackerId, t: 0, element: 'wind' };
+  boardFx.popScale[ev.attackerId] = 1.08;
+  ensureFxLoop();
+  await animate(90, function (t) {
+    boardFx.charge.t = t;
+    boardFx.popScale[ev.attackerId] = 1 + t * 0.1;
+  });
+  boardFx.gust = { x0: x0, y0: y0, x1: x1, y1: y1, head: 0, fade: 0 };
+  await animate(120 + dist * 0.2, function (t) {
+    boardFx.gust.head = easeOut(t);
+    const hx = x0 + (x1 - x0) * boardFx.gust.head;
+    const hy = y0 + (y1 - y0) * boardFx.gust.head;
+    if (Math.random() < 0.8) {
+      boardFx.particles.push({
+        x: hx,
+        y: hy,
+        vx: ux * (3.2 + Math.random() * 2),
+        vy: uy * (3.2 + Math.random() * 2),
+        life: 0.5,
+        color: Math.random() < 0.4 ? '#ffffff' : color,
+        size: 1.6 + Math.random() * 1.8,
+        kind: 'streak'
+      });
+    }
+    ensureFxLoop();
+  });
+  spawnBurst(x1, y1, color, 10, 3.8);
+  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: 'wind' });
+  ensureFxLoop();
+  await animate(80, function (t) { boardFx.gust.fade = t; });
+  delete boardFx.popScale[ev.attackerId];
+  boardFx.gust = null;
   boardFx.charge = null;
 }
 
@@ -817,21 +905,24 @@ async function playMove(ev) {
   const stepMs = w0 && w0.pawnKind ? 520 : (w0 && w0.team === 'enemy' ? 280 : 150);
   let r = ev.from.row;
   let c = ev.from.col;
-  boardFx.override[ev.wizardId] = boxToOv(cellRect(layout, r, c));
+  holdDiscAt(w0, r, c);
   for (let i = 0; i < ev.path.length; i++) {
     const step = ev.path[i];
     await lerpOverride(ev.wizardId, r, c, step.row, step.col, stepMs, { bounce: true });
     r = step.row;
     c = step.col;
+    if (w0 && w0.state === 'onboard') {
+      w0.row = r;
+      w0.col = c;
+    }
     await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 400 : 40);
   }
-  const w = state.wizards[ev.wizardId];
-  if (w && w.state === 'onboard') {
-    w.row = r;
-    w.col = c;
+  if (w0 && w0.state === 'onboard') {
+    w0.row = r;
+    w0.col = c;
   }
-  delete boardFx.override[ev.wizardId];
   await sleep(w0 && w0.pawnKind ? 280 : 80);
+  releaseDisc(w0);
 }
 
 async function playUndoMove(ev) {
@@ -859,22 +950,26 @@ async function playPush(ev) {
   const layout = boardLayout();
   if (!layout) return;
   wakeWizardAt(ev.wizardId, ev.from.row, ev.from.col);
-  boardFx.override[ev.wizardId] = boxToOv(cellRect(layout, r, c));
   const pusher = state.wizards[ev.wizardId];
-  const stepMs = pusher && pusher.pawnKind ? 140 : 90;
+  holdDiscAt(pusher, r, c);
+  const stepMs = pusher && pusher.pawnKind ? 180 : 90;
   for (let i = 0; i < ev.path.length; i++) {
     const step = ev.path[i];
     await lerpOverride(ev.wizardId, r, c, step.row, step.col, stepMs, { trail: true });
     r = step.row;
     c = step.col;
+    if (pusher && pusher.state === 'onboard') {
+      pusher.row = r;
+      pusher.col = c;
+    }
   }
-  const w = state.wizards[ev.wizardId];
-  if (w && w.state === 'onboard') {
-    w.row = r;
-    w.col = c;
+  if (pusher && pusher.state === 'onboard') {
+    pusher.row = r;
+    pusher.col = c;
   }
   boardFx.ghosts = [];
-  delete boardFx.override[ev.wizardId];
+  await sleep(pusher && pusher.pawnKind ? 80 : 0);
+  releaseDisc(pusher);
 }
 
 async function playPortal(ev) {
