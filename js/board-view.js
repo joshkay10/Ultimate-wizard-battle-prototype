@@ -1126,7 +1126,7 @@ function drawDashRibbon(ctx) {
     const fade = d.pts[i].a == null ? 1 : d.pts[i].a;
     ctx.strokeStyle = i % 2 ? '#ffffff' : (d.color || BOARD_COLORS.wind);
     ctx.globalAlpha = fade * (0.25 + u * 0.7);
-    ctx.lineWidth = 2 + u * 8;
+    ctx.lineWidth = 3.5 + u * 11;
     ctx.beginPath();
     ctx.moveTo(d.pts[i - 1].x, d.pts[i - 1].y);
     ctx.lineTo(d.pts[i].x, d.pts[i].y);

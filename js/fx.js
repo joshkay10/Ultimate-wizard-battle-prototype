@@ -376,8 +376,8 @@ function jaggedBoltPoints(x0, y0, x1, y1, segs) {
 }
 
 function easeCharge(t) {
-  if (t < 0.12) return t * 0.2 / 0.12;
-  return 0.2 + easeOut((t - 0.12) / 0.88) * 0.8;
+  if (t < 0.16) return t * 0.08 / 0.16;
+  return 0.08 + easeOut((t - 0.16) / 0.84) * 0.92;
 }
 
 async function playStreamCast(ev) {
@@ -602,7 +602,7 @@ async function playChargeDash(ev) {
   const ux = dx / dist;
   const uy = dy / dist;
   const color = BOARD_COLORS.wind;
-  const dur = Math.max(170, 90 + dist * 0.48);
+  const dur = Math.max(340, 200 + dist * 0.95);
   boardFx.charge = { id: ev.wizardId, t: 1, element: 'wind' };
   boardFx.dashRibbon = { pts: [], color: color };
   await animate(dur, function (t) {
@@ -617,7 +617,7 @@ async function playChargeDash(ev) {
     const cx = box.x + box.s / 2;
     const cy = box.y + box.s / 2;
     boardFx.dashRibbon.pts.push({ x: cx, y: cy, a: 1 });
-    if (boardFx.dashRibbon.pts.length > 22) boardFx.dashRibbon.pts.shift();
+    if (boardFx.dashRibbon.pts.length > 28) boardFx.dashRibbon.pts.shift();
     if (Math.random() < 0.95) {
       const off = (Math.random() - 0.5) * 16;
       boardFx.particles.push({
