@@ -6,7 +6,7 @@ function renderRulesPage() {
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute every strike, then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming shows after the first enemy phase. Later incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters. No enemy crystals. Enemies telegraph, then after your turn they execute every strike, then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. Weak black discs (2–5 HP): melee, charge 3, or fireball 4 — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming shows after the first enemy phase. Later incoming counts vary (quiet vs busy turns, cap 7), and marks can appear on the far edge and flanks. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You win if you wipe every pawn (on the board and incoming). New bodies only stream in if someone is still standing. You lose if the cluster falls or your wizards are wiped.</li>' +
         '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
 
@@ -103,7 +103,7 @@ function renderRulesPage() {
       '</ul>' +
 
       '<h2>Winning</h2>' +
-      '<p>Checked after each side’s turn (not on that side’s very first turn). Defense: lose if your cluster falls or your wizards are wiped; waves do not end the fight. Vs: all enemy nexuses at 0, or no wizards left. Draw if both sides lose at once.</p>' +
+      '<p>Checked after each side’s turn (Defense wipe also checks as soon as the last pawn dies). Defense: you win if no enemies are on the board or incoming; you lose if the cluster falls or your wizards are wiped. New bodies only stream in if someone is still standing. Vs: all enemy nexuses at 0, or no wizards left. Draw if both sides lose at once.</p>' +
     '</article>'
   );
 }

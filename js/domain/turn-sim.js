@@ -2,6 +2,7 @@ function checkWinLoss(match) {
   const mineDead = teamNexusesFallen(match, 'player');
   if (isDefenseMode(match)) {
     if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
+    if (!teamHasPresence(match, 'enemy')) return 'player';
     return null;
   }
   const enemyDead = teamNexusesFallen(match, 'enemy');
@@ -46,7 +47,7 @@ function simEndPlayerTurn(match) {
   match.selectedWizardId = null;
   match.placingWizardId = null;
   events.push({ type: 'turnEnd', team: 'player' });
-  if (!isFirst) {
+  if (!isFirst || (isDefenseMode(match) && !teamHasPresence(match, 'enemy'))) {
     const result = checkWinLoss(match);
     if (result) {
       match.gameOverResult = result;
@@ -74,7 +75,7 @@ function simEndEnemyTurn(match) {
   tickTempMountains(match);
   resetActionFlagsFor(match, 'enemy');
   events.push({ type: 'turnEnd', team: 'enemy' });
-  if (!isFirst) {
+  if (!isFirst || (isDefenseMode(match) && !teamHasPresence(match, 'enemy'))) {
     const result = checkWinLoss(match);
     if (result) {
       match.gameOverResult = result;

@@ -4,7 +4,7 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Each strike finishes — damage, death, and voids — before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. New bodies stream in at a varying rate (quiet turns and busy turns, cap 7). **1–2** pawns can already be on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. Drop a wizard **anywhere** on an open tile — they land **immediately**, burst (push only), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Each strike finishes — damage, death, and voids — before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. New bodies stream in at a varying rate (quiet turns and busy turns, cap 7) **only if someone is still standing**. **1–2** pawns can already be on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. Drop a wizard **anywhere** on an open tile — they land **immediately**, burst (push only), then are spent that turn. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -110,8 +110,8 @@ On your turn you may, in any order:
 
 ## Winning
 
-Checked after each side’s turn (not on that side’s very first turn):
+Checked after each side’s turn (not on that side’s very first turn, except a Defense wipe, which also checks as soon as the last pawn dies):
 
-- **Defense:** you lose if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. Waves do not end the fight. There is no enemy camp to knock out.
+- **Defense:** you **win** if no enemy pawns are on the board or incoming. You **lose** if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. New bodies only stream in if someone is still standing. There is no enemy camp to knock out.
 - **Vs:** you win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
 - Draw if both sides lose at the same time (Vs).

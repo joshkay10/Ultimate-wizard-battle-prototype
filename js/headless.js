@@ -1025,6 +1025,7 @@ async function runSimSelfTests() {
   assert(packedBlobs(state.nexuses.player), 'defense nexuses sit in packed city blobs');
   assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
   assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
+  assert(defensePawns(state, ['onboard']).length > 0, 'opening pawns still keep the fight going');
 
   const citySizes = {};
   const openOnboard = {};
@@ -1293,6 +1294,40 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  assert(defenseFieldClear(state), 'killing every pawn clears the field');
+  assert(defenseSpawnCount(state) === 0, 'a clear field does not queue a new wave');
+  assert(checkWinLoss(state) === 'player', 'defense wins when the field is clear');
+  const wipePhase = simDefenseEnemyPhase(state);
+  assert(!wipePhase.some(function (e) { return e.type === 'emergeMark'; }), 'enemy phase does not spawn after a wipe');
+  assert(defensePawns(state, ['emerging']).length === 0, 'no incoming marks after a wipe');
+  assert(checkWinLoss(state) === 'player', 'wipe still wins after the empty enemy phase');
+  const wipeEnd = simEndPlayerTurn(state);
+  assert(wipeEnd.some(function (e) { return e.type === 'gameOver' && e.result === 'player'; }), 'ending the turn after a wipe emits you win');
+  assert(state.gameOverResult === 'player', 'match records a player win');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  const leftover = defensePawns(state, ['onboard'])[0];
+  leftover.state = 'dead';
+  leftover.row = null;
+  leftover.col = null;
+  leftover.intent = null;
+  if (defensePawns(state, ['onboard']).length === 0) {
+    createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5 });
+  }
+  assert(checkWinLoss(state) === null, 'one living pawn keeps the fight going');
+  assert(defenseSpawnCount(state) > 0, 'a living pawn still draws reinforcements');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
