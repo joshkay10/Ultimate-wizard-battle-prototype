@@ -68,6 +68,9 @@ function describeEvent(ev) {
       return who + ' bolts' + toward;
     }
     if (spell === 'gust') return who + ' gusts' + toward;
+    if (spell === 'tug' || ev.castKind === 'pull') return who + ' tugs' + toward;
+    if (spell === 'lock') return who + ' locks' + toward;
+    if (spell === 'brand') return who + ' brands' + toward;
     if (spell === 'stream') return who + ' streams' + toward;
     const named = (ev.spellName || spell).toLowerCase();
     return who + ' casts ' + named + toward;
@@ -80,6 +83,10 @@ function describeEvent(ev) {
   }
   if (ev.type === 'raise') return actorName(ev.attackerId) + ' raises a mountain';
   if (ev.type === 'silence') return actorName(ev.targetId) + ' is silenced';
+  if (ev.type === 'root') {
+    return actorName(ev.targetId) + (ev.skip ? ' is locked and skips the strike' : ' is locked');
+  }
+  if (ev.type === 'burn') return actorName(ev.targetId) + ' is branded';
   if (ev.type === 'fizzle') return actorName(ev.attackerId) + "'s bolt grounds";
   if (ev.type === 'jump') return actorName(ev.attackerId) + "'s bolt jumps the water";
   if (ev.type === 'void') return 'a nexus becomes a void';

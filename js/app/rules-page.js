@@ -56,12 +56,15 @@ function renderRulesPage() {
             '<tr><td>Stream</td><td>Pyre</td><td>line 4</td><td>3 dmg / 1 push, paints fire</td></tr>' +
             '<tr><td>Inferno</td><td>Pyre</td><td>3×3</td><td>2 dmg, paints fire, skips nexuses</td></tr>' +
             '<tr><td>Cinder</td><td>Pyre</td><td>one tile</td><td>2 dmg, paints fire</td></tr>' +
+            '<tr><td>Brand</td><td>Pyre</td><td>line 3</td><td>1 dmg now, 2 burn when they next act, paints fire</td></tr>' +
             '<tr><td>Pulse</td><td>Rime</td><td>neighbors</td><td>2 dmg / 1 out, paints ice</td></tr>' +
             '<tr><td>Blizzard</td><td>Rime</td><td>3×3</td><td>1 dmg, freezes ground, skips nexuses</td></tr>' +
             '<tr><td>Sheet</td><td>Rime</td><td>line 4</td><td>1 dmg, paints ice, no push</td></tr>' +
+            '<tr><td>Lock</td><td>Rime</td><td>line 3</td><td>1 dmg, skip their next strike, paints ice</td></tr>' +
             '<tr><td>Gust</td><td>Squall</td><td>line 3</td><td>1 dmg / 3 push, paints wind, fans fire</td></tr>' +
             '<tr><td>Gale</td><td>Squall</td><td>3×3</td><td>0 dmg / 1 out, paints wind</td></tr>' +
             '<tr><td>Draft</td><td>Squall</td><td>line 4</td><td>0 dmg / 4 push, paints wind</td></tr>' +
+            '<tr><td>Tug</td><td>Squall</td><td>line 3</td><td>1 dmg / 3 yank toward you, paints wind</td></tr>' +
             '<tr><td>Raise</td><td>Cairn</td><td>empty tile</td><td>temporary mountain</td></tr>' +
             '<tr><td>Quake</td><td>Cairn</td><td>3×3</td><td>2 dmg / 1 out, hits crystals</td></tr>' +
             '<tr><td>Spike</td><td>Cairn</td><td>one tile</td><td>3 dmg, hits crystals</td></tr>' +
@@ -77,9 +80,11 @@ function renderRulesPage() {
 
       '<h2>Unique casts</h2>' +
       '<ul>' +
-        '<li><strong>Stream / gust / sheet / draft</strong> — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.</li>' +
+        '<li><strong>Stream / gust / sheet / draft / tug / brand / lock</strong> — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire. Tug yanks toward you instead of shoving away.</li>' +
         '<li><strong>Pulse / jolt</strong> — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses all count. Pulse survivors are pushed away from the caster.</li>' +
         '<li><strong>Burst (inferno, blizzard, gale, quake, arc, cinder, spike)</strong> — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.</li>' +
+        '<li><strong>Lock</strong> — the body skips its next strike. In Defense the telegraph drops now. In Vs they skip that upcoming turn.</li>' +
+        '<li><strong>Brand</strong> — 1 now, then 2 the next time that body acts (Defense: before they strike; Vs: as their turn starts).</li>' +
         '<li><strong>Raise</strong> — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.</li>' +
         '<li><strong>Bolt</strong> — line of 4. Silences the wizard it hits. Jumps along water. Grounds on a raised mountain (no jump).</li>' +
         '<li><strong>Swap / loop</strong> — trade places with a wizard, or blink to an empty tile. <strong>Step</strong> is blink only. Landing on water or a void still kills you.</li>' +

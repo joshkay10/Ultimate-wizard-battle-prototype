@@ -187,6 +187,7 @@ function tileFill(row, col, highlight, kind, castKind) {
         return '#d7e8f3';
       }
       if (castKind === 'gust') return '#d8ebe1';
+      if (castKind === 'pull') return '#d8ebe1';
       if (castKind === 'raise') return '#e8ddc8';
       if (castKind === 'bolt') return '#f3e9c4';
       if (castKind === 'swap' || castKind === 'blink') return '#eadff3';
@@ -933,6 +934,25 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.stroke();
     ctx.restore();
   }
+  if (wizard.rooted && !flash) {
+    ctx.save();
+    ctx.strokeStyle = BOARD_COLORS.ice;
+    ctx.lineWidth = Math.max(2, box.s * 0.05);
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r * 1.12);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  if (wizard.burn && !flash) {
+    ctx.save();
+    ctx.fillStyle = BOARD_COLORS.fire;
+    ctx.beginPath();
+    canvasArc(ctx, cx + r * 0.62, cy - r * 0.55, Math.max(2.4, box.s * 0.055));
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.fillStyle = flash ? '#1c1e1b' : colors.hp;
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
@@ -1378,6 +1398,7 @@ function drawBoard() {
           : marks.kind === 'cast' && marks.castKind === 'pulse' ? BOARD_COLORS.ice
           : marks.kind === 'cast' && marks.castKind === 'burst' ? BOARD_COLORS[(state.selectedWizardId && state.wizards[state.selectedWizardId] && state.wizards[state.selectedWizardId].element) || 'cast']
           : marks.kind === 'cast' && marks.castKind === 'gust' ? BOARD_COLORS.wind
+          : marks.kind === 'cast' && marks.castKind === 'pull' ? BOARD_COLORS.wind
           : marks.kind === 'cast' && marks.castKind === 'stream' ? BOARD_COLORS.fire
           : marks.kind === 'cast' ? BOARD_COLORS.castBorder
           : BOARD_COLORS.moveBorder;

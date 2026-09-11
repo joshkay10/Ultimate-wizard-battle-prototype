@@ -228,6 +228,8 @@ async function playEvent(ev) {
   if (ev.type === 'raise') return playRaiseTerrain(ev);
   if (ev.type === 'swap') return playSwap(ev);
   if (ev.type === 'silence') return playSilence(ev);
+  if (ev.type === 'root') return playRoot(ev);
+  if (ev.type === 'burn') return playBurnMark(ev);
   if (ev.type === 'fizzle') return playFizzle(ev);
   if (ev.type === 'jump') return playJump(ev);
   if (ev.type === 'void') return playVoidOpen(ev);
@@ -258,6 +260,7 @@ async function playAttack(ev) {
   if (ev.castKind === 'raise') return playRaiseCast(ev);
   if (ev.castKind === 'swap' || ev.castKind === 'blink') return playSwapCast(ev);
   if (ev.castKind === 'gust') return playGustCast(ev);
+  if (ev.castKind === 'pull') return playPullCast(ev);
   if (ev.castKind === 'bolt') return playBoltCast(ev);
   await playStreamCast(ev);
 }
@@ -554,6 +557,62 @@ async function playGustCast(ev) {
   boardFx.charge = null;
 }
 
+async function playPullCast(ev) {
+  const line = lineEnds(ev);
+  if (!line) return;
+  const x0 = line.x0;
+  const y0 = line.y0;
+  const x1 = line.x1;
+  const y1 = line.y1;
+  const dist = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const ux = (x0 - x1) / dist;
+  const uy = (y0 - y1) / dist;
+  const color = BOARD_COLORS.wind;
+
+  boardFx.charge = { id: ev.attackerId, t: 0, element: 'wind' };
+  await animate(80, function (t) {
+    boardFx.charge.t = t;
+    boardFx.popScale[ev.attackerId] = 1 - t * 0.1;
+    boardFx.override[ev.attackerId] = {
+      x: line.start.x + ux * -8 * t,
+      y: line.start.y + uy * -8 * t,
+      s: line.start.s
+    };
+  });
+
+  boardFx.gust = { x0: x1, y0: y1, x1: x0, y1: y0, head: 0, fade: 0 };
+  await animate(220 + dist * 0.3, function (t) {
+    boardFx.gust.head = easeOut(t);
+    const hx = x1 + (x0 - x1) * boardFx.gust.head;
+    const hy = y1 + (y0 - y1) * boardFx.gust.head;
+    if (Math.random() < 0.9) {
+      boardFx.particles.push({
+        x: hx,
+        y: hy,
+        vx: ux * (3.2 + Math.random() * 2.2),
+        vy: uy * (3.2 + Math.random() * 2.2),
+        life: 0.55,
+        color: Math.random() < 0.4 ? '#ffffff' : color,
+        size: 1.6 + Math.random() * 1.8,
+        kind: 'streak'
+      });
+    }
+    ensureFxLoop();
+  });
+
+  spawnBurst(x0, y0, color, 12, 3.6);
+  boardFx.rings.push({ row: ev.from.row, col: ev.from.col, t: 0, element: 'wind' });
+  ensureFxLoop();
+  await animate(100, function (t) {
+    boardFx.gust.fade = t;
+    boardFx.popScale[ev.attackerId] = 0.9 + t * 0.1;
+  });
+  delete boardFx.override[ev.attackerId];
+  delete boardFx.popScale[ev.attackerId];
+  boardFx.gust = null;
+  boardFx.charge = null;
+}
+
 async function playBoltCast(ev) {
   const line = lineEnds(ev);
   if (!line) return;
@@ -778,6 +837,32 @@ async function playSilence(ev) {
   ensureFxLoop();
   await sleep(90);
   boardFx.flash = null;
+}
+
+async function playRoot(ev) {
+  const layout = boardLayout();
+  if (layout && ev.row != null) {
+    const b = cellRect(layout, ev.row, ev.col);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS.ice, 14, 3.4);
+  }
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: ev.skip ? 'skip' : 'lock', t: 0, element: 'ice' });
+  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: 'ice' });
+  boardFx.flash = { row: ev.row, col: ev.col };
+  ensureFxLoop();
+  await sleep(120);
+  boardFx.flash = null;
+}
+
+async function playBurnMark(ev) {
+  const layout = boardLayout();
+  if (layout && ev.row != null) {
+    const b = cellRect(layout, ev.row, ev.col);
+    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS.fire, 12, 3.2);
+  }
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'burn', t: 0, element: 'fire' });
+  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: 'fire' });
+  ensureFxLoop();
+  await sleep(110);
 }
 
 async function playFizzle(ev) {

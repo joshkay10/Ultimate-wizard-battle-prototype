@@ -37,11 +37,11 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
 }
 
 function canMove(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness && !wizard.rooted);
 }
 
 function canAttack(wizard) {
-  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness);
+  return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness && !wizard.rooted);
 }
 
 function clearMoveUndo(wizard) {
@@ -60,6 +60,7 @@ function resetActionFlagsFor(match, team) {
       wizard.hasMoved = false;
       wizard.summoningSickness = false;
       wizard.moveUndo = null;
+      if (wizard.rooted) wizard.rooted = false;
       if (wizard.silenced) {
         wizard.hasAttacked = true;
         wizard.silenceSkip = true;
@@ -81,6 +82,36 @@ function applySilence(match, wizard) {
     return;
   }
   wizard.silenced = true;
+}
+
+function tickBurn(match, wizard) {
+  const events = [];
+  if (!wizard || wizard.state !== 'onboard' || !wizard.burn) return events;
+  const amount = wizard.burn;
+  wizard.burn = 0;
+  wizard.hp -= amount;
+  events.push({
+    type: 'damage',
+    targetKind: 'wizard',
+    targetId: wizard.id,
+    amount: amount,
+    row: wizard.row,
+    col: wizard.col,
+    cause: 'burn'
+  });
+  const death = simKill(match, wizard);
+  if (death) events.push(death);
+  return events;
+}
+
+function tickBurnsForTeam(match, team) {
+  const events = [];
+  if (isDefenseMode(match) && team === 'enemy') return events;
+  Object.values(match.wizards).forEach(function (wizard) {
+    if (wizard.team !== team || wizard.state !== 'onboard') return;
+    events.push.apply(events, tickBurn(match, wizard));
+  });
+  return events;
 }
 
 function teamHasPresence(match, team) {
