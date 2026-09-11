@@ -41,37 +41,24 @@ function setGameMode(mode) {
 let endingTurn = false;
 
 async function presentDefenseEnemyPhase() {
+  resetActionFlagsFor(state, 'enemy');
+  stampDefenseStrikeOrder(state);
   const strikers = defenseActQueue(state);
   let i;
   for (i = 0; i < strikers.length; i++) {
-    const pawn = strikers[i];
-    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
-    const strike = simDefenseExecutePawn(state, pawn);
-    if (!strike.length) {
-      if (typeof releaseDisc === 'function') releaseDisc(pawn);
-      continue;
-    }
-    await present(strike);
-    await maybeWait(280);
+    const strike = simDefenseBeat(state, 'strike', strikers[i]);
+    if (strike.length) await present(strike);
   }
-  const emerged = simDefenseEmerge(state);
-  if (emerged.length) {
-    await present(emerged);
-    await maybeWait(220);
-  }
+  const emerged = simDefenseBeat(state, 'emerge');
+  if (emerged.length) await present(emerged);
   const movers = defenseActQueue(state);
   for (i = 0; i < movers.length; i++) {
-    const pawn = movers[i];
-    if (pawn.state !== 'onboard') continue;
-    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
-    const walk = simDefenseMovePawn(state, pawn);
+    if (movers[i].state !== 'onboard') continue;
+    const walk = simDefenseBeat(state, 'walk', movers[i]);
     if (walk.length) await present(walk);
-    else if (typeof releaseDisc === 'function') releaseDisc(pawn);
-    assignDefenseIntent(state, pawn);
-    if (typeof render === 'function') render();
-    await maybeWait(300);
+    else if (typeof render === 'function') render();
   }
-  const marks = markDefenseSpawns(state, defenseSpawnCount(state));
+  const marks = simDefenseBeat(state, 'mark');
   if (marks.length) await present(marks);
 }
 
@@ -86,7 +73,7 @@ async function endTurn() {
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
 
-    await maybeWait(280);
+    await maybeWait(120);
     if (state.matchId !== matchId) return;
     if (state.gameMode === 'defense') {
       await presentDefenseEnemyPhase();

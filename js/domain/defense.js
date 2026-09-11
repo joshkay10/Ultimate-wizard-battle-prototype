@@ -397,7 +397,8 @@ function scoreDefenseTile(match, pawn, row, col) {
     if (shot.score > 0 && defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score -= 2800;
     if (shot.score > 0 && !defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score += 80;
   }
-  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: shot.score > 0 };
+  const hit = shot.score > 0;
+  return { score: score, dr: shot.dr, dc: shot.dc, hit: hit, nexusShot: hit };
 }
 
 function pickScoredOption(rng, options) {
@@ -408,10 +409,6 @@ function pickScoredOption(rng, options) {
   const top = options.filter(function (opt) { return opt.score >= floor; }).slice(0, 3);
   if (!rng || top.length === 1) return top[0];
   return top[rng.int(top.length)];
-}
-
-function scoreDefenseDir(match, pawn, dr, dc) {
-  return defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
 }
 
 function pickSafeChargeDir(match, pawn, preferred) {
@@ -457,8 +454,18 @@ function pickDefenseIntent(match, pawn) {
 }
 
 function assignDefenseIntent(match, pawn) {
-  if (!pawn || pawn.state !== 'onboard') return;
+  if (!pawn || pawn.state !== 'onboard') return null;
   pawn.intent = pickDefenseIntent(match, pawn);
+  return {
+    type: 'intent',
+    wizardId: pawn.id,
+    kind: pawn.intent.kind,
+    dr: pawn.intent.dr,
+    dc: pawn.intent.dc,
+    row: pawn.row,
+    col: pawn.col,
+    element: pawn.element
+  };
 }
 
 function assignDefenseIntents(match) {
@@ -500,7 +507,9 @@ function simPawnMelee(match, pawn) {
     row: row,
     col: col,
     hit: 'none',
-    spellName: pawn.name
+    spellName: pawn.name,
+    element: pawn.element,
+    damage: pawn.meleeAttack
   });
   const victim = wizardAt(match, row, col);
   const nex = nexusAt(match, row, col);
@@ -544,7 +553,8 @@ function simPawnFireball(match, pawn) {
         col: nc,
         hit: hit,
         spellName: 'Fireball',
-        element: 'fire'
+        element: 'fire',
+        damage: pawn.castAttack
       });
       events.push.apply(events, hurtWizardAmount(match, victim, pawn.castAttack, 'pawn', nr, nc));
       return events;
@@ -561,7 +571,8 @@ function simPawnFireball(match, pawn) {
         col: nc,
         hit: hit,
         spellName: 'Fireball',
-        element: 'fire'
+        element: 'fire',
+        damage: pawn.castAttack
       });
       events.push.apply(events, hurtNexus(match, nex, pawn.castAttack, 'pawn'));
       return events;
@@ -577,7 +588,8 @@ function simPawnFireball(match, pawn) {
     col: hitCol,
     hit: hit,
     spellName: 'Fireball',
-    element: 'fire'
+    element: 'fire',
+    damage: pawn.castAttack
   });
   return events;
 }
@@ -599,7 +611,9 @@ function simPawnCharge(match, pawn) {
     col: pawn.col + dc,
     hit: 'none',
     spellName: 'Charge',
-    element: 'wind'
+    element: 'wind',
+    damage: pawn.meleeAttack,
+    path: path
   });
   for (i = 1; i <= 3; i++) {
     if (pawn.state !== 'onboard') break;
@@ -629,31 +643,31 @@ function simPawnCharge(match, pawn) {
     events.push.apply(events, applyTileEnter(match, pawn));
     if (pawn.state !== 'onboard') break;
   }
-  if (path.length) {
-    events.splice(1, 0, {
-      type: 'push',
-      wizardId: pawn.id,
-      from: from,
-      path: path,
-      tilesShort: 0,
-      crash: null
-    });
-  }
   return events;
+}
+
+function stampDefenseStrikeOrder(match) {
+  const queue = defenseStrikeQueue(match);
+  let i;
+  for (i = 0; i < queue.length; i++) queue[i].strikeOrder = i;
+  return queue;
 }
 
 function simDefenseExecutePawn(match, pawn) {
   if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return [];
+  const strikeOrder = typeof pawn.strikeOrder === 'number' ? pawn.strikeOrder : defenseStrikeIndex(match, pawn);
   let events;
   if (pawn.pawnKind === 'fireball') events = simPawnFireball(match, pawn);
   else if (pawn.pawnKind === 'charge') events = simPawnCharge(match, pawn);
   else events = simPawnMelee(match, pawn);
+  if (events && events[0] && events[0].type === 'attack') events[0].strikeOrder = strikeOrder;
   pawn.intent = null;
   return events || [];
 }
 
 function simDefenseExecute(match) {
   const events = [];
+  stampDefenseStrikeOrder(match);
   const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
@@ -701,15 +715,15 @@ function simDefenseEmerge(match) {
   return events;
 }
 
-function simDefenseMovePawn(match, pawn) {
-  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
+function pickDefenseMove(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return null;
   const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
   const options = [{
     row: pawn.row,
     col: pawn.col,
     stay: true,
     score: stay.score,
-    nexusShot: stay.nexusShot
+    hit: stay.hit
   }];
   getMoveTiles(match, pawn).forEach(function (tile) {
     const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
@@ -718,11 +732,16 @@ function simDefenseMovePawn(match, pawn) {
       col: tile.col,
       stay: false,
       score: scored.score,
-      nexusShot: scored.nexusShot
+      hit: scored.hit
     });
   });
-  const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
-  const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
+  const hits = options.filter(function (opt) { return opt.hit; });
+  return pickScoredOption(match.rng, hits.length ? hits : options);
+}
+
+function simDefenseMovePawn(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
+  const picked = pickDefenseMove(match, pawn);
   const events = [];
   if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
     const path = pathBFS(match, pawn, picked.row, picked.col);
@@ -732,13 +751,25 @@ function simDefenseMovePawn(match, pawn) {
   return events;
 }
 
+function simDefenseBeat(match, beat, pawn) {
+  if (beat === 'strike') return simDefenseExecutePawn(match, pawn);
+  if (beat === 'emerge') return simDefenseEmerge(match);
+  if (beat === 'walk') {
+    const events = simDefenseMovePawn(match, pawn);
+    const aimed = assignDefenseIntent(match, pawn);
+    if (aimed) events.push(aimed);
+    return events;
+  }
+  if (beat === 'mark') return markDefenseSpawns(match, defenseSpawnCount(match));
+  return [];
+}
+
 function simDefenseMoveAndTelegraph(match) {
   const events = [];
   const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
-    events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
-    assignDefenseIntent(match, pawns[i]);
+    events.push.apply(events, simDefenseBeat(match, 'walk', pawns[i]));
   }
   return events;
 }
@@ -755,10 +786,19 @@ function simDefenseMove(match) {
 
 function simDefenseEnemyPhase(match) {
   const events = [];
-  events.push.apply(events, simDefenseExecute(match));
-  events.push.apply(events, simDefenseEmerge(match));
-  events.push.apply(events, simDefenseMoveAndTelegraph(match));
-  events.push.apply(events, markDefenseSpawns(match, defenseSpawnCount(match)));
+  resetActionFlagsFor(match, 'enemy');
+  stampDefenseStrikeOrder(match);
+  const strikers = defenseActQueue(match);
+  let i;
+  for (i = 0; i < strikers.length; i++) {
+    events.push.apply(events, simDefenseBeat(match, 'strike', strikers[i]));
+  }
+  events.push.apply(events, simDefenseBeat(match, 'emerge'));
+  const movers = defenseActQueue(match);
+  for (i = 0; i < movers.length; i++) {
+    events.push.apply(events, simDefenseBeat(match, 'walk', movers[i]));
+  }
+  events.push.apply(events, simDefenseBeat(match, 'mark'));
   return events;
 }
 
