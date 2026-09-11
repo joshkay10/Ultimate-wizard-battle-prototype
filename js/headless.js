@@ -1159,7 +1159,6 @@ async function runSimSelfTests() {
     makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
   ];
   state.nexuses.enemy = [];
-  state.mana = 10;
   const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
   const drop = simSummon(state, dropper, 3, 4, 'player');
@@ -1182,6 +1181,61 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   assert(!canSummonAt(state, 3, 4, 'player'), 'vs still cannot summon mid-board');
+
+  resetMatch(state, 1, {
+    gameMode: 'defense',
+    playerLoadout: [
+      { kit: 'fire', spell: 'stream' },
+      { kit: 'fire', spell: 'inferno' },
+      { kit: 'wind', spell: 'gust' },
+      { kit: 'wind', spell: 'draft' }
+    ]
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const enemyNear = {};
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team !== 'enemy' || w.row == null) return;
+    let dr;
+    let dc;
+    for (dr = -1; dr <= 1; dr++) {
+      for (dc = -1; dc <= 1; dc++) enemyNear[(w.row + dr) + ',' + (w.col + dc)] = true;
+    }
+  });
+  const dropTiles = getPlayerSummonTiles(state).filter(function (t) {
+    return !enemyNear[t.row + ',' + t.col];
+  });
+  assert(dropTiles.length >= 2, 'defense has open drop tiles away from pawns');
+  const pyres = Object.values(state.wizards).filter(function (x) {
+    return x.team === 'player' && x.element === 'fire' && x.state === 'summoned';
+  });
+  assert(pyres.length === 2, 'loadout has two Pyres in hand');
+  assert(pyres[0].cost === 3 && state.mana === 2, 'round 1 mana is still 2, Pyre still costs 3');
+  assert(canPaySummon(state, pyres[0], 'player'), 'defense round 1 can drop a 3-cost Pyre');
+  assert(playerHasLegalAction(state), 'defense round 1 without Rime still has a drop');
+  const firstDrop = simSummon(state, pyres[0], dropTiles[0].row, dropTiles[0].col, 'player');
+  assert(firstDrop.some(function (e) { return e.type === 'summon'; }), 'first defense drop lands');
+  assert(state.playerSummonedThisTurn, 'defense marks the drop as spent');
+  assert(state.mana === 2, 'defense drop does not spend mana');
+  assert(!canPaySummon(state, pyres[1], 'player'), 'second drop is blocked the same turn');
+  const blockedDrop = simSummon(state, pyres[1], dropTiles[1].row, dropTiles[1].col, 'player');
+  assert(!blockedDrop.length, 'simSummon refuses a second defense drop');
+  assert(pyres[1].state === 'summoned', 'second wizard stays in hand');
+  simEndPlayerTurn(state);
+  simEndEnemyTurn(state);
+  assert(!state.playerSummonedThisTurn, 'a new player turn restores the drop');
+  assert(state.mana === 2, 'defense does not grow a mana pool');
+  assert(canPaySummon(state, pyres[1], 'player'), 'next round can drop the next body');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const vsTile = getPlayerSummonTiles(state)[0];
+  assert(vsTile, 'vs has a portal tile');
+  const vsBlocked = simSummon(state, vsPyre, vsTile.row, vsTile.col, 'player');
+  assert(!vsBlocked.length && vsPyre.state === 'summoned', 'vs still cannot portal a 3-cost on 2 mana');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;

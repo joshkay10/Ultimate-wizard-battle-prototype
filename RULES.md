@@ -4,7 +4,7 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak black-disc enemies telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A wizard shot and a city shot are worth the same; they walk toward whichever prey is closer. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **5** on the board at once. New bodies stream in only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains — and they spread instead of piling. **1–2** pawns can already be on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. Drop a wizard **anywhere** on an open tile — they land **immediately**, burst (push only), then are spent that turn. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak black-disc enemies telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A wizard shot and a city shot are worth the same; they walk toward whichever prey is closer. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **5** on the board at once. New bodies stream in only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains — and they spread instead of piling. **1–2** pawns can already be on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. No mana. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -25,7 +25,8 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
-- Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
+- **Defense:** one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.
+- **Vs:** pay mana. Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
@@ -36,11 +37,11 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. Some Vs maps open a mountain **gate** in the mid file. **Defense** maps are named islands and are not mirrored.
-- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn.
+- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. **Defense has no mana** — one drop per round instead.
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought.
+Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores it.
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
 | --- | --- | --- | --- | --- | --- |
@@ -89,9 +90,9 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 
 On your turn you may, in any order:
 
-1. **Summon** — pay a wizard’s cost.
-   - **Defense:** drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
-   - **Vs:** open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, also bursts, then is sick that turn. If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
+1. **Summon**
+   - **Defense:** **one wizard per round**. Cost is ignored. Drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
+   - **Vs:** pay the wizard’s cost. Open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, also bursts, then is sick that turn. If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
 2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
 4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.

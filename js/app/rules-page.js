@@ -6,7 +6,7 @@ function renderRulesPage() {
 
       '<h2>Modes</h2>' +
       '<ul>' +
-        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters, on a <strong>named island</strong> (the pass, the canal, the moat, twin towns, and the rest). Terrain can sit against the city. No enemy crystals. Enemies telegraph, then after your turn they execute every strike <strong>north to south, then west to east</strong> (numbered on the telegraph), then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. A wizard shot and a city shot are worth the same. They will not aim a charge into water or a void; you can still shove them into one. Black discs: Brute melee 1 (3 HP), Charger ram 1 then push 1 (4 HP), Bomber line 4 for 1 (3 HP) — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. A match has <strong>10 invaders</strong> total (opening counts). At most <strong>5</strong> on the board at once. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming holes open after the first enemy phase on open field ground — not the last two rows, not city, water, or mountains. Drop a wizard anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. The map is not mirrored. You win if you wipe every pawn (on the board and incoming). New bodies only stream in if someone is still standing and the 10 are not all out. You lose if the cluster falls or your wizards are wiped.</li>' +
+        '<li><strong>Defense</strong> — Into the Breach holdout. Defend a city of 3–6 nexuses (2 HP each), packed in one or two clusters, on a <strong>named island</strong> (the pass, the canal, the moat, twin towns, and the rest). Terrain can sit against the city. No enemy crystals. Enemies telegraph, then after your turn they execute every strike <strong>north to south, then west to east</strong> (numbered on the telegraph), then move and telegraph one body at a time. Each strike finishes (damage, death, voids) before the next pawn winds up. A wizard shot and a city shot are worth the same. They will not aim a charge into water or a void; you can still shove them into one. Black discs: Brute melee 1 (3 HP), Charger ram 1 then push 1 (4 HP), Bomber line 4 for 1 (3 HP) — telegraphs say MELEE, CHARGE, or SHOT. Pushing them does not change the aimed direction. Charge into water or a void still falls. A match has <strong>10 invaders</strong> total (opening counts). At most <strong>5</strong> on the board at once. Opening puts 1–2 pawns on the board with no telegraph and no incoming marks. Incoming holes open after the first enemy phase on open field ground — not the last two rows, not city, water, or mountains. <strong>One drop per round</strong> — any kit, anywhere on an open tile — they land immediately, burst (push, no damage), then are spent that turn. No mana. The map is not mirrored. You win if you wipe every pawn (on the board and incoming). New bodies only stream in if someone is still standing and the 10 are not all out. You lose if the cluster falls or your wizards are wiped.</li>' +
         '<li><strong>Vs</strong> — four enemy kits, full turn, no telegraph. Wipe or crystals both count. Terrain is mirrored. Portals in the back 3 rows arrive next turn.</li>' +
       '</ul>' +
 
@@ -29,7 +29,8 @@ function renderRulesPage() {
         '<li>Pick kits and spells on <a href="' + routeHref('team') + '">Team</a>. That loadout is saved on this device and used for every battle until you change it.</li>' +
         '<li>The enemy rolls <strong>four kits from the same pool</strong> each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.</li>' +
         '<li>The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).</li>' +
-        '<li>Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
+        '<li><strong>Defense:</strong> one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.</li>' +
+        '<li><strong>Vs:</strong> pay mana. Rime is the only <strong>2-cost</strong> kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.</li>' +
         '<li>Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.</li>' +
       '</ul>' +
 
@@ -41,11 +42,11 @@ function renderRulesPage() {
         '<li><strong>Water</strong> shows up on some maps. Step, slide, or get pushed on and you die. No summoning onto it. Line spells fly over.</li>' +
         '<li><strong>Voids</strong> open when a nexus hits 0. Same kill-on-enter as water. The crystal is gone.</li>' +
         '<li>Vs terrain is vertically mirrored so both camps get the same layout. Some Vs maps open a mountain gate. Defense maps are named islands and are not mirrored.</li>' +
-        '<li>Round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Each team has its own pool. Refill to max at the start of your turn.</li>' +
+        '<li><strong>Vs</strong> round 1 starts at <strong>2 mana</strong>. Max +1 each round, cap 10. Each team has its own pool. Refill to max at the start of your turn. <strong>Defense has no mana</strong> — one drop per round instead.</li>' +
       '</ul>' +
 
       '<h2>Wizards</h2>' +
-      '<p>Melee is a punch. The spell is what you configured on Team. You only have the four bodies you brought.</p>' +
+      '<p>Melee is a punch. The spell is what you configured on Team. You only have the four bodies you brought. Cost is Vs mana; Defense ignores it.</p>' +
       '<div class="table-wrap">' +
         '<table class="rules-table">' +
           '<thead><tr><th>Wizard</th><th>Cost</th><th>Move</th><th>HP</th><th>Melee</th><th>Default spell</th></tr></thead>' +
@@ -100,7 +101,7 @@ function renderRulesPage() {
 
       '<h2>Turn</h2>' +
       '<ol>' +
-        '<li><strong>Summon</strong> — pay cost. In Defense, drop anywhere on an open tile; they land immediately, burst (pulse shape, push only), then have summoning sickness this turn. In Vs, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, also bursts, then is sick. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
+        '<li><strong>Summon</strong> — Defense is <strong>one wizard per round</strong> (cost ignored), anywhere on an open tile; they land immediately, burst (pulse shape, push only), then have summoning sickness this turn. Vs: pay cost, open a portal in your back 3 rows. The wizard arrives at the start of your next turn, also bursts, then is sick. If anyone is standing on it — ally or enemy — both the incoming wizard and the one standing there die.</li>' +
         '<li><strong>Move</strong> — each onboard wizard may move once, up to its range. Other wizards, living nexuses, mountains, water, and voids block. You cannot walk onto water or a void. Undo a move if that wizard has not attacked yet.</li>' +
         '<li><strong>Attack</strong> — each onboard wizard may melee or cast once. Empty tiles, allies, enemies, and nexuses are valid unless the spell says otherwise.</li>' +
         '<li><strong>End turn</strong> — or it ends on its own when you have nothing left. A pending move-undo still counts, so the turn waits until you attack or undo.</li>' +
