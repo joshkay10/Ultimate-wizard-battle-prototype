@@ -234,13 +234,25 @@ function defenseShotScore(match, pawn, row, col, dr, dc) {
       if (victim.team === 'player') return 70 - i * 6;
       return -40;
     }
-    if (pawn.pawnKind === 'charge' && hazardAt(match, nr, nc)) return 8;
-    if (pawn.pawnKind !== 'fireball' && hazardAt(match, nr, nc)) return 0;
+    if (hazardAt(match, nr, nc)) return pawn.pawnKind === 'fireball' ? 0 : (pawn.pawnKind === 'charge' ? -200 : 0);
     r = nr;
     c = nc;
     if (pawn.pawnKind === 'melee') break;
   }
   return 0;
+}
+
+function defenseChargeWouldFall(match, row, col, dr, dc) {
+  let i;
+  for (i = 1; i <= 3; i++) {
+    const nr = row + dr * i;
+    const nc = col + dc * i;
+    if (!inBounds(nr, nc)) return false;
+    if (mountainAt(match, nr, nc)) return false;
+    if (wizardAt(match, nr, nc) || nexusAt(match, nr, nc)) return false;
+    if (hazardAt(match, nr, nc)) return true;
+  }
+  return false;
 }
 
 function bestDefenseShot(match, pawn, row, col) {
@@ -263,6 +275,11 @@ function scoreDefenseTile(match, pawn, row, col) {
   let score;
   if (nexusShot) score = 9000 + shot.score - dist * 4;
   else score = (18 - dist) * 110;
+  if (pawn.pawnKind === 'charge') {
+    const toward = nexus ? cardinalToward(row, col, nexus.row, nexus.col) : null;
+    if (toward && defenseChargeWouldFall(match, row, col, toward.dr, toward.dc)) score -= 2800;
+    if (shot.score > 0 && !defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score += 180;
+  }
   return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: nexusShot };
 }
 
@@ -280,6 +297,26 @@ function scoreDefenseDir(match, pawn, dr, dc) {
   return defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
 }
 
+function pickSafeChargeDir(match, pawn, preferred) {
+  const kind = (preferred && preferred.kind) || (pawn && pawn.pawnKind) || 'charge';
+  if (!preferred) return { kind: kind, dr: 1, dc: 0 };
+  if (pawn.pawnKind !== 'charge') return { kind: kind, dr: preferred.dr, dc: preferred.dc };
+  if (!defenseChargeWouldFall(match, pawn.row, pawn.col, preferred.dr, preferred.dc)) {
+    return { kind: kind, dr: preferred.dr, dc: preferred.dc };
+  }
+  let best = null;
+  let d;
+  for (d = 0; d < CARDINALS.length; d++) {
+    const dr = CARDINALS[d][0];
+    const dc = CARDINALS[d][1];
+    if (defenseChargeWouldFall(match, pawn.row, pawn.col, dr, dc)) continue;
+    const score = defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
+    if (!best || score > best.score) best = { dr: dr, dc: dc, score: score };
+  }
+  if (best) return { kind: kind, dr: best.dr, dc: best.dc };
+  return { kind: kind, dr: preferred.dr, dc: preferred.dc };
+}
+
 function pickDefenseIntent(match, pawn) {
   const spec = defensePawnSpec(pawn.pawnKind);
   const options = [];
@@ -294,27 +331,32 @@ function pickDefenseIntent(match, pawn) {
   const pool = nexusHits.length ? nexusHits : options;
   const hit = pickScoredOption(match.rng, pool);
   if (nexusHits.length && hit) {
-    return { kind: spec.id, dr: hit.dr, dc: hit.dc };
+    return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: hit.dr, dc: hit.dc });
   }
   if (hit && hit.score >= 40) {
     const prey = nearestDefenseNexus(match, pawn.row, pawn.col);
     if (prey) {
       const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
-      return { kind: spec.id, dr: dir.dr, dc: dir.dc };
+      return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: dir.dr, dc: dir.dc });
     }
-    return { kind: spec.id, dr: hit.dr, dc: hit.dc };
+    return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: hit.dr, dc: hit.dc });
   }
   const prey = nearestDefensePrey(match, pawn.row, pawn.col);
   if (prey) {
     const dir = cardinalToward(pawn.row, pawn.col, prey.row, prey.col);
-    return { kind: spec.id, dr: dir.dr, dc: dir.dc };
+    return pickSafeChargeDir(match, pawn, { kind: spec.id, dr: dir.dr, dc: dir.dc });
   }
-  return (hit && { kind: spec.id, dr: hit.dr, dc: hit.dc }) || { kind: spec.id, dr: 1, dc: 0 };
+  return pickSafeChargeDir(match, pawn, (hit && { kind: spec.id, dr: hit.dr, dc: hit.dc }) || { kind: spec.id, dr: 1, dc: 0 });
+}
+
+function assignDefenseIntent(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard') return;
+  pawn.intent = pickDefenseIntent(match, pawn);
 }
 
 function assignDefenseIntents(match) {
   defensePawns(match, ['onboard']).forEach(function (pawn) {
-    pawn.intent = pickDefenseIntent(match, pawn);
+    assignDefenseIntent(match, pawn);
   });
 }
 
@@ -581,6 +623,19 @@ function simDefenseMovePawn(match, pawn) {
   return events;
 }
 
+function simDefenseMoveAndTelegraph(match) {
+  const events = [];
+  const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
+    return a.id < b.id ? -1 : 1;
+  });
+  let i;
+  for (i = 0; i < pawns.length; i++) {
+    events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
+    assignDefenseIntent(match, pawns[i]);
+  }
+  return events;
+}
+
 function simDefenseMove(match) {
   const events = [];
   const pawns = defensePawns(match, ['onboard']).slice().sort(function (a, b) {
@@ -597,8 +652,7 @@ function simDefenseEnemyPhase(match) {
   const events = [];
   events.push.apply(events, simDefenseExecute(match));
   events.push.apply(events, simDefenseEmerge(match));
-  events.push.apply(events, simDefenseMove(match));
-  assignDefenseIntents(match);
+  events.push.apply(events, simDefenseMoveAndTelegraph(match));
   events.push.apply(events, markDefenseSpawns(match, defenseSpawnCount(match)));
   return events;
 }

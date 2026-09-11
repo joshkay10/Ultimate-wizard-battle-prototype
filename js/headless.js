@@ -1254,6 +1254,41 @@ async function runSimSelfTests() {
   cityBomber.intent = pickDefenseIntent(state, cityBomber);
   assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city even with a wizard beside it');
 
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = { '4,4': true };
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 6, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 6, col: 5 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const wetCharger = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 4, hp: 4, maxHp: 4, hasMoved: true });
+  wetCharger.intent = pickDefenseIntent(state, wetCharger);
+  assert(wetCharger.intent.dr !== 1 || wetCharger.intent.dc !== 0, 'charger does not aim south into water toward the city');
+  assert(!defenseChargeWouldFall(state, wetCharger.row, wetCharger.col, wetCharger.intent.dr, wetCharger.intent.dc), 'picked charge path does not fall in a hazard');
+  const shovedCharger = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  state.water['3,3'] = true;
+  simDefenseExecutePawn(state, shovedCharger);
+  assert(shovedCharger.state === 'dead', 'an already-aimed charge into water still falls');
+
+  const firstAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 2, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  const laterAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 6, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  simDefenseMovePawn(state, firstAim);
+  assignDefenseIntent(state, firstAim);
+  assert(firstAim.intent && firstAim.intent.dr != null, 'first walker telegraphs as soon as it moves');
+  assert(!laterAim.intent, 'later walker has no telegraph until it moves');
+
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');

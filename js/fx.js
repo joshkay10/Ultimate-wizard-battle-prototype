@@ -126,7 +126,7 @@ async function playEvents(events) {
         while (j < events.length && !fxGroupStop(events[j].type)) j++;
         await playAttackGroup(events, i, j, matchId);
         if (j < events.length) {
-          const gap = ev.type === 'move' ? 1100 : (ev.type === 'attack' ? 640 : 400);
+          const gap = ev.type === 'move' ? 400 : (ev.type === 'attack' ? 280 : 220);
           await sleep(gap);
         }
         i = j;
@@ -902,7 +902,7 @@ async function playMove(ev) {
   if (!layout) return;
   wakeWizardAt(ev.wizardId, ev.from.row, ev.from.col);
   const w0 = state.wizards[ev.wizardId];
-  const stepMs = w0 && w0.pawnKind ? 520 : (w0 && w0.team === 'enemy' ? 280 : 150);
+  const stepMs = w0 && w0.pawnKind ? 280 : (w0 && w0.team === 'enemy' ? 200 : 150);
   let r = ev.from.row;
   let c = ev.from.col;
   holdDiscAt(w0, r, c);
@@ -915,13 +915,13 @@ async function playMove(ev) {
       w0.row = r;
       w0.col = c;
     }
-    await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 400 : 40);
+    await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 140 : 40);
   }
   if (w0 && w0.state === 'onboard') {
     w0.row = r;
     w0.col = c;
   }
-  await sleep(w0 && w0.pawnKind ? 280 : 80);
+  await sleep(80);
   releaseDisc(w0);
 }
 

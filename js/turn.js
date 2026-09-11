@@ -45,30 +45,27 @@ async function presentDefenseEnemyPhase() {
       continue;
     }
     await present(strike);
-    await maybeWait(640);
+    await maybeWait(280);
   }
   const emerged = simDefenseEmerge(state);
   if (emerged.length) {
     await present(emerged);
-    await maybeWait(480);
+    await maybeWait(220);
   }
   const movers = defensePawns(state, ['onboard']).slice().sort(function (a, b) {
     return a.id < b.id ? -1 : 1;
   });
   for (i = 0; i < movers.length; i++) {
     const pawn = movers[i];
+    if (pawn.state !== 'onboard') continue;
     if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
     const walk = simDefenseMovePawn(state, pawn);
-    if (!walk.length) {
-      if (typeof releaseDisc === 'function') releaseDisc(pawn);
-      continue;
-    }
-    await present(walk);
-    await maybeWait(720);
+    if (walk.length) await present(walk);
+    else if (typeof releaseDisc === 'function') releaseDisc(pawn);
+    assignDefenseIntent(state, pawn);
+    if (typeof render === 'function') render();
+    await maybeWait(300);
   }
-  assignDefenseIntents(state);
-  if (typeof render === 'function') render();
-  await maybeWait(500);
   const marks = markDefenseSpawns(state, defenseSpawnCount(state));
   if (marks.length) await present(marks);
 }
@@ -84,7 +81,7 @@ async function endTurn() {
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
 
-    await maybeWait(500);
+    await maybeWait(280);
     if (state.matchId !== matchId) return;
     if (state.gameMode === 'defense') {
       await presentDefenseEnemyPhase();
