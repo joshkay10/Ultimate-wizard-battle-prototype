@@ -823,6 +823,7 @@ async function playMove(ev) {
     await lerpOverride(ev.wizardId, r, c, step.row, step.col, stepMs, { bounce: true });
     r = step.row;
     c = step.col;
+    await sleep(w0 && (w0.pawnKind || w0.team === 'enemy') ? 240 : 40);
   }
   const w = state.wizards[ev.wizardId];
   if (w && w.state === 'onboard') {
