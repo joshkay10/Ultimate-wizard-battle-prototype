@@ -119,8 +119,13 @@ function islandOk(match, baked) {
   return true;
 }
 
+var islandCityExtra = null;
+
 function extraCity(rng, base, extras) {
-  const n = rng.int(Math.min(3, extras.length + 1));
+  const maxAdd = islandCityExtra != null
+    ? Math.max(0, Math.min(islandCityExtra, extras.length))
+    : Math.min(2, extras.length);
+  const n = rng.int(maxAdd + 1);
   return base.concat(extras.slice(0, n));
 }
 
@@ -288,7 +293,14 @@ function applyFallbackIsland(match) {
 
 function tryBakeIsland(match, build, flip) {
   if (!build || !match.rng) return false;
-  const baked = bakeDefenseIsland(build(match.rng), flip);
+  const prevExtra = islandCityExtra;
+  islandCityExtra = typeof match.cityExtra === 'number' ? match.cityExtra : null;
+  let baked;
+  try {
+    baked = bakeDefenseIsland(build(match.rng), flip);
+  } finally {
+    islandCityExtra = prevExtra;
+  }
   if (!islandOk(match, baked)) return false;
   applyBakedIsland(match, baked);
   return true;

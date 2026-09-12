@@ -38,6 +38,8 @@ const state = {
   missionId: '',
   missionTitle: '',
   matchBestCombo: 0,
+  matchDunks: 0,
+  justUnlocked: false,
   resultRecorded: false,
   matchSummary: null
 };

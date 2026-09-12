@@ -67,6 +67,10 @@ html, body {
   color: var(--fire);
   font-weight: 600;
 }
+#app.is-enemy-turn .campaign-track,
+#app.is-animating .campaign-track {
+  pointer-events: none;
+}
 
 .game-over-overlay {
   position: fixed;
@@ -83,7 +87,7 @@ html, body {
   border-radius: 14px;
   padding: 28px 26px;
   text-align: center;
-  max-width: 320px;
+  max-width: 340px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
@@ -254,6 +258,93 @@ html, body {
   background-repeat: no-repeat;
   background-position: right 8px center;
 }
+
+.campaign-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: end;
+}
+.track-pip {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text-dim);
+  font: 800 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  padding: 0;
+}
+.track-pip.is-now {
+  border-color: var(--text);
+  background: var(--text);
+  color: #fff;
+}
+.track-pip.is-clear:not(.is-now) {
+  border-color: var(--wind);
+  color: var(--wind);
+}
+.track-pip.is-star:not(.is-now) {
+  border-color: var(--lightning);
+  color: var(--lightning);
+  box-shadow: 0 0 0 1px var(--lightning);
+}
+.track-pip.is-star.is-now {
+  box-shadow: 0 0 0 2px var(--lightning);
+}
+.track-pip.is-locked {
+  opacity: 0.35;
+  cursor: default;
+}
+.track-pip.track-vs {
+  width: auto;
+  padding: 0 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.track-pip:not(:disabled):active { transform: scale(0.96); }
+
+.mission-brief {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.mission-goal {
+  font: 800 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+.mission-hint {
+  margin-top: 4px;
+  font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text-dim);
+}
+
+.game-over-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+}
+.game-over-actions .end-turn-btn,
+.game-over-actions .game-over-ghost {
+  width: 100%;
+  margin-top: 0;
+}
+.game-over-ghost {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: 700 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.game-over-ghost:active { transform: scale(0.98); }
 
 /* ---------- Shared token (used in roster cards + selected panel) ---------- */
 .status-token {

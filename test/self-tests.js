@@ -2052,13 +2052,23 @@ async function runSimSelfTests() {
     assert(state.gameMode === 'defense', mission.id + ' is Defense');
     assert(state.missionId === mission.id, mission.id + ' stamps missionId');
     assert(state.mapId === mission.islandId, mission.id + ' pins ' + mission.islandId + ' (got ' + state.mapId + ')');
-    assert(state.playerLoadout.length === 4, mission.id + ' brings four');
+    assert(state.playerLoadout.length === mission.loadout.length, mission.id + ' brings ' + mission.loadout.length + ' (got ' + state.playerLoadout.length + ')');
+    assert(Object.values(state.wizards).filter(function (w) { return w.team === 'player'; }).length === mission.loadout.length, mission.id + ' seeds that many bodies');
     assert(state.playerLoadout[0].kit === mission.loadout[0].kit, mission.id + ' uses the scripted first kit');
     assert(defenseSpawnBudget(state) === mission.spawnBudget, mission.id + ' uses its spawn budget');
     assert(defenseLivingCap(state) === mission.pawnCap, mission.id + ' uses its living cap');
     const openers = defensePawns(state, ['onboard']);
     assert(openers.length === 1, mission.id + ' opens with one vek');
     assert(openers[0].pawnKind === mission.opening.kind, mission.id + ' opens with a ' + mission.opening.kind);
+    if (mission.opening.row != null) {
+      assert(openers[0].row === mission.opening.row && openers[0].col === mission.opening.col, mission.id + ' pins the opener tile');
+    }
+    assert(state.nexuses.player.length === 3, mission.id + ' pins a 3-crystal city');
+    assert(kitById('fire').hp === 3 && kitById('ice').hp === 3 && kitById('wind').hp === 2, 'wizard HP is 2–3, not a 12 HP sponge');
+    if (mission.id === 'mission-1') {
+      const only = Object.values(state.wizards).filter(function (w) { return w.team === 'player'; });
+      assert(only.length === 1 && only[0].name === 'Squall' && only[0].hp === 2, 'the pass teaches with one 2 HP Squall');
+    }
     const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
     resetMatch(state, mission.seed, { missionId: mission.id });
     const opener2 = defensePawns(state, ['onboard'])[0];
@@ -2071,6 +2081,62 @@ async function runSimSelfTests() {
       }
     }
   });
+
+  assert(nextMission(missionById('mission-1')) === missionById('mission-2'), 'the canal follows the pass');
+  assert(nextMission(missionById('mission-4')) === null, 'the moat is the last island');
+  const fresh = emptyCampaign();
+  assert(missionIsUnlocked(missionById('mission-1'), fresh), 'the pass is open');
+  assert(!missionIsUnlocked(missionById('mission-2'), fresh), 'the canal starts locked');
+  const clearedPass = applyMissionClear(fresh, 'mission-1', true);
+  assert(clearedPass.unlocked === 2, 'clearing the pass unlocks the canal');
+  assert(clearedPass.cleared['mission-1'].flawless, 'a clean city stamps flawless');
+  assert(missionIsUnlocked(missionById('mission-2'), clearedPass), 'the canal opens after a clear');
+  assert(!missionIsUnlocked(missionById('mission-3'), clearedPass), 'the alley stays locked');
+  const clearedAll = applyMissionClear(applyMissionClear(applyMissionClear(clearedPass, 'mission-2', false), 'mission-3', false), 'mission-4', false);
+  assert(clearedAll.complete && clearedAll.unlocked === 4, 'the moat completes the campaign');
+  MISSIONS.forEach(function (mission) {
+    assert(mission.goal && mission.hint && mission.name, mission.id + ' has player-facing copy');
+  });
+
+  resetMatch(state, 11, { missionId: 'mission-2' });
+  state.fxEnabled = false;
+  const canalOpener = defensePawns(state, ['onboard'])[0];
+  assert(canalOpener && canalOpener.pawnKind === 'charge', 'the canal opens with a charger');
+  assert(waterAt(state, canalOpener.row, canalOpener.col - 1), 'the charger sits one tile from the river — a dunk');
+
+  resetMatch(state, 23, { missionId: 'mission-4' });
+  state.fxEnabled = false;
+  const moatOpener = defensePawns(state, ['onboard'])[0];
+  assert(moatOpener && moatOpener.pawnKind === 'golem', 'the moat opens with a golem');
+  assert(waterAt(state, moatOpener.row, moatOpener.col + 2), 'a 3-pip gust from the west dunks the golem');
+
+  resetMatch(state, 7, { missionId: 'mission-1' });
+  state.fxEnabled = false;
+  const passOpener = defensePawns(state, ['onboard'])[0];
+  passOpener.state = 'dead';
+  passOpener.row = null;
+  passOpener.col = null;
+  passOpener.intent = null;
+  assert(defenseFieldClear(state), 'mission opener kill clears the field');
+  assert(defenseBudgetLeft(state) > 0, 'mission budget is still leftover after the opener');
+  assert(checkWinLoss(state) === null, 'killing the mission opener does not win');
+  assert(defenseSpawnCount(state) === 1, 'an empty mission field still queues the rest of the wave');
+  const holdPhase = simDefenseEnemyPhase(state);
+  assert(holdPhase.some(function (e) { return e.type === 'emergeMark'; }), 'mission enemy phase marks the next hole after a wipe');
+  assert(defensePawns(state, ['emerging']).length === 1, 'the next mite is incoming');
+  assert(checkWinLoss(state) === null, 'incoming still keeps the mission going');
+
+  resetMatch(state, 7, { missionId: 'mission-1' });
+  state.fxEnabled = false;
+  let afkGuard = 0;
+  while (!state.gameOverResult && afkGuard++ < 16) {
+    simEndPlayerTurn(state);
+    if (state.gameOverResult) break;
+    simDefenseEnemyPhase(state);
+    simEndEnemyTurn(state);
+  }
+  assert(state.gameOverResult === 'enemy', 'mission 1 loses if you never interrupt (got ' + state.gameOverResult + ')');
+  assert(teamNexusesFallen(state, 'player'), 'the pass city can actually fall');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);

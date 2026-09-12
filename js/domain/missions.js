@@ -1,4 +1,4 @@
-// Named Defense missions. Each one pins an island, a four, and a spawn mix.
+// Named Defense missions. Each one pins an island, a roster (1–4), and a spawn mix.
 // Vs stays free-play. Random Defense (no missionId) is still what the tests use.
 const MISSIONS = [
   {
@@ -8,17 +8,19 @@ const MISSIONS = [
     islandFlip: false,
     seed: 7,
     title: '1 · The Pass',
+    name: 'The Pass',
     mapLabel: 'the pass',
-    blurb: 'A tight mountain gate. Drop, read the telegraph, and pop the mites before they stack.',
+    goal: 'Pop every mite.',
+    hint: 'One wizard. Drop, then next turn Gust or melee. Red tiles fire after you end turn.',
+    fail: 'The mites got through.',
+    blurb: 'A tight mountain gate. One Squall. Drop, read the telegraph, pop the mite. Two mite hits and you are gone.',
     spawnBudget: 4,
     pawnCap: 2,
+    cityExtra: 0,
     spawnKinds: ['mite'],
-    opening: { kind: 'mite' },
+    opening: { kind: 'mite', row: 4, col: 4 },
     loadout: [
-      { kit: 'ice', spell: 'sheet', special: 'pulse' },
-      { kit: 'ice', spell: 'lock', special: 'blizzard' },
-      { kit: 'wind', spell: 'gust', special: 'gale' },
-      { kit: 'fire', spell: 'stream', special: 'lance' }
+      { kit: 'wind', spell: 'gust', special: 'gale' }
     ]
   },
   {
@@ -28,17 +30,20 @@ const MISSIONS = [
     islandFlip: false,
     seed: 11,
     title: '2 · The Canal',
+    name: 'The Canal',
     mapLabel: 'the canal',
-    blurb: 'A river splits the board. Tug and Gust exist to put bodies in the water.',
+    goal: 'Drown them.',
+    hint: 'Two Squalls. Dunk the charger — Gust or Tug into the river. Do not trade blows.',
+    fail: 'The canal wasn’t enough.',
+    blurb: 'A charger sits one tile from the river. Two Squalls — Tug and Gust. Put bodies in the water.',
     spawnBudget: 6,
     pawnCap: 3,
+    cityExtra: 0,
     spawnKinds: ['melee', 'charge'],
-    opening: { kind: 'melee' },
+    opening: { kind: 'charge', row: 4, col: 4 },
     loadout: [
       { kit: 'wind', spell: 'tug', special: 'draft' },
-      { kit: 'wind', spell: 'gust', special: 'gale' },
-      { kit: 'ice', spell: 'sheet', special: 'pulse' },
-      { kit: 'fire', spell: 'stream', special: 'inferno' }
+      { kit: 'wind', spell: 'gust', special: 'gale' }
     ]
   },
   {
@@ -48,15 +53,19 @@ const MISSIONS = [
     islandFlip: false,
     seed: 19,
     title: '3 · The Alley',
+    name: 'The Alley',
     mapLabel: 'the alley',
-    blurb: 'A corridor. Lance pays for itself when mites line up.',
+    goal: 'Pierce the line.',
+    hint: 'Lance hits a whole row. Do not stand in a SHOT. Three bodies this island.',
+    fail: 'The alley broke.',
+    blurb: 'A bomber already has the corridor. Three wizards. Lance pays when bodies line up.',
     spawnBudget: 8,
     pawnCap: 3,
+    cityExtra: 0,
     spawnKinds: ['mite', 'melee', 'fireball'],
-    opening: { kind: 'mite' },
+    opening: { kind: 'fireball', row: 4, col: 4 },
     loadout: [
       { kit: 'fire', spell: 'stream', special: 'lance' },
-      { kit: 'fire', spell: 'cinder', special: 'inferno' },
       { kit: 'ice', spell: 'lock', special: 'pulse' },
       { kit: 'wind', spell: 'gust', special: 'draft' }
     ]
@@ -68,14 +77,19 @@ const MISSIONS = [
     islandFlip: false,
     seed: 23,
     title: '4 · The Moat',
+    name: 'The Moat',
     mapLabel: 'the moat',
-    blurb: 'The exam. A Golem you do not trade with — shove it in the drink. Full toolkit.',
+    goal: 'Shove the Golem.',
+    hint: 'Dunk the Golem. Bombers still shoot — greed the dunk and the city falls.',
+    fail: 'The Golem walked in.',
+    blurb: 'The exam. A Golem is one gust from the moat — dunk it. Bombers and chargers still come; greed the dunk and the cluster falls.',
     spawnBudget: 10,
     pawnCap: 3,
-    spawnKinds: ['mite', 'melee', 'charge', 'fireball', 'golem'],
-    opening: { kind: 'golem' },
+    cityExtra: 0,
+    spawnKinds: ['fireball', 'fireball', 'charge', 'melee'],
+    opening: { kind: 'golem', row: 4, col: 1 },
     loadout: [
-      { kit: 'wind', spell: 'tug', special: 'gale' },
+      { kit: 'wind', spell: 'gust', special: 'draft' },
       { kit: 'ice', spell: 'lock', special: 'pulse' },
       { kit: 'fire', spell: 'brand', special: 'lance' },
       { kit: 'ice', spell: 'sheet', special: 'blizzard' }
@@ -102,6 +116,7 @@ function missionResetOpts(mission) {
     islandFlip: !!mission.islandFlip,
     spawnBudget: mission.spawnBudget,
     pawnCap: mission.pawnCap,
+    cityExtra: typeof mission.cityExtra === 'number' ? mission.cityExtra : null,
     spawnKinds: mission.spawnKinds ? mission.spawnKinds.slice() : null,
     opening: mission.opening ? { kind: mission.opening.kind, row: mission.opening.row, col: mission.opening.col } : null,
     playerLoadout: cloneLoadout(mission.loadout),
@@ -115,4 +130,61 @@ function playlistIdDefault() {
 
 function isVsPlaylist(id) {
   return id === 'vs';
+}
+
+function nextMission(mission) {
+  if (!mission) return null;
+  let i;
+  for (i = 0; i < MISSIONS.length; i++) {
+    if (MISSIONS[i].id === mission.id) return MISSIONS[i + 1] || null;
+  }
+  return null;
+}
+
+function emptyCampaign() {
+  return { cleared: {}, unlocked: 1, complete: false };
+}
+
+function cloneCampaign(raw) {
+  const out = emptyCampaign();
+  if (!raw) return out;
+  if (typeof raw.unlocked === 'number' && raw.unlocked >= 1) out.unlocked = raw.unlocked;
+  out.complete = !!raw.complete;
+  if (raw.cleared && typeof raw.cleared === 'object') {
+    Object.keys(raw.cleared).forEach(function (id) {
+      const row = raw.cleared[id];
+      out.cleared[id] = { flawless: !!(row && row.flawless) };
+    });
+  }
+  if (out.unlocked > MISSIONS.length) out.unlocked = MISSIONS.length;
+  return out;
+}
+
+function missionIsUnlocked(mission, campaign) {
+  if (!mission) return false;
+  const cap = campaign && typeof campaign.unlocked === 'number' ? campaign.unlocked : 1;
+  return mission.number <= cap;
+}
+
+function highestUnlockedMission(campaign) {
+  let best = MISSIONS[0] || null;
+  let i;
+  for (i = 0; i < MISSIONS.length; i++) {
+    if (missionIsUnlocked(MISSIONS[i], campaign)) best = MISSIONS[i];
+  }
+  return best;
+}
+
+function applyMissionClear(campaign, missionId, flawless) {
+  const out = cloneCampaign(campaign);
+  const mission = missionById(missionId);
+  if (!mission) return out;
+  const prev = out.cleared[mission.id] || {};
+  out.cleared[mission.id] = { flawless: !!(prev.flawless || flawless) };
+  out.unlocked = Math.max(out.unlocked, Math.min(MISSIONS.length, mission.number + 1));
+  if (mission.number === MISSIONS.length) {
+    out.unlocked = MISSIONS.length;
+    out.complete = true;
+  }
+  return out;
 }

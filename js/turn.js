@@ -34,6 +34,12 @@ function rematch() {
 }
 
 function setGameMode(mode) {
+  if (mode && mode !== 'vs' && typeof missionById === 'function') {
+    const mission = missionById(mode);
+    if (mission && typeof missionIsUnlocked === 'function' && typeof loadCampaign === 'function') {
+      if (!missionIsUnlocked(mission, loadCampaign())) return;
+    }
+  }
   if (typeof savePlaylistId === 'function') savePlaylistId(mode);
   else saveGameMode(mode);
   rematch();

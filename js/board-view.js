@@ -637,14 +637,13 @@ function drawEmerging(ctx, box, pawn) {
   const cy = box.y + box.s / 2;
   const t = performance.now() / 380;
   const style = defenseTelegraphStyle(pawn.pawnKind);
-  const face = vekFacing(pawn);
   const sizeF = (typeof pawnSizeFactor === 'function' ? pawnSizeFactor(pawn) : 0.36) / 0.36;
   ctx.save();
   ctx.strokeStyle = style.edge;
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
   ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
-  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32 * sizeF, face.dr, face.dc));
+  pathPoly(ctx, circleVerts(cx, cy, box.s * 0.32 * sizeF));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -877,16 +876,26 @@ function hexVerts(cx, cy, r) {
   return pts;
 }
 
-function vekVerts(cx, cy, r, dr, dc) {
+function circleVerts(cx, cy, r, n) {
+  n = n || 24;
+  const pts = [];
+  let i;
+  for (i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / n;
+    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+  return pts;
+}
+
+function facingWedge(cx, cy, r, dr, dc) {
   const ang = Math.atan2(dr == null ? 1 : dr, dc || 0);
-  const tipR = r * 1.12;
-  const backR = r * 0.78;
-  const spread = 2.35;
+  const tipR = r * 1.08;
+  const baseR = r * 0.42;
+  const spread = 0.62;
   return [
     { x: cx + Math.cos(ang) * tipR, y: cy + Math.sin(ang) * tipR },
-    { x: cx + Math.cos(ang + spread) * backR, y: cy + Math.sin(ang + spread) * backR },
-    { x: cx + Math.cos(ang) * -r * 0.28, y: cy + Math.sin(ang) * -r * 0.28 },
-    { x: cx + Math.cos(ang - spread) * backR, y: cy + Math.sin(ang - spread) * backR }
+    { x: cx + Math.cos(ang + spread) * baseR, y: cy + Math.sin(ang + spread) * baseR },
+    { x: cx + Math.cos(ang - spread) * baseR, y: cy + Math.sin(ang - spread) * baseR }
   ];
 }
 
@@ -962,11 +971,17 @@ function vekFacing(wizard) {
 }
 
 function tokenShapePts(wizard, cx, cy, r) {
-  if (wizard.pawnKind) {
-    const face = vekFacing(wizard);
-    return vekVerts(cx, cy, r, face.dr, face.dc);
-  }
+  if (wizard.pawnKind) return circleVerts(cx, cy, r);
   return hexVerts(cx, cy, r);
+}
+
+function drawFacingMark(ctx, cx, cy, r, wizard, color) {
+  const face = vekFacing(wizard);
+  ctx.save();
+  ctx.fillStyle = color || 'rgba(244,245,242,0.95)';
+  pathPoly(ctx, facingWedge(cx, cy, r, face.dr, face.dc));
+  ctx.fill();
+  ctx.restore();
 }
 
 function pawnSizeFactor(wizard) {
@@ -1012,6 +1027,10 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   }
   const pts = tokenShapePts(wizard, cx, cy, r);
   drawShapedBody(ctx, pts, Math.max(3.2, r * 0.3), flash, colors);
+  if (!flash && wizard.pawnKind) {
+    const ring = wizard.intent ? defenseTelegraphStyle(wizard.pawnKind) : null;
+    drawFacingMark(ctx, cx, cy, r, wizard, ring ? ring.edge : 'rgba(244,245,242,0.92)');
+  }
   if (!flash && !yours && !wizard.pawnKind) {
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
@@ -1026,12 +1045,11 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   }
   if (!flash && wizard.pawnKind && wizard.intent) {
     const ring = defenseTelegraphStyle(wizard.pawnKind);
-    const face = vekFacing(wizard);
     ctx.save();
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = ring.edge;
     ctx.setLineDash(ring.dash);
-    pathPoly(ctx, vekVerts(cx, cy, r * 0.92, face.dr, face.dc));
+    pathPoly(ctx, circleVerts(cx, cy, r * 0.92));
     ctx.stroke();
     ctx.restore();
   }
@@ -1723,6 +1741,12 @@ function comboLabel(count) {
   if (count === 3) return 'TRIPLE KILL';
   if (count === 4) return 'QUAD KILL';
   return 'MULTI KILL \u00d7' + count;
+}
+
+function dunkLabel(count) {
+  if (count <= 1) return 'DUNK';
+  if (count === 2) return 'DOUBLE DUNK';
+  return 'MULTI DUNK \u00d7' + count;
 }
 
 function drawCombo(ctx, css) {

@@ -34,6 +34,7 @@ function resetMatch(match, seed, opts) {
   match.spawnBudget = null;
   match.pawnCap = null;
   match.spawnKinds = null;
+  match.cityExtra = null;
   match.missionOpening = null;
 
   if (opts.missionId && typeof missionById === 'function') {
@@ -56,6 +57,7 @@ function resetMatch(match, seed, opts) {
   match.spawnBudget = typeof opts.spawnBudget === 'number' ? opts.spawnBudget : null;
   match.pawnCap = typeof opts.pawnCap === 'number' ? opts.pawnCap : null;
   match.spawnKinds = opts.spawnKinds ? opts.spawnKinds.slice() : null;
+  match.cityExtra = typeof opts.cityExtra === 'number' ? opts.cityExtra : null;
   match.missionOpening = opts.opening || null;
   if (match.gameMode === 'defense') {
     match.nexuses = { player: [], enemy: [] };
@@ -66,7 +68,9 @@ function resetMatch(match, seed, opts) {
     };
   }
 
-  const playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT);
+  const loadoutOpts = opts.missionId ? { pad: false } : {};
+  let playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT, loadoutOpts);
+  if (!playerLoadout.length) playerLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   let enemyLoadout;
   if (match.gameMode === 'defense') {
     enemyLoadout = [];
@@ -80,7 +84,7 @@ function resetMatch(match, seed, opts) {
     enemyLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   }
   match.playerLoadout = playerLoadout;
-  match.playerTeam = loadoutKitIds(playerLoadout);
+  match.playerTeam = playerLoadout.map(function (slot) { return slot.kit; });
   if (match.gameMode === 'defense') {
     match.enemyLoadout = [];
     match.enemyTeam = [];

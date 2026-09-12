@@ -38,7 +38,8 @@ function createWizard(match, typeId, team, spellId, specialId) {
 }
 
 function seedRosters(match, playerLoadout, enemyLoadout) {
-  const player = normalizeLoadout(playerLoadout);
+  const player = normalizeLoadout(playerLoadout, { pad: !match.missionId });
+  if (!player.length) return;
   let i;
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
   if (match.gameMode === 'defense') return;

@@ -2,7 +2,9 @@ function checkWinLoss(match) {
   const mineDead = teamNexusesFallen(match, 'player');
   if (isDefenseMode(match)) {
     if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
-    if (!teamHasPresence(match, 'enemy')) return 'player';
+    if (typeof defenseWaveCleared === 'function' ? defenseWaveCleared(match) : !teamHasPresence(match, 'enemy')) {
+      return 'player';
+    }
     return null;
   }
   const enemyDead = teamNexusesFallen(match, 'enemy');
