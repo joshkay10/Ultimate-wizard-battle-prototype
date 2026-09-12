@@ -148,11 +148,21 @@ function defenseLivingCap(match) {
   return typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 3;
 }
 
+function defenseHoldsWave(match) {
+  return !!(match && match.missionId);
+}
+
+function defenseWaveCleared(match) {
+  if (!defenseFieldClear(match)) return false;
+  if (defenseHoldsWave(match) && defenseBudgetLeft(match) > 0) return false;
+  return true;
+}
+
 function defenseSpawnCount(match) {
   const living = defensePawns(match, ['onboard', 'emerging']).length;
-  if (living === 0) return 0;
   const budget = defenseBudgetLeft(match);
   if (budget <= 0) return 0;
+  if (living === 0 && !defenseHoldsWave(match)) return 0;
   const room = defenseLivingCap(match) - living;
   if (room <= 0) return 0;
   const t = match.turnCount || 1;

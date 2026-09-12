@@ -34,6 +34,7 @@ function resetMatch(match, seed, opts) {
   match.spawnBudget = null;
   match.pawnCap = null;
   match.spawnKinds = null;
+  match.cityExtra = null;
   match.missionOpening = null;
 
   if (opts.missionId && typeof missionById === 'function') {
@@ -56,6 +57,7 @@ function resetMatch(match, seed, opts) {
   match.spawnBudget = typeof opts.spawnBudget === 'number' ? opts.spawnBudget : null;
   match.pawnCap = typeof opts.pawnCap === 'number' ? opts.pawnCap : null;
   match.spawnKinds = opts.spawnKinds ? opts.spawnKinds.slice() : null;
+  match.cityExtra = typeof opts.cityExtra === 'number' ? opts.cityExtra : null;
   match.missionOpening = opts.opening || null;
   if (match.gameMode === 'defense') {
     match.nexuses = { player: [], enemy: [] };

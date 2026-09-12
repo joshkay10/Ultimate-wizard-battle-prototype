@@ -20,9 +20,9 @@ Team and Elements stay hand-built in `js/pages.js` / `js/app/team-page.js`.
 
 ## Missions
 
-`js/domain/missions.js` is the four named Defense fights. Each pins `islandId`, `loadout`, `spawnBudget`, `pawnCap`, `spawnKinds`, and opening kind. Add a mission there. The battle dropdown reads `MISSIONS`. Do not copy the list into `js/ui.js`.
+`js/domain/missions.js` is the four named Defense fights. Each pins `islandId`, `loadout`, `spawnBudget`, `pawnCap`, `spawnKinds`, `cityExtra`, and opening kind/tile. Add a mission there. The battle dropdown reads `MISSIONS`. Do not copy the list into `js/ui.js`.
 
-Vs is still free-play with the Team-page loadout. Mission fours are locked.
+Named missions keep the remaining spawn budget after a wipe (killing the opener does not win). Random Defense (no `missionId`) still ends on a wipe. Vs is free-play with the Team-page loadout. Mission fours are locked.
 
 ## Tests
 

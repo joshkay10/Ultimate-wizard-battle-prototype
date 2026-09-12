@@ -8,16 +8,16 @@ The Defense dropdown is four scripted islands. Each one locks the map, the four 
 
 | # | Island | Four | Wave |
 | --- | --- | --- | --- |
-| 1 | The Pass | Rime / Rime / Squall / Pyre | 4 mites, cap 2 |
-| 2 | The Canal | Squall Tug / Squall Gust / Rime / Pyre | 6 brutes and chargers |
-| 3 | The Alley | Pyre Lance / Pyre / Rime / Squall | 8 mites, brutes, bombers |
-| 4 | The Moat | Tug / Lock / Brand / Rime | 10 of everything, opens with a Golem |
+| 1 | The Pass | Rime / Rime / Squall / Pyre | 4 mites, cap 2. Opener on the city’s doorstep |
+| 2 | The Canal | Squall Tug / Squall Gust / Rime / Pyre | 6 brutes and chargers. Opener is a charger next to the river |
+| 3 | The Alley | Pyre Lance / Pyre / Rime / Squall | 8 mites, brutes, bombers. Opener is a bomber in the corridor |
+| 4 | The Moat | Gust / Lock / Brand / Rime | 10: Golem opener, then bombers, chargers, and brutes |
 
 Switch to **Vs** to play the mirrored match with the team you edit on the Team page. Mission fours are locked.
 
 ## Modes
 
-- **Defense** (missions 1–4, or a random island in tests) — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has a **spawn budget** of invaders (opening counts) — **4 / 6 / 8 / 10** on missions 1–4, **10** on a free island. At most **3** on the board at once (Into the Breach’s usual island; mission 1 caps at 2). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the budget is not spent. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. Missions lock your four. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
+- **Defense** (missions 1–4, or a random island in tests) — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)** — named missions pin **3** (6 HP total), packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has a **spawn budget** of invaders (opening counts) — **4 / 6 / 8 / 10** on missions 1–4, **10** on a free island. At most **3** on the board at once (Into the Breach’s usual island; mission 1 caps at 2). New bodies stream in **one hole per enemy phase**. On a named mission the remaining budget still arrives after a wipe — killing the opener does not end the island. On a free island, new bodies only stream in if someone is still standing. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. Missions lock your four. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming) — missions also require the spawn budget to be spent. You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -62,12 +62,12 @@ Melee is a simple adjacent punch for everyone. Each wizard also carries **two sp
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Free cast |
 | --- | --- | --- | --- | --- | --- |
-| Pyre (fire) | 2 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
-| Rime (ice) | 1 | 3 | 12 | 4 / 2 | **Sheet** — line 4, 1 dmg, paints ice |
-| Squall (wind) | 2 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
-| Cairn (earth) | 3 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
-| Volt (lightning) | 2 | 3 | 9 | 3 / 1 | **Jolt** — neighbors, 1 dmg, silence |
-| Chrono (temporal) | 3 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+| Pyre (fire) | 2 | 3 | 4 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
+| Rime (ice) | 1 | 3 | 5 | 4 / 2 | **Sheet** — line 4, 1 dmg, paints ice |
+| Squall (wind) | 2 | 4 | 3 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
+| Cairn (earth) | 3 | 2 | 6 | 4 / 1 | **Raise** — empty tile becomes a mountain |
+| Volt (lightning) | 2 | 3 | 4 | 3 / 1 | **Jolt** — neighbors, 1 dmg, silence |
+| Chrono (temporal) | 3 | 3 | 4 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
 ### Specials — the third action
 
@@ -137,6 +137,6 @@ On your turn you may, in any order:
 
 Checked after each side’s turn (not on that side’s very first turn, except a Defense wipe, which also checks as soon as the last pawn dies):
 
-- **Defense:** you **win** if no enemy pawns are on the board or incoming. You **lose** if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. New bodies only stream in if someone is still standing and the **10 invaders** are not all out. There is no enemy camp to knock out.
+- **Defense:** you **win** if no enemy pawns are on the board or incoming. **Named missions** also wait until the spawn budget is spent — wiping the opener does not skip the rest of the wave. You **lose** if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. On a free island, new bodies only stream in if someone is still standing and the **10 invaders** are not all out. There is no enemy camp to knock out.
 - **Vs:** you win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
 - Draw if both sides lose at the same time (Vs).

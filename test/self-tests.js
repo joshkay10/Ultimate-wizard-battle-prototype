@@ -2059,6 +2059,11 @@ async function runSimSelfTests() {
     const openers = defensePawns(state, ['onboard']);
     assert(openers.length === 1, mission.id + ' opens with one vek');
     assert(openers[0].pawnKind === mission.opening.kind, mission.id + ' opens with a ' + mission.opening.kind);
+    if (mission.opening.row != null) {
+      assert(openers[0].row === mission.opening.row && openers[0].col === mission.opening.col, mission.id + ' pins the opener tile');
+    }
+    assert(state.nexuses.player.length === 3, mission.id + ' pins a 3-crystal city');
+    assert(kitById('fire').hp === 4 && kitById('ice').hp === 5 && kitById('wind').hp === 3, 'wizard HP is in the 3–5 band');
     const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
     resetMatch(state, mission.seed, { missionId: mission.id });
     const opener2 = defensePawns(state, ['onboard'])[0];
@@ -2071,6 +2076,34 @@ async function runSimSelfTests() {
       }
     }
   });
+
+  resetMatch(state, 7, { missionId: 'mission-1' });
+  state.fxEnabled = false;
+  const passOpener = defensePawns(state, ['onboard'])[0];
+  passOpener.state = 'dead';
+  passOpener.row = null;
+  passOpener.col = null;
+  passOpener.intent = null;
+  assert(defenseFieldClear(state), 'mission opener kill clears the field');
+  assert(defenseBudgetLeft(state) > 0, 'mission budget is still leftover after the opener');
+  assert(checkWinLoss(state) === null, 'killing the mission opener does not win');
+  assert(defenseSpawnCount(state) === 1, 'an empty mission field still queues the rest of the wave');
+  const holdPhase = simDefenseEnemyPhase(state);
+  assert(holdPhase.some(function (e) { return e.type === 'emergeMark'; }), 'mission enemy phase marks the next hole after a wipe');
+  assert(defensePawns(state, ['emerging']).length === 1, 'the next mite is incoming');
+  assert(checkWinLoss(state) === null, 'incoming still keeps the mission going');
+
+  resetMatch(state, 7, { missionId: 'mission-1' });
+  state.fxEnabled = false;
+  let afkGuard = 0;
+  while (!state.gameOverResult && afkGuard++ < 16) {
+    simEndPlayerTurn(state);
+    if (state.gameOverResult) break;
+    simDefenseEnemyPhase(state);
+    simEndEnemyTurn(state);
+  }
+  assert(state.gameOverResult === 'enemy', 'mission 1 loses if you never interrupt (got ' + state.gameOverResult + ')');
+  assert(teamNexusesFallen(state, 'player'), 'the pass city can actually fall');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
