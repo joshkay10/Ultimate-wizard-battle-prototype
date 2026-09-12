@@ -2,6 +2,7 @@ function checkWinLoss(match) {
   const mineDead = teamNexusesFallen(match, 'player');
   if (isDefenseMode(match)) {
     if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
+    if (!teamHasPresence(match, 'enemy')) return 'player';
     return null;
   }
   const enemyDead = teamNexusesFallen(match, 'enemy');
@@ -21,7 +22,7 @@ function playerHasLegalAction(match) {
   if (match.placingWizardId && getPlayerSummonTiles(match).length) return true;
 
   const canPortal = Object.values(match.wizards).some(function (wizard) {
-    return wizard.team === 'player' && wizard.state === 'summoned' && match.mana >= wizard.cost;
+    return canPaySummon(match, wizard, 'player');
   });
   if (canPortal && getPlayerSummonTiles(match).length) return true;
 
@@ -46,7 +47,7 @@ function simEndPlayerTurn(match) {
   match.selectedWizardId = null;
   match.placingWizardId = null;
   events.push({ type: 'turnEnd', team: 'player' });
-  if (!isFirst) {
+  if (!isFirst || (isDefenseMode(match) && !teamHasPresence(match, 'enemy'))) {
     const result = checkWinLoss(match);
     if (result) {
       match.gameOverResult = result;
@@ -75,7 +76,7 @@ function simEndEnemyTurn(match) {
   tickTempMountains(match);
   resetActionFlagsFor(match, 'enemy');
   events.push({ type: 'turnEnd', team: 'enemy' });
-  if (!isFirst) {
+  if (!isFirst || (isDefenseMode(match) && !teamHasPresence(match, 'enemy'))) {
     const result = checkWinLoss(match);
     if (result) {
       match.gameOverResult = result;
@@ -85,6 +86,7 @@ function simEndEnemyTurn(match) {
   }
   match.turnCount++;
   match.currentTurn = 'player';
+  match.playerSummonedThisTurn = false;
   refillManaPools(match);
   resetActionFlagsFor(match, 'player');
   events.push.apply(events, tickBurnsForTeam(match, 'player'));

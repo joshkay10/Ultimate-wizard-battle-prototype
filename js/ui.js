@@ -61,11 +61,14 @@ function renderPanel() {
       const inHand = wiz.state === 'summoned';
       const arriving = wiz.state === 'portaling';
       const isPicked = wiz.id === state.placingWizardId;
-      const clickable = inHand && state.mana >= wiz.cost;
+      const clickable = inHand && canPaySummon(state, wiz, 'player');
       const cardClasses = 'wizard-card ' + wiz.element
         + (inHand ? ' in-hand' : ' summoned')
         + (arriving ? ' arriving' : '')
         + (isPicked ? ' placing' : '');
+      const costBadge = state.gameMode === 'defense'
+        ? ''
+        : '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>';
 
       return (
         '<div class="' + cardClasses + '">' +
@@ -76,7 +79,7 @@ function renderPanel() {
                 '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
                 '<div class="wizard-card-element">' + (wiz.spellName || wiz.element) + '</div>' +
               '</div>' +
-              '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>' +
+              costBadge +
             '</div>' +
             '<div class="wizard-stats">' +
               '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
@@ -101,7 +104,12 @@ function renderPanel() {
     }).join('') + '</ul>'
     : '';
 
-  const handLabel = wizardCards ? '<p class="panel-section-label">in hand</p><div class="wizard-grid">' + wizardCards + '</div>' : '';
+  const handNote = state.gameMode === 'defense'
+    ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
+    : '';
+  const handLabel = wizardCards
+    ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
+    : '';
 
   return (
     '<div class="panel">' +
@@ -123,6 +131,8 @@ function wizardStatusBits(wiz) {
     if (wiz.burn) bits.push('burn ' + wiz.burn);
     if (wiz.intent) {
       const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
+      const strikeAt = defenseStrikeIndex(state, wiz);
+      if (strikeAt >= 0) bits.push(defenseOrdinal(strikeAt + 1) + ' to strike');
       bits.push(defenseKindLabel(wiz.pawnKind) + (dir ? ' ' + dir : ''));
     } else {
       bits.push('no telegraph');
@@ -211,7 +221,7 @@ function renderGameOverOverlay() {
   } else if (state.gameOverResult === 'player') {
     heading = 'you win';
     sub = state.gameMode === 'defense'
-      ? 'you held the cluster'
+      ? 'the field is clear'
       : 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
     heading = 'you lose';
@@ -277,6 +287,17 @@ function attachHandlers() {
   }
 }
 
+function defenseDropHud() {
+  const inHand = Object.values(state.wizards).some(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  });
+  if (!inHand) return '<div class="topbar-mana topbar-drop is-empty" aria-hidden="true"></div>';
+  if (state.playerSummonedThisTurn) {
+    return '<div class="topbar-mana topbar-drop is-spent">dropped</div>';
+  }
+  return '<div class="topbar-mana topbar-drop">1 drop</div>';
+}
+
 function render() {
   ensureShell();
   const route = currentRoute();
@@ -301,9 +322,18 @@ function render() {
     ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
     : '';
   const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
+  const island = state.gameMode === 'defense' && state.mapName
+    ? '<span class="topbar-map">' + state.mapName + '</span>'
+    : '';
+  const invaders = state.gameMode === 'defense'
+    ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + DEFENSE_SPAWN_BUDGET + ' invaders</span>'
+    : '';
+  const leftHud = state.gameMode === 'defense'
+    ? defenseDropHud()
+    : '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
   document.getElementById('topbar').innerHTML =
-    '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
+    leftHud +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
     '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
       '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
       '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +

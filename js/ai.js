@@ -61,7 +61,7 @@ function wizardActPriority(wizard, team) {
 async function teamSummonPhase(team) {
   while (true) {
     const affordable = Object.values(state.wizards).filter(
-      w => w.team === team && w.state === 'summoned' && teamMana(state, team) >= w.cost
+      w => canPaySummon(state, w, team)
     );
     if (!affordable.length) break;
 

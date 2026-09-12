@@ -59,11 +59,21 @@ function landPlayerWizard(match, wizard, row, col, team) {
   return events;
 }
 
+function defenseDropsOnce(match, team) {
+  return match.gameMode === 'defense' && team === 'player';
+}
+
+function canPaySummon(match, wizard, team) {
+  if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return false;
+  if (defenseDropsOnce(match, team)) return !match.playerSummonedThisTurn;
+  return teamMana(match, team) >= wizard.cost;
+}
+
 function simSummon(match, wizard, row, col, team) {
-  if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return [];
-  if (teamMana(match, team) < wizard.cost) return [];
+  if (!canPaySummon(match, wizard, team)) return [];
   if (!canSummonAt(match, row, col, team)) return [];
-  spendMana(match, team, wizard.cost);
+  if (defenseDropsOnce(match, team)) match.playerSummonedThisTurn = true;
+  else spendMana(match, team, wizard.cost);
   wizard.row = row;
   wizard.col = col;
   wizard.hasMoved = false;

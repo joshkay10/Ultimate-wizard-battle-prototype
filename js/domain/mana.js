@@ -8,6 +8,7 @@ function spendMana(match, team, amount) {
 }
 
 function refillManaPools(match) {
+  if (match.gameMode === 'defense') return;
   match.maxMana = Math.min(MANA_CAP, match.maxMana + 1);
   match.mana = match.maxMana;
   match.enemyMaxMana = Math.min(MANA_CAP, match.enemyMaxMana + 1);

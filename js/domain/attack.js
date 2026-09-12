@@ -76,16 +76,7 @@ function simBoltJump(match, attacker, pathTiles, skipRow, skipCol) {
     hit[key] = true;
     const wizard = wizardAt(match, r, c);
     if (wizard && wizard.id !== attacker.id && wizard.state === 'onboard') {
-      wizard.hp -= attacker.castAttack;
-      events.push({
-        type: 'damage',
-        targetKind: 'wizard',
-        targetId: wizard.id,
-        amount: attacker.castAttack,
-        row: r,
-        col: c,
-        cause: 'jump'
-      });
+      events.push(stampWizardDamage(wizard, attacker.castAttack, 'jump', r, c));
       applySilence(match, wizard);
       events.push({ type: 'silence', targetId: wizard.id, row: wizard.row, col: wizard.col, cause: 'jump' });
       const death = simKill(match, wizard);
@@ -199,16 +190,7 @@ function simStrike(match, attacker, row, col, kind) {
   });
 
   if (targetWizard) {
-    targetWizard.hp -= dmg;
-    events.push({
-      type: 'damage',
-      targetKind: 'wizard',
-      targetId: targetWizard.id,
-      amount: dmg,
-      row: row,
-      col: col,
-      cause: kind
-    });
+    events.push(stampWizardDamage(targetWizard, dmg, kind, row, col));
     if (kind === 'cast' && (attacker.castKind === 'bolt' || attacker.spellSilence)) {
       applySilence(match, targetWizard);
       events.push({
@@ -280,18 +262,7 @@ function simPulse(match, attacker, clickRow, clickCol) {
 
   hits.forEach(function (hit) {
     if (hit.kind === 'wizard') {
-      if (dmg) {
-        hit.wizard.hp -= dmg;
-        events.push({
-          type: 'damage',
-          targetKind: 'wizard',
-          targetId: hit.wizard.id,
-          amount: dmg,
-          row: hit.row,
-          col: hit.col,
-          cause: 'cast'
-        });
-      }
+      if (dmg) events.push(stampWizardDamage(hit.wizard, dmg, 'cast', hit.row, hit.col));
       if (attacker.spellSilence) {
         applySilence(match, hit.wizard);
         events.push({
@@ -307,21 +278,21 @@ function simPulse(match, attacker, clickRow, clickCol) {
     }
   });
 
+  const pulseShoves = hits.filter(function (hit) {
+    return hit.kind === 'wizard' && hit.wizard.state === 'onboard';
+  });
+  pulseShoves.sort(function (a, b) {
+    return manhattan(attacker.row, attacker.col, b.row, b.col) - manhattan(attacker.row, attacker.col, a.row, a.col);
+  });
+  pulseShoves.forEach(function (hit) {
+    const dir = directionBetween(attacker.row, attacker.col, hit.row, hit.col);
+    if (pushAmt) events.push.apply(events, simPush(match, hit.wizard, dir.dr, dir.dc, pushAmt));
+  });
+
   hits.forEach(function (hit) {
     if (hit.kind !== 'wizard') return;
     const death = simKill(match, hit.wizard);
     if (death) events.push(death);
-  });
-
-  const survivors = hits.filter(function (hit) {
-    return hit.kind === 'wizard' && hit.wizard.state === 'onboard';
-  });
-  survivors.sort(function (a, b) {
-    return manhattan(attacker.row, attacker.col, b.row, b.col) - manhattan(attacker.row, attacker.col, a.row, a.col);
-  });
-  survivors.forEach(function (hit) {
-    const dir = directionBetween(attacker.row, attacker.col, hit.row, hit.col);
-    if (pushAmt) events.push.apply(events, simPush(match, hit.wizard, dir.dr, dir.dc, pushAmt));
   });
 
   if (!hits.length) {
@@ -439,18 +410,7 @@ function simBurst(match, attacker, aimRow, aimCol) {
 
   hits.forEach(function (hit) {
     if (hit.kind === 'wizard') {
-      if (dmg) {
-        hit.wizard.hp -= dmg;
-        events.push({
-          type: 'damage',
-          targetKind: 'wizard',
-          targetId: hit.wizard.id,
-          amount: dmg,
-          row: hit.row,
-          col: hit.col,
-          cause: 'cast'
-        });
-      }
+      if (dmg) events.push(stampWizardDamage(hit.wizard, dmg, 'cast', hit.row, hit.col));
       if (attacker.spellSilence) {
         applySilence(match, hit.wizard);
         events.push({
@@ -466,23 +426,23 @@ function simBurst(match, attacker, aimRow, aimCol) {
     }
   });
 
-  hits.forEach(function (hit) {
-    if (hit.kind !== 'wizard') return;
-    const death = simKill(match, hit.wizard);
-    if (death) events.push(death);
-  });
-
-  const survivors = hits.filter(function (hit) {
+  const burstShoves = hits.filter(function (hit) {
     return hit.kind === 'wizard' && hit.wizard.state === 'onboard';
   });
-  survivors.sort(function (a, b) {
+  burstShoves.sort(function (a, b) {
     return manhattan(aimRow, aimCol, b.row, b.col) - manhattan(aimRow, aimCol, a.row, a.col);
   });
-  survivors.forEach(function (hit) {
+  burstShoves.forEach(function (hit) {
     if (!pushAmt) return;
     const dir = directionBetween(aimRow, aimCol, hit.row, hit.col);
     if (!dir.dr && !dir.dc) return;
     events.push.apply(events, simPush(match, hit.wizard, dir.dr, dir.dc, pushAmt));
+  });
+
+  hits.forEach(function (hit) {
+    if (hit.kind !== 'wizard') return;
+    const death = simKill(match, hit.wizard);
+    if (death) events.push(death);
   });
 
   if (!hits.length) {

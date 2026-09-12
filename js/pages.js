@@ -36,9 +36,9 @@ function renderTodoPage() {
 
       '<h2>Loop</h2>' +
       '<ul class="todo-list">' +
+        item('<strong>Badges and bosses</strong> — named missions. Stamp a badge when you clear. A boss at the end of a track.') +
+        item('<strong>Power spikes</strong> — unlock a spell, a kit, or a big stat bump between badges. Not a relic shop, not a roguelike run.') +
         item('<strong>Seeded daily / share seed</strong> — one board + enemy roll to race and send.') +
-        item('<strong>Short run</strong> — three fights, pick a spell upgrade between them.') +
-        item('<strong>Draft bigger</strong> — see more spells, lock one per body, leftover become the shop.') +
         item('<strong>First-fight tutorial</strong> — one scripted board for portal, crash chain, ice slide, undo.') +
       '</ul>' +
 

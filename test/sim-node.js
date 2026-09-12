@@ -16,6 +16,7 @@ const files = [
   'js/domain/nexus.js',
   'js/domain/trail.js',
   'js/domain/terrain.js',
+  'js/domain/islands.js',
   'js/domain/path.js',
   'js/domain/wizard.js',
   'js/domain/mana.js',
