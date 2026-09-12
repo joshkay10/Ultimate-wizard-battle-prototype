@@ -1380,6 +1380,40 @@ async function runSimSelfTests() {
   simDefenseExecute(state);
   assert(pyre.hp === 9, 'fireball hits 4 range for 1 in the aimed direction (' + pyre.hp + ')');
 
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    } else if (w.team === 'player') {
+      w.state = 'summoned';
+      w.row = null;
+      w.col = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const rusher = createDefensePawn(state, 'charge', { state: 'onboard', row: 2, col: 1, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  const rushEvents = simDefenseExecutePawn(state, rusher);
+  const rushAtk = rushEvents.find(function (e) { return e.type === 'attack'; });
+  assert(rushAtk && rushAtk.spellName === 'Charge', 'charge attack is named Charge');
+  assert(rushAtk.path && rushAtk.path.length === 3, 'empty charge dashes 3 tiles');
+  assert(!rushEvents.some(function (e) { return e.type === 'push' && e.wizardId === rusher.id; }), 'charge dash is not a fake self-push');
+  assert(rusher.row === 2 && rusher.col === 4, 'empty charge runs 3 tiles');
+  assert(describeEvent(rushEvents[0]).indexOf('charges') !== -1, 'charge log says charges');
+
+  pyre.state = 'onboard';
+  pyre.row = 3;
+  pyre.col = 3;
+  pyre.hp = 10;
+  const slammer = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  const slamEvents = simDefenseExecutePawn(state, slammer);
+  assert(slamEvents.some(e => e.type === 'attack' && e.hit === 'wizard'), 'adjacent charge slams the body in front');
+  assert(slammer.row === 3 && slammer.col === 2, 'adjacent charger stays on their tile');
+  assert(pyre.hp === 9, 'adjacent charge deals 1');
+
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
   Object.values(state.wizards).forEach(function (w) {

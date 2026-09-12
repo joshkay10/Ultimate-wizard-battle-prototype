@@ -711,6 +711,20 @@ function drawDefenseOverlays(ctx, layout) {
     ctx.lineTo(x1 - ux * b.s * 0.18, y1 - uy * b.s * 0.18);
     ctx.stroke();
     ctx.setLineDash([]);
+    if (pawn.pawnKind === 'charge') {
+      const chevs = Math.max(1, Math.floor(len / Math.max(18, a.s * 0.42)));
+      for (let i = 1; i <= chevs; i++) {
+        const u = i / (chevs + 1);
+        const px = x0 + dx * u;
+        const py = y0 + dy * u;
+        const ch = Math.max(5, a.s * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(px - ux * ch - uy * ch * 0.7, py - uy * ch + ux * ch * 0.7);
+        ctx.lineTo(px, py);
+        ctx.lineTo(px - ux * ch + uy * ch * 0.7, py - uy * ch - ux * ch * 0.7);
+        ctx.stroke();
+      }
+    }
     const ah = Math.max(style.pip ? 8 : 9, b.s * 0.18);
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -1086,13 +1100,24 @@ function drawChargeGlow(ctx, box, element, t) {
     ctx.lineWidth = 1.2;
     ctx.stroke();
   } else if (element === 'wind') {
-    ctx.globalAlpha = 0.55 + t * 0.4;
-    ctx.lineWidth = 2.4;
-    ctx.setLineDash([6, 7]);
+    ctx.globalAlpha = 0.4 + t * 0.5;
+    ctx.lineWidth = 2.6;
+    ctx.setLineDash([5, 6]);
     ctx.beginPath();
     canvasArc(ctx, cx, cy, r);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.globalAlpha = 0.22 + t * 0.35;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r * 0.72);
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.35 + t * 0.4;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    canvasArc(ctx, cx, cy, r * 1.08);
+    ctx.stroke();
   } else if (element === 'earth') {
     ctx.globalAlpha = 0.5 + t * 0.45;
     ctx.lineWidth = 3.2;
@@ -1200,6 +1225,26 @@ function drawStream(ctx) {
   ctx.beginPath();
   canvasArc(ctx, x, y, 3.2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawDashRibbon(ctx) {
+  const d = boardFx.dashRibbon;
+  if (!d || !d.pts || d.pts.length < 2) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 1; i < d.pts.length; i++) {
+    const u = i / (d.pts.length - 1);
+    const fade = d.pts[i].a == null ? 1 : d.pts[i].a;
+    ctx.strokeStyle = i % 2 ? '#ffffff' : (d.color || BOARD_COLORS.wind);
+    ctx.globalAlpha = fade * (0.25 + u * 0.7);
+    ctx.lineWidth = 3.5 + u * 11;
+    ctx.beginPath();
+    ctx.moveTo(d.pts[i - 1].x, d.pts[i - 1].y);
+    ctx.lineTo(d.pts[i].x, d.pts[i].y);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -1417,7 +1462,7 @@ function ensureFxLoop() {
     fxLast = now;
     tickFx(dt);
     try { drawBoard(); } catch (err) { console.error(err); }
-    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || !!(state.portals && Object.keys(state.portals).length);
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || boardFx.dashRibbon || !!(state.portals && Object.keys(state.portals).length);
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
   }
