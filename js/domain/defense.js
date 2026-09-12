@@ -597,15 +597,26 @@ function stampDefenseStrikeOrder(match) {
 }
 
 function simDefenseExecutePawn(match, pawn) {
-  if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return [];
+  if (!pawn || pawn.state !== 'onboard') return [];
+  const events = tickBurn(match, pawn);
+  if (pawn.state !== 'onboard') return events;
+  if (pawn.rooted) {
+    pawn.rooted = false;
+    const had = pawn.intent;
+    pawn.intent = null;
+    if (had) events.push({ type: 'root', targetId: pawn.id, row: pawn.row, col: pawn.col, skip: true });
+    return events;
+  }
+  if (!pawn.intent) return events;
   const strikeOrder = typeof pawn.strikeOrder === 'number' ? pawn.strikeOrder : defenseStrikeIndex(match, pawn);
-  let events;
-  if (pawn.pawnKind === 'fireball') events = simPawnFireball(match, pawn);
-  else if (pawn.pawnKind === 'charge') events = simPawnCharge(match, pawn);
-  else events = simPawnMelee(match, pawn);
-  if (events && events[0] && events[0].type === 'attack') events[0].strikeOrder = strikeOrder;
+  let strike;
+  if (pawn.pawnKind === 'fireball') strike = simPawnFireball(match, pawn);
+  else if (pawn.pawnKind === 'charge') strike = simPawnCharge(match, pawn);
+  else strike = simPawnMelee(match, pawn);
+  if (strike && strike[0] && strike[0].type === 'attack') strike[0].strikeOrder = strikeOrder;
   pawn.intent = null;
-  return events || [];
+  events.push.apply(events, strike || []);
+  return events;
 }
 
 function simDefenseExecute(match) {

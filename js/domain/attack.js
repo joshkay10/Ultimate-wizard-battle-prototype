@@ -25,6 +25,19 @@ function casterPaints(attacker) {
   return attacker.spellPaint !== false && paintsTrail(attacker.element);
 }
 
+function applyHitStatuses(match, attacker, wizard, events) {
+  if (!wizard || wizard.state !== 'onboard') return;
+  if (attacker.spellRoot) {
+    wizard.rooted = true;
+    wizard.intent = null;
+    events.push({ type: 'root', targetId: wizard.id, row: wizard.row, col: wizard.col });
+  }
+  if (attacker.spellBurn) {
+    wizard.burn = attacker.spellBurn;
+    events.push({ type: 'burn', targetId: wizard.id, amount: attacker.spellBurn, row: wizard.row, col: wizard.col });
+  }
+}
+
 function simBoltJump(match, attacker, pathTiles, skipRow, skipCol) {
   const events = [];
   const seeds = [];
@@ -187,7 +200,13 @@ function simStrike(match, attacker, row, col, kind) {
         col: targetWizard.col
       });
     }
-    if (pushAmt) events.push.apply(events, simPush(match, targetWizard, dir.dr, dir.dc, pushAmt));
+    applyHitStatuses(match, attacker, targetWizard, events);
+    if (pushAmt) {
+      const away = attacker.castKind === 'pull'
+        ? { dr: -dir.dr, dc: -dir.dc }
+        : dir;
+      events.push.apply(events, simPush(match, targetWizard, away.dr, away.dc, pushAmt));
+    }
     const death = simKill(match, targetWizard);
     if (death) events.push(death);
   } else if (targetNexus) {
@@ -253,6 +272,7 @@ function simPulse(match, attacker, clickRow, clickCol) {
           col: hit.wizard.col
         });
       }
+      applyHitStatuses(match, attacker, hit.wizard, events);
     } else {
       events.push.apply(events, hurtNexus(match, hit.nexus, dmg, 'cast'));
     }
@@ -400,6 +420,7 @@ function simBurst(match, attacker, aimRow, aimCol) {
           col: hit.wizard.col
         });
       }
+      applyHitStatuses(match, attacker, hit.wizard, events);
     } else if (dmg) {
       events.push.apply(events, hurtNexus(match, hit.nexus, dmg, 'cast'));
     }

@@ -56,6 +56,7 @@ function simEndPlayerTurn(match) {
     }
   }
   match.currentTurn = 'enemy';
+  events.push.apply(events, tickBurnsForTeam(match, 'enemy'));
   events.push.apply(events, simResolvePortals(match, 'enemy'));
   const afterPortals = checkWinLoss(match);
   if (afterPortals) {
@@ -88,6 +89,7 @@ function simEndEnemyTurn(match) {
   match.playerSummonedThisTurn = false;
   refillManaPools(match);
   resetActionFlagsFor(match, 'player');
+  events.push.apply(events, tickBurnsForTeam(match, 'player'));
   events.push.apply(events, simResolvePortals(match, 'player'));
   const afterPortals = checkWinLoss(match);
   if (afterPortals) {

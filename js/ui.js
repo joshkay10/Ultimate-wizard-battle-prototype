@@ -127,6 +127,8 @@ function renderPanel() {
 function wizardStatusBits(wiz) {
   const bits = [];
   if (wiz.pawnKind) {
+    if (wiz.rooted) bits.push('locked');
+    if (wiz.burn) bits.push('burn ' + wiz.burn);
     if (wiz.intent) {
       const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
       const strikeAt = defenseStrikeIndex(state, wiz);
@@ -137,6 +139,8 @@ function wizardStatusBits(wiz) {
     }
     return bits;
   }
+  if (wiz.rooted) bits.push('locked');
+  if (wiz.burn) bits.push('burn ' + wiz.burn);
   if (wiz.summoningSickness) {
     bits.push('summoning sickness');
     bits.push('burst spent');

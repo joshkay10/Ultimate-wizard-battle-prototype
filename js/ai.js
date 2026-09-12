@@ -194,6 +194,13 @@ function attackScore(wizard, tile, kind, team) {
       const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
       if (hazardAt(state, tile.row + dir.dr, tile.col + dir.dc)) score += 95;
     }
+    if (kind === 'cast' && wizard.castKind === 'pull') {
+      score += wizard.castDisplacement * 4;
+      const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
+      if (hazardAt(state, tile.row - dir.dr, tile.col - dir.dc)) score += 95;
+    }
+    if (kind === 'cast' && wizard.spellRoot) score += 70;
+    if (kind === 'cast' && wizard.spellBurn) score += 40;
   }
   if (kind === 'cast' && wizard.castKind === 'bolt') {
     score += countBoltJumpFoes(wizard, tile, team) * 70;

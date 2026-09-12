@@ -591,9 +591,9 @@ async function runSimSelfTests() {
   assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
   const mixed = randomPlayableLoadout(createRng(9));
   assert(mixed.length === TEAM_SIZE && mixed.every(function (s) { return kitPlayable(s.kit); }), 'randomize stays in Pyre Rime Squall');
-  assert(SPELLS.length === 18, 'spell catalog is eighteen');
+  assert(SPELLS.length === 21, 'spell catalog is twenty-one');
   assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
-  assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
+  assert(CAST_HINT.blizzard && CAST_HINT.inferno && CAST_HINT.tug && CAST_HINT.lock && CAST_HINT.brand, 'new spell hints exist');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -665,6 +665,93 @@ async function runSimSelfTests() {
   assert(rimes.map(w => w.spellId).sort().join(',') === 'blizzard,pulse,pulse,sheet', 'duplicate kits keep their own spells');
   const enemyFires = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.element === 'fire');
   assert(enemyFires.length === 2, 'enemy can roll duplicate kits');
+
+  resetMatch(state, 1, {
+    playerLoadout: [
+      { kit: 'wind', spell: 'tug' },
+      { kit: 'ice', spell: 'lock' },
+      { kit: 'fire', spell: 'brand' },
+      { kit: 'ice', spell: 'pulse' }
+    ],
+    gameMode: 'defense'
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [];
+  state.nexuses.enemy = [];
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  const tugger = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'tug');
+  const locker = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'lock');
+  const brander = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'brand');
+  assert(tugger && tugger.castKind === 'pull', 'Tug is a pull');
+  assert(locker && locker.spellRoot, 'Lock roots');
+  assert(brander && brander.spellBurn === 2, 'Brand burns 2');
+
+  tugger.state = 'onboard';
+  tugger.row = 4;
+  tugger.col = 1;
+  tugger.hasAttacked = false;
+  const yanked = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5 });
+  state.water = { '4,3': true };
+  const tugHit = simAttack(state, tugger, 4, 4, 'cast');
+  assert(tugHit.some(e => e.type === 'attack' && e.castKind === 'pull' && e.spellId === 'tug'), 'tug attack is a pull');
+  assert(yanked.state === 'dead', 'tug yanks a pawn into water');
+  assert(describeEvent(tugHit[0]).indexOf('tugs') !== -1, 'tug log says tugs');
+
+  locker.state = 'onboard';
+  locker.row = 2;
+  locker.col = 2;
+  locker.hasAttacked = false;
+  const lockPawn = createDefensePawn(state, 'charge', {
+    state: 'onboard',
+    row: 2,
+    col: 5,
+    hp: 4,
+    maxHp: 4,
+    intent: { kind: 'charge', dr: 0, dc: 1 }
+  });
+  const lockHit = simAttack(state, locker, 2, 5, 'cast');
+  assert(lockHit.some(e => e.type === 'root' && e.targetId === lockPawn.id), 'lock emits a root');
+  assert(lockPawn.rooted, 'lock marks the pawn rooted');
+  assert(!lockPawn.intent, 'lock drops the telegraph now');
+  const lockSkip = simDefenseExecutePawn(state, lockPawn);
+  assert(lockPawn.rooted === false, 'lock is spent on the skipped strike');
+  assert(!lockSkip.some(e => e.type === 'attack'), 'locked charger does not dash');
+  assert(lockPawn.state === 'onboard' && lockPawn.col === 5, 'locked charger stays put');
+
+  brander.state = 'onboard';
+  brander.row = 6;
+  brander.col = 2;
+  brander.hasAttacked = false;
+  const brandPawn = createDefensePawn(state, 'fireball', {
+    state: 'onboard',
+    row: 6,
+    col: 4,
+    hp: 2,
+    maxHp: 2,
+    intent: { kind: 'fireball', dr: 1, dc: 0 }
+  });
+  const brandHit = simAttack(state, brander, 6, 4, 'cast');
+  assert(brandPawn.hp === 1, 'brand chips 1 now');
+  assert(brandPawn.burn === 2, 'brand leaves 2 burn');
+  const pulsePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'pulse');
+  pulsePrey.state = 'onboard';
+  pulsePrey.row = 8;
+  pulsePrey.col = 4;
+  pulsePrey.hp = 12;
+  const brandTick = simDefenseExecutePawn(state, brandPawn);
+  assert(brandPawn.state === 'dead', 'burn kills the 2 HP bomber before the shot');
+  assert(brandTick.some(e => e.type === 'damage' && e.cause === 'burn'), 'burn ticks on execute');
+  assert(pulsePrey.hp === 12, 'dead bomber never fires');
 
   resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: DEFAULT_TEAM });
   state.fxEnabled = false;
