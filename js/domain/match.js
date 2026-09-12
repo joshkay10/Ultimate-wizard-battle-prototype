@@ -25,6 +25,9 @@ function resetMatch(match, seed, opts) {
   match.enemyMana = STARTING_MANA;
   match.enemyMaxMana = STARTING_MANA;
   match.playerSummonedThisTurn = false;
+  match.playerDropsThisTurn = 0;
+  match.dropsPerTurn = 0;
+  match.deploySquad = false;
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
   match.missionId = '';
@@ -57,6 +60,11 @@ function resetMatch(match, seed, opts) {
   match.pawnCap = typeof opts.pawnCap === 'number' ? opts.pawnCap : null;
   match.spawnKinds = opts.spawnKinds ? opts.spawnKinds.slice() : null;
   match.missionOpening = opts.opening || null;
+  match.dropsPerTurn = typeof opts.dropsPerTurn === 'number'
+    ? opts.dropsPerTurn
+    : (match.gameMode === 'defense' ? 1 : 0);
+  match.deploySquad = !!opts.deploySquad;
+  match.playerDropsThisTurn = 0;
   if (match.gameMode === 'defense') {
     match.nexuses = { player: [], enemy: [] };
   } else {
@@ -92,4 +100,5 @@ function resetMatch(match, seed, opts) {
   generateTerrain(match);
   seedRosters(match, playerLoadout, enemyLoadout);
   if (match.gameMode === 'defense') seedDefenseOpening(match);
+  if (match.deploySquad && typeof seedMissionSquad === 'function') seedMissionSquad(match);
 }

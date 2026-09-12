@@ -2070,7 +2070,35 @@ async function runSimSelfTests() {
         assert(mission.spawnKinds.indexOf(kind) >= 0, mission.id + ' only rolls its spawn mix');
       }
     }
+    const squad = Object.values(state.wizards).filter(function (w) {
+      return w.team === 'player' && !w.pawnKind;
+    });
+    assert(squad.length === 4, mission.id + ' fields four wizards');
+    assert(squad.every(function (w) {
+      return w.state === 'onboard' && w.row != null && !w.summoningSickness;
+    }), mission.id + ' deploys the four ready to act');
+    assert(playerHasLegalAction(state), mission.id + ' can act on round 1 without dropping');
+    assert(state.dropsPerTurn === 4, mission.id + ' keeps four drops if someone is still in hand');
+    assert(mission.goal && mission.hint, mission.id + ' states a goal and a hint');
   });
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  const hpPyre = Object.values(state.wizards).find(function (x) { return x.team === 'player' && x.element === 'fire'; });
+  const hpRime = Object.values(state.wizards).find(function (x) { return x.team === 'player' && x.element === 'ice'; });
+  const hpSquall = Object.values(state.wizards).find(function (x) { return x.team === 'player' && x.element === 'wind'; });
+  assert(hpPyre && hpPyre.hp === 4 && hpPyre.maxHp === 4, 'Pyre is 4 HP');
+  assert(hpRime && hpRime.hp === 5 && hpRime.maxHp === 5, 'Rime is 5 HP');
+  assert(hpSquall && hpSquall.hp === 3 && hpSquall.maxHp === 3, 'Squall is 3 HP');
+  assert(kitById('earth').hp === 6 && kitById('lightning').hp === 4 && kitById('temporal').hp === 4, 'bench kits also got the HP cut');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  const randomHand = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  });
+  assert(randomHand.length === 4, 'random Defense still starts with four in hand');
+  assert(state.dropsPerTurn === 1, 'random Defense is still one drop');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);

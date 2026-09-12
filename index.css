@@ -246,7 +246,7 @@ html, body {
   font: 700 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  min-width: 148px;
+  min-width: 176px;
   padding: 8px 22px 8px 10px;
   border-radius: 8px;
   cursor: pointer;
@@ -315,6 +315,26 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+.mission-brief {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--tile-alt);
+}
+.mission-goal {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+.mission-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
 }
 
 .panel-section-label {

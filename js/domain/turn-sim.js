@@ -87,6 +87,7 @@ function simEndEnemyTurn(match) {
   match.turnCount++;
   match.currentTurn = 'player';
   match.playerSummonedThisTurn = false;
+  match.playerDropsThisTurn = 0;
   refillManaPools(match);
   resetActionFlagsFor(match, 'player');
   events.push.apply(events, tickBurnsForTeam(match, 'player'));

@@ -135,8 +135,10 @@ function renderPanel() {
     }).join('') + '</ul>'
     : '';
 
+  const dropCap = state.dropsPerTurn == null ? 1 : state.dropsPerTurn;
+  const dropsLeft = typeof remainingDrops === 'function' ? remainingDrops(state) : (state.playerSummonedThisTurn ? 0 : 1);
   const handNote = state.gameMode === 'defense'
-    ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
+    ? (dropsLeft <= 0 ? 'already dropped' : (dropCap > 1 ? dropsLeft + ' left' : '1 drop this turn'))
     : '';
   const handLabel = wizardCards
     ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
@@ -144,6 +146,7 @@ function renderPanel() {
 
   return (
     '<div class="panel">' +
+      renderMissionBrief() +
       placingHint +
       '<div>' +
         renderInspect(selected) +
@@ -151,6 +154,18 @@ function renderPanel() {
         handLabel +
         logHtml +
       '</div>' +
+    '</div>'
+  );
+}
+
+function renderMissionBrief() {
+  if (state.gameMode !== 'defense' || !state.missionId) return '';
+  const mission = typeof missionById === 'function' ? missionById(state.missionId) : null;
+  if (!mission || !mission.goal) return '';
+  return (
+    '<div class="mission-brief">' +
+      '<p class="mission-goal">' + mission.goal + '</p>' +
+      (mission.hint ? '<p class="mission-hint">' + mission.hint + '</p>' : '') +
     '</div>'
   );
 }
@@ -373,8 +388,13 @@ function defenseDropHud() {
     return w.team === 'player' && w.state === 'summoned';
   });
   if (!inHand) return '<div class="topbar-mana topbar-drop is-empty" aria-hidden="true"></div>';
-  if (state.playerSummonedThisTurn) {
+  const left = typeof remainingDrops === 'function' ? remainingDrops(state) : (state.playerSummonedThisTurn ? 0 : 1);
+  const cap = state.dropsPerTurn == null ? 1 : state.dropsPerTurn;
+  if (left <= 0) {
     return '<div class="topbar-mana topbar-drop is-spent">dropped</div>';
+  }
+  if (cap > 1) {
+    return '<div class="topbar-mana topbar-drop">' + left + ' left</div>';
   }
   return '<div class="topbar-mana topbar-drop">1 drop</div>';
 }

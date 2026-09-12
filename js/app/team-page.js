@@ -61,7 +61,7 @@ function renderLockedMissionTeam(mission) {
   return (
     '<article class="page team-page is-locked">' +
       '<h1>' + mission.title + '</h1>' +
-      '<p class="lede">' + mission.blurb + ' This four is locked for the mission. Switch the battle dropdown to <strong>Vs</strong> to edit your own team.</p>' +
+      '<p class="lede">' + mission.blurb + ' This four starts on the board, ready on round 1. Switch the battle dropdown to <strong>Vs</strong> to edit your own team.</p>' +
       '<p class="team-count ready">' + names + '</p>' +
       '<h2 class="team-sub">Mission four</h2>' +
       '<div class="team-grid team-roster">' + roster + '</div>' +

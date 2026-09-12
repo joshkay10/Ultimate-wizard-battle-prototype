@@ -63,17 +63,25 @@ function defenseDropsOnce(match, team) {
   return match.gameMode === 'defense' && team === 'player';
 }
 
+function remainingDrops(match) {
+  if (!match || match.gameMode !== 'defense') return 0;
+  const cap = match.dropsPerTurn == null ? 1 : match.dropsPerTurn;
+  return Math.max(0, cap - (match.playerDropsThisTurn || 0));
+}
+
 function canPaySummon(match, wizard, team) {
   if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return false;
-  if (defenseDropsOnce(match, team)) return !match.playerSummonedThisTurn;
+  if (defenseDropsOnce(match, team)) return remainingDrops(match) > 0;
   return teamMana(match, team) >= wizard.cost;
 }
 
 function simSummon(match, wizard, row, col, team) {
   if (!canPaySummon(match, wizard, team)) return [];
   if (!canSummonAt(match, row, col, team)) return [];
-  if (defenseDropsOnce(match, team)) match.playerSummonedThisTurn = true;
-  else spendMana(match, team, wizard.cost);
+  if (defenseDropsOnce(match, team)) {
+    match.playerDropsThisTurn = (match.playerDropsThisTurn || 0) + 1;
+    match.playerSummonedThisTurn = remainingDrops(match) <= 0;
+  } else spendMana(match, team, wizard.cost);
   wizard.row = row;
   wizard.col = col;
   wizard.hasMoved = false;

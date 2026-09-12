@@ -2,7 +2,7 @@
 
 What is still leftover. Shipped work is already off this list.
 
-Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round), Brand / Lock / Tug, smash leftover knockback, hex wizards and chevron vek, Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4.
+Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round on random Defense), Brand / Lock / Tug, smash leftover knockback, hex wizards and circle vek, Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4 that deploy the teaching four.
 
 ## Need from you
 
@@ -13,7 +13,7 @@ Element icons are in (`img/elements.png`, 6×256 white-on-transparent). Wizard p
 
 ## Loop
 
-- [x] **Named missions 1–4** — dropdown, locked teams, pinned islands (the pass, the canal, the alley, the moat).
+- [x] **Named missions 1–4** — goal-first titles, locked teams, four wizards start on the board.
 - [ ] **Badges and bosses** — stamp a badge when you clear. A boss at the end of a track.
 - [ ] **Power spikes** — unlock a spell, a kit, or a big stat bump between badges. Not a relic shop, not a roguelike run.
 - [ ] **Seeded daily / share seed** — one board + enemy roll to race and send to a friend.
