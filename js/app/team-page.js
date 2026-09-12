@@ -61,9 +61,9 @@ function renderLockedMissionTeam(mission) {
   return (
     '<article class="page team-page is-locked">' +
       '<h1>' + (mission.name || mission.title) + '</h1>' +
-      '<p class="lede">' + (mission.goal || '') + (mission.hint ? ' ' + mission.hint : '') + ' This four is locked for the island. Switch to <strong>Vs</strong> to edit your own team.</p>' +
+      '<p class="lede">' + (mission.goal || '') + (mission.hint ? ' ' + mission.hint : '') + ' This roster is locked for the island. Switch to <strong>Vs</strong> to edit your own team.</p>' +
       '<p class="team-count ready">' + names + '</p>' +
-      '<h2 class="team-sub">Locked four</h2>' +
+      '<h2 class="team-sub">Locked roster</h2>' +
       '<div class="team-grid team-roster">' + roster + '</div>' +
       '<div class="team-actions">' +
         '<a class="end-turn-btn" id="team-fight-btn" href="' + routeHref('play') + '">play island</a>' +

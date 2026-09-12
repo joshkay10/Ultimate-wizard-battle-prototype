@@ -68,7 +68,9 @@ function resetMatch(match, seed, opts) {
     };
   }
 
-  const playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT);
+  const loadoutOpts = opts.missionId ? { pad: false } : {};
+  let playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT, loadoutOpts);
+  if (!playerLoadout.length) playerLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   let enemyLoadout;
   if (match.gameMode === 'defense') {
     enemyLoadout = [];
@@ -82,7 +84,7 @@ function resetMatch(match, seed, opts) {
     enemyLoadout = normalizeLoadout(DEFAULT_LOADOUT);
   }
   match.playerLoadout = playerLoadout;
-  match.playerTeam = loadoutKitIds(playerLoadout);
+  match.playerTeam = playerLoadout.map(function (slot) { return slot.kit; });
   if (match.gameMode === 'defense') {
     match.enemyLoadout = [];
     match.enemyTeam = [];

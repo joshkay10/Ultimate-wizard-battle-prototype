@@ -2052,7 +2052,8 @@ async function runSimSelfTests() {
     assert(state.gameMode === 'defense', mission.id + ' is Defense');
     assert(state.missionId === mission.id, mission.id + ' stamps missionId');
     assert(state.mapId === mission.islandId, mission.id + ' pins ' + mission.islandId + ' (got ' + state.mapId + ')');
-    assert(state.playerLoadout.length === 4, mission.id + ' brings four');
+    assert(state.playerLoadout.length === mission.loadout.length, mission.id + ' brings ' + mission.loadout.length + ' (got ' + state.playerLoadout.length + ')');
+    assert(Object.values(state.wizards).filter(function (w) { return w.team === 'player'; }).length === mission.loadout.length, mission.id + ' seeds that many bodies');
     assert(state.playerLoadout[0].kit === mission.loadout[0].kit, mission.id + ' uses the scripted first kit');
     assert(defenseSpawnBudget(state) === mission.spawnBudget, mission.id + ' uses its spawn budget');
     assert(defenseLivingCap(state) === mission.pawnCap, mission.id + ' uses its living cap');
@@ -2063,7 +2064,11 @@ async function runSimSelfTests() {
       assert(openers[0].row === mission.opening.row && openers[0].col === mission.opening.col, mission.id + ' pins the opener tile');
     }
     assert(state.nexuses.player.length === 3, mission.id + ' pins a 3-crystal city');
-    assert(kitById('fire').hp === 4 && kitById('ice').hp === 5 && kitById('wind').hp === 3, 'wizard HP is in the 3–5 band');
+    assert(kitById('fire').hp === 3 && kitById('ice').hp === 3 && kitById('wind').hp === 2, 'wizard HP is 2–3, not a 12 HP sponge');
+    if (mission.id === 'mission-1') {
+      const only = Object.values(state.wizards).filter(function (w) { return w.team === 'player'; });
+      assert(only.length === 1 && only[0].name === 'Squall' && only[0].hp === 2, 'the pass teaches with one 2 HP Squall');
+    }
     const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
     resetMatch(state, mission.seed, { missionId: mission.id });
     const opener2 = defensePawns(state, ['onboard'])[0];

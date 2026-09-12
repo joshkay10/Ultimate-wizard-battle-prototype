@@ -87,8 +87,11 @@ function randomPlayableLoadout(rng) {
   return out;
 }
 
-function normalizeLoadout(raw) {
-  return padLoadout(parseLoadoutSlots(raw));
+function normalizeLoadout(raw, opts) {
+  opts = opts || {};
+  const parsed = parseLoadoutSlots(raw);
+  if (opts.pad === false) return parsed;
+  return padLoadout(parsed);
 }
 
 function loadoutKitIds(loadout) {
