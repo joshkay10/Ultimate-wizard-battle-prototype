@@ -1,23 +1,10 @@
-const fs = require('fs');
+'use strict';
+
 const vm = require('vm');
-const path = require('path');
+const { loadGame } = require('./load-game');
 
-const root = path.join(__dirname, '..');
-const files = [
-  'js/constants.js', 'js/domain/kits.js', 'js/domain/spells.js', 'js/domain/loadout.js',
-  'js/domain/geo.js', 'js/rng.js', 'js/state.js', 'js/util.js', 'js/domain/occupancy.js',
-  'js/domain/nexus.js', 'js/domain/trail.js', 'js/domain/terrain.js', 'js/domain/islands.js',
-  'js/domain/path.js', 'js/domain/wizard.js', 'js/domain/mana.js', 'js/domain/kill.js',
-  'js/domain/push.js', 'js/domain/summon.js', 'js/domain/move.js', 'js/domain/attack.js',
-  'js/domain/turn-sim.js', 'js/domain/defense.js', 'js/domain/match.js', 'js/app/present.js',
-  'js/log.js', 'js/ai.js', 'js/combat.js', 'js/headless.js'
-];
-
-const ctx = { console, Math, Date, JSON, Object, Array, Promise, setTimeout, parseInt, Infinity, performance: { now: () => Date.now() } };
-vm.createContext(ctx);
-files.forEach(f => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f }));
-
-const scenario = `
+const ctx = loadGame();
+const out = vm.runInContext(`
 (function () {
   resetMatch(state, 12345, { gameMode: 'defense', playerLoadout: ['ice', 'ice', 'ice', 'ice'] });
   Object.values(state.wizards).forEach(function (w) { if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; } });
@@ -39,10 +26,12 @@ const scenario = `
   var enemyDeaths = deaths.filter(function (e) { return e.team === 'enemy'; }).length;
   return JSON.stringify({ totalEvents: events.length, deaths: deaths.length, enemyDeaths: enemyDeaths, comboWouldFire: enemyDeaths >= 2 });
 })()
-`;
+`, ctx, { filename: 'combo-scenario' });
 
-const out = vm.runInContext(scenario, ctx, { filename: 'combo-scenario' });
 console.log(out);
 const parsed = JSON.parse(out);
-if (parsed.enemyDeaths < 2) { console.error('FAIL: expected >=2 enemy deaths'); process.exit(1); }
+if (parsed.enemyDeaths < 2) {
+  console.error('FAIL: expected >=2 enemy deaths');
+  process.exit(1);
+}
 console.log('OK: combo pipeline input verified (' + parsed.enemyDeaths + ' enemy deaths from one pulse)');

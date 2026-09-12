@@ -1,0 +1,9 @@
+{
+  "name": "ultimate-wizard-battle-prototype",
+  "private": true,
+  "description": "Static 9×9 wizard battle. Open over HTTP.",
+  "scripts": {
+    "test": "node test/sim-node.js && node test/combo-check.js && node test/markdown-check.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
