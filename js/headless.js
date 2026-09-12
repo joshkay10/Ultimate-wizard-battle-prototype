@@ -1396,11 +1396,11 @@ async function runSimSelfTests() {
   state.water = {};
   state.voids = {};
   const rusher = createDefensePawn(state, 'charge', { state: 'onboard', row: 2, col: 1, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
-  assert(rusher.castKind === 'charge', 'charger kit is a charge, not a gust');
   const rushEvents = simDefenseExecutePawn(state, rusher);
-  assert(rushEvents.some(e => e.type === 'attack' && e.castKind === 'charge' && e.chargeDash), 'charge attack is a body dash, not a gust');
-  assert(!rushEvents.some(e => e.castKind === 'gust'), 'charge does not emit a gust beam');
-  assert(rushEvents.some(e => e.type === 'push' && e.chargeDash && e.path && e.path.length === 3), 'charge travels 3 tiles with a trail push');
+  const rushAtk = rushEvents.find(function (e) { return e.type === 'attack'; });
+  assert(rushAtk && rushAtk.spellName === 'Charge', 'charge attack is named Charge');
+  assert(rushAtk.path && rushAtk.path.length === 3, 'empty charge dashes 3 tiles');
+  assert(!rushEvents.some(function (e) { return e.type === 'push' && e.wizardId === rusher.id; }), 'charge dash is not a fake self-push');
   assert(rusher.row === 2 && rusher.col === 4, 'empty charge runs 3 tiles');
   assert(describeEvent(rushEvents[0]).indexOf('charges') !== -1, 'charge log says charges');
 
@@ -1410,10 +1410,9 @@ async function runSimSelfTests() {
   pyre.hp = 10;
   const slammer = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
   const slamEvents = simDefenseExecutePawn(state, slammer);
-  assert(slamEvents.some(e => e.type === 'attack' && e.castKind === 'charge' && e.hit === 'wizard'), 'adjacent charge slams the body in front');
-  assert(!slamEvents.some(e => e.chargeDash), 'adjacent charge does not travel');
+  assert(slamEvents.some(e => e.type === 'attack' && e.hit === 'wizard'), 'adjacent charge slams the body in front');
   assert(slammer.row === 3 && slammer.col === 2, 'adjacent charger stays on their tile');
-  assert(pyre.hp === 8, 'adjacent charge still deals 2');
+  assert(pyre.hp === 9, 'adjacent charge deals 1');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;

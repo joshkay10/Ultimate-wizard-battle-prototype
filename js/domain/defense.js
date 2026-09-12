@@ -49,7 +49,7 @@ function createDefensePawn(match, kind, extra) {
     castAttack: spec.attack,
     castDisplacement: spec.displacement || 0,
     castRange: spec.range,
-    castKind: spec.id === 'fireball' ? 'stream' : (spec.id === 'charge' ? 'charge' : 'melee'),
+    castKind: spec.id === 'fireball' ? 'stream' : (spec.id === 'charge' ? 'gust' : 'melee'),
     spellName: spec.name,
     team: 'enemy',
     state: 'emerging',
