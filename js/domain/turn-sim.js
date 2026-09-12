@@ -22,7 +22,7 @@ function playerHasLegalAction(match) {
   if (match.placingWizardId && getPlayerSummonTiles(match).length) return true;
 
   const canPortal = Object.values(match.wizards).some(function (wizard) {
-    return wizard.team === 'player' && wizard.state === 'summoned' && match.mana >= wizard.cost;
+    return canPaySummon(match, wizard, 'player');
   });
   if (canPortal && getPlayerSummonTiles(match).length) return true;
 
@@ -85,6 +85,7 @@ function simEndEnemyTurn(match) {
   }
   match.turnCount++;
   match.currentTurn = 'player';
+  match.playerSummonedThisTurn = false;
   refillManaPools(match);
   resetActionFlagsFor(match, 'player');
   events.push.apply(events, simResolvePortals(match, 'player'));

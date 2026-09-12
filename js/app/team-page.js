@@ -80,7 +80,7 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body picks one spell. Saved on this device.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body picks one spell. Saved on this device. Cost is <strong>Vs mana</strong>. Defense drops one wizard per round, any kit.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
