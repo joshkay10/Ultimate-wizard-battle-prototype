@@ -15,12 +15,14 @@ function defenseTelegraphStyle(kind) {
 }
 
 const DEFENSE_PAWN_KINDS = {
+  mite: { id: 'mite', name: 'Mite', element: 'wind', moveRange: 4, attack: 1, range: 1, hpMin: 1, hpMax: 1, displacement: 0 },
   melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 1, range: 1, hpMin: 3, hpMax: 3, displacement: 0 },
   charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 1, range: 3, hpMin: 4, hpMax: 4, displacement: 1 },
-  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 1, range: 4, hpMin: 3, hpMax: 3, displacement: 0 }
+  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 1, range: 4, hpMin: 3, hpMax: 3, displacement: 0 },
+  golem: { id: 'golem', name: 'Golem', element: 'earth', moveRange: 2, attack: 1, range: 1, hpMin: 7, hpMax: 8, displacement: 1 }
 };
 
-const DEFENSE_PAWN_ORDER = ['melee', 'charge', 'fireball'];
+const DEFENSE_PAWN_ORDER = ['mite', 'melee', 'charge', 'fireball', 'golem'];
 
 function isDefenseMode(match) {
   return !!(match && match.gameMode === 'defense');
@@ -61,7 +63,8 @@ function createDefensePawn(match, kind, extra) {
     silenced: false,
     silenceSkip: false,
     moveUndo: null,
-    intent: null
+    intent: null,
+    stack: 1
   };
   if (extra) Object.keys(extra).forEach(function (k) { pawn[k] = extra[k]; });
   match.wizards[id] = pawn;
@@ -226,9 +229,11 @@ function pickDefenseSpawnTile(match, kind) {
 
 function pickDefenseKind(match) {
   const roll = match.rng ? match.rng.next() : 0.2;
-  if (roll < 0.46) return 'melee';
-  if (roll < 0.76) return 'charge';
-  return 'fireball';
+  if (roll < 0.40) return 'mite';
+  if (roll < 0.58) return 'melee';
+  if (roll < 0.73) return 'charge';
+  if (roll < 0.88) return 'fireball';
+  return 'golem';
 }
 
 function markDefenseSpawns(match, count) {
@@ -505,6 +510,7 @@ function simPawnMelee(match, pawn) {
   const row = pawn.row + pawn.intent.dr;
   const col = pawn.col + pawn.intent.dc;
   if (!inBounds(row, col)) return [];
+  const amount = pawn.meleeAttack * (pawn.stack || 1);
   const tiles = [{ row: row, col: col }];
   const events = [pawnAttackEvent(pawn, {
     kind: 'melee',
@@ -512,9 +518,10 @@ function simPawnMelee(match, pawn) {
     col: col,
     hit: pawnHitKind(match, row, col),
     spellName: pawn.name,
+    damage: amount,
     tiles: tiles
   })];
-  events.push.apply(events, pawnHitAt(match, pawn, row, col, pawn.meleeAttack));
+  events.push.apply(events, pawnHitAt(match, pawn, row, col, amount));
   return events;
 }
 
@@ -693,9 +700,61 @@ function pickDefenseMove(match, pawn) {
   return pickScoredOption(match.rng, hits.length ? hits : options);
 }
 
+// A mite may step onto an adjacent friendly mite (stack < 2) to double up,
+// as long as that tile is not farther from the city than where it stands.
+function pickMiteMergeTile(match, pawn) {
+  if (!pawn || pawn.pawnKind !== 'mite' || (pawn.stack || 1) >= 2) return null;
+  const city = nearestDefenseNexus(match, pawn.row, pawn.col);
+  const cur = city ? manhattan(pawn.row, pawn.col, city.row, city.col) : 0;
+  let best = null;
+  let d;
+  for (d = 0; d < CARDINALS.length; d++) {
+    const nr = pawn.row + CARDINALS[d][0];
+    const nc = pawn.col + CARDINALS[d][1];
+    if (!inBounds(nr, nc)) continue;
+    if (mountainAt(match, nr, nc) || hazardAt(match, nr, nc)) continue;
+    const occ = wizardAt(match, nr, nc);
+    if (!occ || occ.id === pawn.id) continue;
+    if (occ.team !== 'enemy' || occ.pawnKind !== 'mite' || (occ.stack || 1) >= 2) continue;
+    const d2 = city ? manhattan(nr, nc, city.row, city.col) : 0;
+    if (city && d2 > cur) continue;
+    if (!best || d2 < best.d) best = { row: nr, col: nc, d: d2 };
+  }
+  return best;
+}
+
+function simMiteMerge(match, mover, tile) {
+  const resident = wizardAt(match, tile.row, tile.col);
+  const events = [];
+  const from = { row: mover.row, col: mover.col };
+  mover.row = tile.row;
+  mover.col = tile.col;
+  events.push({ type: 'move', wizardId: mover.id, from: from, path: [{ row: tile.row, col: tile.col }] });
+  if (resident && resident !== mover) {
+    resident.stack = Math.min(2, (resident.stack || 1) + (mover.stack || 1));
+    mover.hp = 0;
+    const death = simKill(match, mover);
+    if (death) {
+      death.cause = 'merge';
+      death.row = tile.row;
+      death.col = tile.col;
+      events.push(death);
+    }
+  }
+  return events;
+}
+
 function simDefenseMovePawn(match, pawn) {
   if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
   const picked = pickDefenseMove(match, pawn);
+  if (pawn.pawnKind === 'mite' && (!picked || !picked.hit)) {
+    const mergeTile = pickMiteMergeTile(match, pawn);
+    if (mergeTile) {
+      const merged = simMiteMerge(match, pawn, mergeTile);
+      pawn.hasMoved = true;
+      return merged;
+    }
+  }
   const events = [];
   if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
     const path = pathBFS(match, pawn, picked.row, picked.col);

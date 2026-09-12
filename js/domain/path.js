@@ -55,6 +55,23 @@ function getLineCastTiles(match, wizard, range) {
   return result;
 }
 
+function getPierceTiles(match, wizard, range) {
+  range = range || wizard.castRange || 4;
+  const result = [];
+  for (let d = 0; d < CARDINALS.length; d++) {
+    const dr = CARDINALS[d][0];
+    const dc = CARDINALS[d][1];
+    for (let dist = 1; dist <= range; dist++) {
+      const nr = wizard.row + dr * dist;
+      const nc = wizard.col + dc * dist;
+      if (!inBounds(nr, nc)) break;
+      if (mountainAt(match, nr, nc)) break;
+      result.push({ row: nr, col: nc });
+    }
+  }
+  return result;
+}
+
 function getBoltTiles(match, wizard) {
   const range = wizard.castRange || 4;
   const result = [];
@@ -186,6 +203,7 @@ function getCastTiles(match, wizard) {
   if (kind === 'pull') return getLineCastTiles(match, wizard, wizard.castRange || 3);
   if (kind === 'raise') return getRaiseTiles(match, wizard);
   if (kind === 'bolt') return getBoltTiles(match, wizard);
+  if (kind === 'pierce') return getPierceTiles(match, wizard, wizard.castRange || 4);
   if (kind === 'swap') return getSwapTiles(match, wizard);
   if (kind === 'blink') return getBlinkTiles(match, wizard);
   if (kind === 'burst') return getBurstAimTiles(match, wizard);

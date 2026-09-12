@@ -1,17 +1,21 @@
 const DEFAULT_LOADOUT = [
-  { kit: 'fire', spell: 'stream' },
-  { kit: 'ice', spell: 'pulse' },
-  { kit: 'wind', spell: 'gust' },
-  { kit: 'ice', spell: 'pulse' }
+  { kit: 'fire', spell: 'stream', special: 'lance' },
+  { kit: 'ice', spell: 'sheet', special: 'pulse' },
+  { kit: 'wind', spell: 'gust', special: 'draft' },
+  { kit: 'fire', spell: 'cinder', special: 'inferno' }
 ];
 
 function emptyLoadoutSlot(kitId) {
-  return { kit: kitId, spell: normalizeSpellId(kitId, null) };
+  return {
+    kit: kitId,
+    spell: normalizeBasicSpellId(kitId, null),
+    special: normalizeSpecialSpellId(kitId, null)
+  };
 }
 
 function cloneLoadout(loadout) {
   return (loadout || []).map(function (slot) {
-    return { kit: slot.kit, spell: slot.spell };
+    return { kit: slot.kit, spell: slot.spell, special: slot.special };
   });
 }
 
@@ -30,7 +34,11 @@ function parseLoadoutSlots(raw) {
     const row = slots[i] || {};
     const kitId = row.kit || row.kitId || row.id;
     if (!kitById(kitId)) continue;
-    out.push({ kit: kitId, spell: normalizeSpellId(kitId, row.spell || row.spellId) });
+    out.push({
+      kit: kitId,
+      spell: normalizeBasicSpellId(kitId, row.spell || row.spellId),
+      special: normalizeSpecialSpellId(kitId, row.special)
+    });
   }
   return out;
 }
@@ -45,14 +53,14 @@ function padLoadout(slots) {
     const row = DEFAULT_LOADOUT[i];
     seen[row.kit] = (seen[row.kit] || 0) + 1;
     if ((used[row.kit] || 0) < seen[row.kit]) {
-      out.push({ kit: row.kit, spell: row.spell });
+      out.push({ kit: row.kit, spell: row.spell, special: row.special });
       used[row.kit] = (used[row.kit] || 0) + 1;
     }
   }
   i = 0;
   while (out.length < TEAM_SIZE) {
     const row = DEFAULT_LOADOUT[i % DEFAULT_LOADOUT.length];
-    out.push({ kit: row.kit, spell: row.spell });
+    out.push({ kit: row.kit, spell: row.spell, special: row.special });
     i += 1;
   }
   return out;

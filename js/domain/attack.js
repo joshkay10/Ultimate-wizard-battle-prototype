@@ -1,16 +1,22 @@
 function simAttack(match, attacker, row, col, kind) {
   if (!canAttack(attacker) || attacker.row === null) return [];
+  const usingSpecial = kind === 'cast' && attacker.activeSpell === 'special' && attacker.specialSpellId;
+  const specialCost = usingSpecial ? (attacker.specialCost || 0) : 0;
+  if (usingSpecial && teamMana(match, attacker.team) < specialCost) return [];
   const legal = kind === 'cast' ? getCastTiles(match, attacker) : getMeleeTiles(match, attacker);
   if (!legal.some(function (tile) { return tile.row === row && tile.col === col; })) return [];
   clearMoveUndo(attacker);
 
-  if (kind === 'cast' && attacker.castKind === 'pulse') return simPulse(match, attacker, row, col);
-  if (kind === 'cast' && attacker.castKind === 'raise') return simRaise(match, attacker, row, col);
-  if (kind === 'cast' && (attacker.castKind === 'swap' || attacker.castKind === 'blink')) {
-    return simSwap(match, attacker, row, col);
-  }
-  if (kind === 'cast' && attacker.castKind === 'burst') return simBurst(match, attacker, row, col);
-  return simStrike(match, attacker, row, col, kind);
+  let result;
+  if (kind === 'cast' && attacker.castKind === 'pulse') result = simPulse(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'raise') result = simRaise(match, attacker, row, col);
+  else if (kind === 'cast' && (attacker.castKind === 'swap' || attacker.castKind === 'blink')) result = simSwap(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'burst') result = simBurst(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'pierce') result = simPierce(match, attacker, row, col);
+  else result = simStrike(match, attacker, row, col, kind);
+
+  if (usingSpecial && result && result.length) spendMana(match, attacker.team, specialCost);
+  return result;
 }
 
 function attackSpellFields(attacker, kind) {
@@ -217,6 +223,90 @@ function simStrike(match, attacker, row, col, kind) {
 
   if (kind === 'cast' && attacker.castKind === 'bolt') {
     events.push.apply(events, simBoltJump(match, attacker, pathTiles, row, col));
+  }
+
+  attacker.hasAttacked = true;
+  return events;
+}
+
+function simPierce(match, attacker, clickRow, clickCol) {
+  const dir = directionBetween(attacker.row, attacker.col, clickRow, clickCol);
+  const range = attacker.castRange || 4;
+  const events = [];
+  const dmg = attacker.castAttack;
+  const pushAmt = attacker.castDisplacement;
+  const pathTiles = [];
+  let i;
+  for (i = 1; i <= range; i++) {
+    const nr = attacker.row + dir.dr * i;
+    const nc = attacker.col + dir.dc * i;
+    if (!inBounds(nr, nc)) break;
+    if (mountainAt(match, nr, nc)) break;
+    pathTiles.push({ row: nr, col: nc });
+  }
+  const last = pathTiles.length ? pathTiles[pathTiles.length - 1] : { row: clickRow, col: clickCol };
+
+  const trails = [];
+  pathTiles.forEach(function (tile) {
+    if (!casterPaints(attacker)) return;
+    layTrail(match, tile.row, tile.col, attacker.element);
+    trails.push({ row: tile.row, col: tile.col, element: attacker.element });
+  });
+
+  const hits = [];
+  pathTiles.forEach(function (tile) {
+    const wizard = wizardAt(match, tile.row, tile.col);
+    const nexus = nexusAt(match, tile.row, tile.col);
+    if (wizard) hits.push({ kind: 'wizard', wizard: wizard, row: tile.row, col: tile.col });
+    else if (nexus && attacker.spellHitNexus) hits.push({ kind: 'nexus', nexus: nexus, row: tile.row, col: tile.col });
+  });
+
+  events.push(Object.assign({
+    type: 'attack',
+    kind: 'cast',
+    attackerId: attacker.id,
+    from: { row: attacker.row, col: attacker.col },
+    row: last.row,
+    col: last.col,
+    element: attacker.element,
+    hit: hits.length ? 'burst' : 'tile',
+    pathTiles: pathTiles.slice(),
+    trails: trails,
+    damage: dmg
+  }, attackSpellFields(attacker, 'cast')));
+  trails.forEach(function (tile) {
+    events.push({ type: 'trail', row: tile.row, col: tile.col, element: tile.element });
+  });
+
+  hits.forEach(function (hit) {
+    if (hit.kind === 'wizard') {
+      if (dmg) events.push(stampWizardDamage(hit.wizard, dmg, 'cast', hit.row, hit.col));
+      applyHitStatuses(match, attacker, hit.wizard, events);
+    } else if (dmg) {
+      events.push.apply(events, hurtNexus(match, hit.nexus, dmg, 'cast'));
+    }
+  });
+
+  if (pushAmt) {
+    const shoves = hits.filter(function (hit) {
+      return hit.kind === 'wizard' && hit.wizard.state === 'onboard';
+    });
+    shoves.sort(function (a, b) {
+      return manhattan(attacker.row, attacker.col, b.row, b.col) - manhattan(attacker.row, attacker.col, a.row, a.col);
+    });
+    shoves.forEach(function (hit) {
+      events.push.apply(events, simPush(match, hit.wizard, dir.dr, dir.dc, pushAmt));
+    });
+  }
+
+  hits.forEach(function (hit) {
+    if (hit.kind !== 'wizard') return;
+    const death = simKill(match, hit.wizard);
+    if (death) events.push(death);
+  });
+
+  if (!hits.length) {
+    events.push({ type: 'ground', row: last.row, col: last.col, element: attacker.element, kind: 'cast' });
   }
 
   attacker.hasAttacked = true;

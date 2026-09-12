@@ -1226,6 +1226,25 @@ async function playIntent(ev) {
 }
 
 async function playDeath(ev) {
+  if (ev.cause === 'merge') {
+    const m = state.wizards[ev.wizardId];
+    const layout = boardLayout();
+    if (m && ev.row != null) {
+      m.state = 'onboard';
+      m.row = ev.row;
+      m.col = ev.col;
+      if (layout) boardFx.override[m.id] = boxToOv(cellRect(layout, ev.row, ev.col));
+      await animate(150, function (t) {
+        boardFx.fade[m.id] = 1 - t;
+        boardFx.popScale[m.id] = 1 - t * 0.35;
+      });
+      delete boardFx.fade[m.id];
+      delete boardFx.popScale[m.id];
+      delete boardFx.override[m.id];
+    }
+    if (m) buryWizard(m);
+    return;
+  }
   const fall = ev.cause === 'water' || ev.cause === 'void';
   if (ev.row != null && !fall) {
     boardFx.popups.push({ row: ev.row, col: ev.col, text: 'out', t: 0 });

@@ -156,6 +156,10 @@ function renderPanel() {
 function wizardStatusBits(wiz) {
   const bits = [];
   if (wiz.pawnKind) {
+    if ((wiz.stack || 1) >= 2) {
+      bits.push('stacked \u00d7' + wiz.stack);
+      bits.push('hits for ' + (wiz.meleeAttack * wiz.stack));
+    }
     if (wiz.rooted) bits.push('locked');
     if (wiz.burn) bits.push('burn ' + wiz.burn);
     if (wiz.intent) {
@@ -185,14 +189,14 @@ function wizardStatusBits(wiz) {
 
 function renderInspect(selected) {
   if (!selected || selected.state !== 'onboard' || state.placingWizardId) {
-    if (state.selectedWizardId && state.wizards[state.selectedWizardId] && state.selectedAction === 'cast' && !state.placingWizardId) {
+    if (state.selectedWizardId && state.wizards[state.selectedWizardId] && (state.selectedAction === 'cast' || state.selectedAction === 'special') && !state.placingWizardId) {
       const wiz = state.wizards[state.selectedWizardId];
       return '<div class="no-selection-hint"><strong>' + spellLabel(wiz) + '</strong> — ' + castHintFor(wiz) + '</div>';
     }
     return '';
   }
   const bits = wizardStatusBits(selected);
-  const hint = state.selectedAction === 'cast' && selected.team === 'player'
+  const hint = (state.selectedAction === 'cast' || state.selectedAction === 'special') && selected.team === 'player'
     ? '<div class="inspect-hint"><strong>' + spellLabel(selected) + '</strong> — ' + castHintFor(selected) + '</div>'
     : '';
   const enemyTag = selected.team === 'enemy' ? ' <span class="arriving-tag">enemy</span>' : '';
@@ -225,16 +229,26 @@ function renderActionRow(selected) {
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
   const undoOk = usable && canUndoMove(selected);
-  const castLabel = selected ? spellLabel(selected).toLowerCase() : 'cast';
+  const basicSpell = selected ? spellById(selected.basicSpellId || selected.spellId) : null;
+  const basicLabel = basicSpell ? basicSpell.name.toLowerCase() : 'cast';
+  const specialSpell = selected && selected.specialSpellId ? spellById(selected.specialSpellId) : null;
+  const specialCost = selected ? (selected.specialCost || 0) : 0;
+  const affordSpecial = !!(usable && specialSpell && !atkDisabled && typeof canCastSpecial === 'function' && canCastSpecial(state, selected, 'player'));
   const moveLabel = sick ? 'sick' : (moved ? 'moved' : 'move');
   const meleeLabel = sick ? 'sick' : (attacked ? 'spent' : 'melee');
-  const spentCast = sick ? 'sick' : (attacked ? 'spent' : castLabel);
+  const spentCast = sick ? 'sick' : (attacked ? 'spent' : basicLabel);
+  const specialLabel = specialSpell ? specialSpell.name.toLowerCase() : 'special';
+  const specialSpent = sick ? 'sick' : (attacked ? 'spent' : specialLabel);
+  const specialBtn = specialSpell
+    ? '<button class="action-btn special' + (usable && !atkDisabled && state.selectedAction === 'special' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' + ICONS.cast + ' ' + specialSpent + '<span class="special-cost">' + ICONS.mana + specialCost + '</span></button>'
+    : '';
 
   return (
     '<div class="action-row">' +
       '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + (moved ? ' spent' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' ' + moveLabel + '</button>' +
       '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' ' + meleeLabel + '</button>' +
       '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' ' + spentCast + '</button>' +
+      specialBtn +
       '<button class="action-btn undo" id="undo-move-btn" ' + (undoOk ? '' : 'disabled') + '>undo</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
@@ -396,9 +410,10 @@ function render() {
   const streakHud = streakStats && (streakStats.streak > 0 || streakStats.best > 0)
     ? '<span class="topbar-streak" title="win streak · best">streak ' + streakStats.streak + (streakStats.best > streakStats.streak ? ' · best ' + streakStats.best : '') + '</span>'
     : '';
+  const manaHud = '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
   const leftHud = state.gameMode === 'defense'
-    ? defenseDropHud()
-    : '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
+    ? (defenseDropHud() + manaHud)
+    : manaHud;
   document.getElementById('topbar').innerHTML =
     leftHud +
     '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (streakHud ? ' &middot; ' + streakHud : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
