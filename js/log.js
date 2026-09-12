@@ -32,6 +32,7 @@ function describeEvent(ev) {
     return '';
   }
 
+  if (ev.type === 'intent') return '';
   if (ev.type === 'emergeMark') return actorName(ev.wizardId) + ' will arrive next';
   if (ev.type === 'portal') return actorName(ev.wizardId) + ' opens a portal — arrives next turn';
   if (ev.type === 'summon') return actorName(ev.wizardId) + ' arrives';
@@ -67,8 +68,14 @@ function describeEvent(ev) {
       if (ev.hit === 'nexus') return who + ' bolts ' + nexusOwnerWord(ev);
       return who + ' bolts' + toward;
     }
-    if (spell === 'gust') return who + ' gusts' + toward;
-    if (spell === 'stream') return who + ' streams' + toward;
+    if (spell === 'gust') {
+      const ram = ev.spellName === 'Charge';
+      return who + (ram ? ' charges' : ' gusts') + toward;
+    }
+    if (spell === 'stream') {
+      const shot = ev.spellName === 'Fireball';
+      return who + (shot ? ' shoots' : ' streams') + toward;
+    }
     const named = (ev.spellName || spell).toLowerCase();
     return who + ' casts ' + named + toward;
   }

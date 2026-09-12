@@ -41,38 +41,15 @@ function setGameMode(mode) {
 let endingTurn = false;
 
 async function presentDefenseEnemyPhase() {
-  const strikers = defenseActQueue(state);
-  let i;
-  for (i = 0; i < strikers.length; i++) {
-    const pawn = strikers[i];
-    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
-    const strike = simDefenseExecutePawn(state, pawn);
-    if (!strike.length) {
-      if (typeof releaseDisc === 'function') releaseDisc(pawn);
-      continue;
-    }
-    await present(strike);
-    await maybeWait(280);
+  const iter = defenseEnemyPhaseParts(state);
+  let step = iter.next();
+  while (!step.done) {
+    const part = step.value;
+    if (part.events.length) await present(part.events);
+    else if (part.kind === 'walk' && typeof render === 'function') render();
+    if (part.kind === 'strike' && part.events.length) await maybeWait(90);
+    step = iter.next();
   }
-  const emerged = simDefenseEmerge(state);
-  if (emerged.length) {
-    await present(emerged);
-    await maybeWait(220);
-  }
-  const movers = defenseActQueue(state);
-  for (i = 0; i < movers.length; i++) {
-    const pawn = movers[i];
-    if (pawn.state !== 'onboard') continue;
-    if (typeof holdDiscAt === 'function') holdDiscAt(pawn, pawn.row, pawn.col);
-    const walk = simDefenseMovePawn(state, pawn);
-    if (walk.length) await present(walk);
-    else if (typeof releaseDisc === 'function') releaseDisc(pawn);
-    assignDefenseIntent(state, pawn);
-    if (typeof render === 'function') render();
-    await maybeWait(300);
-  }
-  const marks = markDefenseSpawns(state, defenseSpawnCount(state));
-  if (marks.length) await present(marks);
 }
 
 async function endTurn() {
@@ -86,7 +63,7 @@ async function endTurn() {
     if (typeof render === 'function') render();
     if (state.gameOverResult) return;
 
-    await maybeWait(280);
+    await maybeWait(120);
     if (state.matchId !== matchId) return;
     if (state.gameMode === 'defense') {
       await presentDefenseEnemyPhase();

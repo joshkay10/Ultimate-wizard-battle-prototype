@@ -1419,6 +1419,58 @@ async function runSimSelfTests() {
   assert(firstAim.intent && firstAim.intent.dr != null, 'first walker telegraphs as soon as it moves');
   assert(!laterAim.intent, 'later walker has no telegraph until it moves');
 
+  const planner = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 0, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const plan = pickDefenseMove(state, planner);
+  assert(plan && plan.row != null, 'pickDefenseMove returns a tile');
+  assert(!planner.hasMoved && planner.row === 0 && planner.col === 0, 'picking a walk does not move the pawn');
+
+  const dashPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  dashPrey.state = 'onboard';
+  dashPrey.row = 0;
+  dashPrey.col = 4;
+  dashPrey.hp = 10;
+  const dasher = createDefensePawn(state, 'charge', {
+    state: 'onboard', row: 0, col: 1, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 }
+  });
+  const dashHit = simDefenseExecutePawn(state, dasher);
+  const dashAtk = dashHit.find(function (e) { return e.type === 'attack'; });
+  assert(dashAtk && dashAtk.path && dashAtk.path.length >= 1, 'charge records its own path on the attack');
+  assert(!dashHit.some(function (e) { return e.type === 'push' && e.wizardId === dasher.id; }), 'charge no longer fakes a self-push');
+  assert(dashHit.some(function (e) { return e.type === 'push' && e.wizardId === dashPrey.id; }), 'beetle shove is still a real push');
+  assert(typeof dashAtk.strikeOrder === 'number', 'strike carries its number');
+  assert(dashAtk.tiles && dashAtk.tiles.length >= 1, 'charge attack keeps the aimed tiles for FX');
+
+  const shotPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  shotPrey.state = 'onboard';
+  shotPrey.row = 2;
+  shotPrey.col = 6;
+  shotPrey.hp = 10;
+  const lineBomber = createDefensePawn(state, 'fireball', {
+    state: 'onboard', row: 2, col: 2, hp: 3, maxHp: 3, intent: { kind: 'fireball', dr: 0, dc: 1 }
+  });
+  const shotHit = simDefenseExecutePawn(state, lineBomber);
+  const shotAtks = shotHit.filter(function (e) { return e.type === 'attack'; });
+  assert(shotAtks.length === 1, 'bomber emits one attack event');
+  assert(shotAtks[0].tiles && shotAtks[0].tiles.length === 4, 'bomber attack lists the whole shot line');
+  assert(shotPrey.hp === 9, 'bomber still deals 1');
+
+  const punchPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  punchPrey.state = 'onboard';
+  punchPrey.row = 8;
+  punchPrey.col = 1;
+  punchPrey.hp = 10;
+  const puncher = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 8, col: 0, hp: 3, maxHp: 3, intent: { kind: 'melee', dr: 0, dc: 1 }
+  });
+  const punchHit = simDefenseExecutePawn(state, puncher);
+  const punchAtk = punchHit.find(function (e) { return e.type === 'attack'; });
+  assert(punchAtk && punchAtk.tiles && punchAtk.tiles.length === 1, 'melee attack keeps its one tile');
+  assert(punchAtk.kind === 'melee', 'melee stays a melee event');
+
+  const aimer = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 7, hp: 3, maxHp: 3, hasMoved: true, intent: null });
+  const aimed = assignDefenseIntent(state, aimer);
+  assert(aimed && aimed.type === 'intent' && aimer.intent, 'telegraph is an intent event');
+
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');

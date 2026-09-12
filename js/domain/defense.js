@@ -397,7 +397,8 @@ function scoreDefenseTile(match, pawn, row, col) {
     if (shot.score > 0 && defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score -= 2800;
     if (shot.score > 0 && !defenseChargeWouldFall(match, row, col, shot.dr, shot.dc)) score += 80;
   }
-  return { score: score, dr: shot.dr, dc: shot.dc, nexusShot: shot.score > 0 };
+  const hit = shot.score > 0;
+  return { score: score, dr: shot.dr, dc: shot.dc, hit: hit, nexusShot: hit };
 }
 
 function pickScoredOption(rng, options) {
@@ -408,10 +409,6 @@ function pickScoredOption(rng, options) {
   const top = options.filter(function (opt) { return opt.score >= floor; }).slice(0, 3);
   if (!rng || top.length === 1) return top[0];
   return top[rng.int(top.length)];
-}
-
-function scoreDefenseDir(match, pawn, dr, dc) {
-  return defenseShotScore(match, pawn, pawn.row, pawn.col, dr, dc);
 }
 
 function pickSafeChargeDir(match, pawn, preferred) {
@@ -457,14 +454,18 @@ function pickDefenseIntent(match, pawn) {
 }
 
 function assignDefenseIntent(match, pawn) {
-  if (!pawn || pawn.state !== 'onboard') return;
+  if (!pawn || pawn.state !== 'onboard') return null;
   pawn.intent = pickDefenseIntent(match, pawn);
-}
-
-function assignDefenseIntents(match) {
-  defensePawns(match, ['onboard']).forEach(function (pawn) {
-    assignDefenseIntent(match, pawn);
-  });
+  return {
+    type: 'intent',
+    wizardId: pawn.id,
+    kind: pawn.intent.kind,
+    dr: pawn.intent.dr,
+    dc: pawn.intent.dc,
+    row: pawn.row,
+    col: pawn.col,
+    element: pawn.element
+  };
 }
 
 function hurtWizardAmount(match, wizard, amount, cause, row, col) {
@@ -485,175 +486,174 @@ function hurtWizardAmount(match, wizard, amount, cause, row, col) {
   return events;
 }
 
-function simPawnMelee(match, pawn) {
-  const events = [];
-  const dr = pawn.intent.dr;
-  const dc = pawn.intent.dc;
-  const row = pawn.row + dr;
-  const col = pawn.col + dc;
-  if (!inBounds(row, col)) return events;
-  events.push({
+function defenseRayTiles(match, row, col, dr, dc, range, opts) {
+  opts = opts || {};
+  const tiles = [];
+  let i;
+  for (i = 1; i <= range; i++) {
+    const nr = row + dr * i;
+    const nc = col + dc * i;
+    if (!inBounds(nr, nc)) break;
+    if (mountainAt(match, nr, nc)) break;
+    tiles.push({ row: nr, col: nc });
+    if (wizardAt(match, nr, nc) || nexusAt(match, nr, nc)) break;
+    if (opts.stopOnHazard && hazardAt(match, nr, nc)) break;
+    if (opts.oneTile) break;
+  }
+  return tiles;
+}
+
+function pawnAttackEvent(pawn, extra) {
+  extra = extra || {};
+  const ev = {
     type: 'attack',
-    kind: 'melee',
+    kind: extra.kind,
     attackerId: pawn.id,
-    from: { row: pawn.row, col: pawn.col },
-    row: row,
-    col: col,
-    hit: 'none',
-    spellName: pawn.name
-  });
+    from: extra.from || { row: pawn.row, col: pawn.col },
+    row: extra.row,
+    col: extra.col,
+    hit: extra.hit || 'none',
+    spellName: extra.spellName || pawn.spellName,
+    element: extra.element || pawn.element,
+    damage: extra.damage != null ? extra.damage : pawn.meleeAttack,
+    tiles: extra.tiles || [{ row: extra.row, col: extra.col }]
+  };
+  if (extra.castKind) ev.castKind = extra.castKind;
+  if (extra.path) ev.path = extra.path;
+  return ev;
+}
+
+function pawnHitAt(match, pawn, row, col, amount, shove) {
+  const events = [];
   const victim = wizardAt(match, row, col);
   const nex = nexusAt(match, row, col);
   if (victim) {
-    events[0].hit = 'wizard';
-    events.push.apply(events, hurtWizardAmount(match, victim, pawn.meleeAttack, 'pawn', row, col));
-  } else if (nex) {
-    events[0].hit = 'nexus';
-    events.push.apply(events, hurtNexus(match, nex, pawn.meleeAttack, 'pawn'));
+    events.push.apply(events, hurtWizardAmount(match, victim, amount, 'pawn', row, col));
+    if (shove && victim.state === 'onboard' && (pawn.meleeDisplacement || 0) > 0) {
+      events.push.apply(events, simPush(match, victim, shove.dr, shove.dc, pawn.meleeDisplacement));
+    }
+    return events;
   }
+  if (nex) events.push.apply(events, hurtNexus(match, nex, amount, 'pawn'));
+  return events;
+}
+
+function pawnHitKind(match, row, col) {
+  if (wizardAt(match, row, col)) return 'wizard';
+  if (nexusAt(match, row, col)) return 'nexus';
+  return 'none';
+}
+
+function simPawnMelee(match, pawn) {
+  const row = pawn.row + pawn.intent.dr;
+  const col = pawn.col + pawn.intent.dc;
+  if (!inBounds(row, col)) return [];
+  const tiles = [{ row: row, col: col }];
+  const events = [pawnAttackEvent(pawn, {
+    kind: 'melee',
+    row: row,
+    col: col,
+    hit: pawnHitKind(match, row, col),
+    spellName: pawn.name,
+    tiles: tiles
+  })];
+  events.push.apply(events, pawnHitAt(match, pawn, row, col, pawn.meleeAttack));
   return events;
 }
 
 function simPawnFireball(match, pawn) {
-  const events = [];
   const dr = pawn.intent.dr;
   const dc = pawn.intent.dc;
-  const from = { row: pawn.row, col: pawn.col };
-  let hitRow = pawn.row + dr;
-  let hitCol = pawn.col + dc;
-  let i;
-  let hit = 'none';
-  for (i = 1; i <= 4; i++) {
-    const nr = pawn.row + dr * i;
-    const nc = pawn.col + dc * i;
-    if (!inBounds(nr, nc)) break;
-    hitRow = nr;
-    hitCol = nc;
-    if (mountainAt(match, nr, nc)) break;
-    const victim = wizardAt(match, nr, nc);
-    const nex = nexusAt(match, nr, nc);
-    if (victim) {
-      hit = 'wizard';
-      events.push({
-        type: 'attack',
-        kind: 'cast',
-        castKind: 'stream',
-        attackerId: pawn.id,
-        from: from,
-        row: nr,
-        col: nc,
-        hit: hit,
-        spellName: 'Fireball',
-        element: 'fire'
-      });
-      events.push.apply(events, hurtWizardAmount(match, victim, pawn.castAttack, 'pawn', nr, nc));
-      return events;
-    }
-    if (nex) {
-      hit = 'nexus';
-      events.push({
-        type: 'attack',
-        kind: 'cast',
-        castKind: 'stream',
-        attackerId: pawn.id,
-        from: from,
-        row: nr,
-        col: nc,
-        hit: hit,
-        spellName: 'Fireball',
-        element: 'fire'
-      });
-      events.push.apply(events, hurtNexus(match, nex, pawn.castAttack, 'pawn'));
-      return events;
-    }
-  }
-  events.push({
-    type: 'attack',
+  const range = pawn.castRange || 4;
+  const tiles = defenseRayTiles(match, pawn.row, pawn.col, dr, dc, range);
+  const last = tiles.length ? tiles[tiles.length - 1] : { row: pawn.row + dr, col: pawn.col + dc };
+  const events = [pawnAttackEvent(pawn, {
     kind: 'cast',
     castKind: 'stream',
-    attackerId: pawn.id,
-    from: from,
-    row: hitRow,
-    col: hitCol,
-    hit: hit,
+    row: last.row,
+    col: last.col,
+    hit: pawnHitKind(match, last.row, last.col),
     spellName: 'Fireball',
-    element: 'fire'
-  });
+    element: 'fire',
+    damage: pawn.castAttack,
+    tiles: tiles.length ? tiles : [last]
+  })];
+  events.push.apply(events, pawnHitAt(match, pawn, last.row, last.col, pawn.castAttack));
   return events;
 }
 
 function simPawnCharge(match, pawn) {
-  const events = [];
   const dr = pawn.intent.dr;
   const dc = pawn.intent.dc;
   const from = { row: pawn.row, col: pawn.col };
   const path = [];
+  const tiles = [];
+  const after = [];
+  let hit = 'none';
+  let hitRow = pawn.row + dr;
+  let hitCol = pawn.col + dc;
   let i;
-  events.push({
-    type: 'attack',
-    kind: 'cast',
-    castKind: 'gust',
-    attackerId: pawn.id,
-    from: from,
-    row: pawn.row + dr,
-    col: pawn.col + dc,
-    hit: 'none',
-    spellName: 'Charge',
-    element: 'wind'
-  });
   for (i = 1; i <= 3; i++) {
     if (pawn.state !== 'onboard') break;
     const nr = pawn.row + dr;
     const nc = pawn.col + dc;
     if (!inBounds(nr, nc)) break;
     if (mountainAt(match, nr, nc)) break;
+    hitRow = nr;
+    hitCol = nc;
+    tiles.push({ row: nr, col: nc });
     const victim = wizardAt(match, nr, nc);
     const nex = nexusAt(match, nr, nc);
     if (victim || nex) {
-      events[0].row = nr;
-      events[0].col = nc;
-      events[0].hit = victim ? 'wizard' : 'nexus';
-      if (victim) {
-        events.push.apply(events, hurtWizardAmount(match, victim, pawn.meleeAttack, 'pawn', nr, nc));
-        if (victim.state === 'onboard' && (pawn.meleeDisplacement || 0) > 0) {
-          events.push.apply(events, simPush(match, victim, dr, dc, pawn.meleeDisplacement));
-        }
-      } else events.push.apply(events, hurtNexus(match, nex, pawn.meleeAttack, 'pawn'));
+      hit = victim ? 'wizard' : 'nexus';
+      after.push.apply(after, pawnHitAt(match, pawn, nr, nc, pawn.meleeAttack, victim ? { dr: dr, dc: dc } : null));
       break;
     }
     pawn.row = nr;
     pawn.col = nc;
     path.push({ row: nr, col: nc });
-    events[0].row = nr;
-    events[0].col = nc;
-    events.push.apply(events, applyTileEnter(match, pawn));
+    after.push.apply(after, applyTileEnter(match, pawn));
     if (pawn.state !== 'onboard') break;
   }
-  if (path.length) {
-    events.splice(1, 0, {
-      type: 'push',
-      wizardId: pawn.id,
-      from: from,
-      path: path,
-      tilesShort: 0,
-      crash: null
-    });
-  }
+  const events = [pawnAttackEvent(pawn, {
+    kind: 'cast',
+    castKind: 'gust',
+    from: from,
+    row: hitRow,
+    col: hitCol,
+    hit: hit,
+    spellName: 'Charge',
+    element: 'wind',
+    damage: pawn.meleeAttack,
+    path: path,
+    tiles: tiles.length ? tiles : [{ row: hitRow, col: hitCol }]
+  })];
+  events.push.apply(events, after);
   return events;
+}
+
+function stampDefenseStrikeOrder(match) {
+  const queue = defenseStrikeQueue(match);
+  let i;
+  for (i = 0; i < queue.length; i++) queue[i].strikeOrder = i;
+  return queue;
 }
 
 function simDefenseExecutePawn(match, pawn) {
   if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return [];
+  const strikeOrder = typeof pawn.strikeOrder === 'number' ? pawn.strikeOrder : defenseStrikeIndex(match, pawn);
   let events;
   if (pawn.pawnKind === 'fireball') events = simPawnFireball(match, pawn);
   else if (pawn.pawnKind === 'charge') events = simPawnCharge(match, pawn);
   else events = simPawnMelee(match, pawn);
+  if (events && events[0] && events[0].type === 'attack') events[0].strikeOrder = strikeOrder;
   pawn.intent = null;
   return events || [];
 }
 
 function simDefenseExecute(match) {
   const events = [];
+  stampDefenseStrikeOrder(match);
   const pawns = defenseActQueue(match);
   let i;
   for (i = 0; i < pawns.length; i++) {
@@ -701,15 +701,15 @@ function simDefenseEmerge(match) {
   return events;
 }
 
-function simDefenseMovePawn(match, pawn) {
-  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
+function pickDefenseMove(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return null;
   const stay = scoreDefenseTile(match, pawn, pawn.row, pawn.col);
   const options = [{
     row: pawn.row,
     col: pawn.col,
     stay: true,
     score: stay.score,
-    nexusShot: stay.nexusShot
+    hit: stay.hit
   }];
   getMoveTiles(match, pawn).forEach(function (tile) {
     const scored = scoreDefenseTile(match, pawn, tile.row, tile.col);
@@ -718,11 +718,16 @@ function simDefenseMovePawn(match, pawn) {
       col: tile.col,
       stay: false,
       score: scored.score,
-      nexusShot: scored.nexusShot
+      hit: scored.hit
     });
   });
-  const nexusOpts = options.filter(function (opt) { return opt.nexusShot; });
-  const picked = pickScoredOption(match.rng, nexusOpts.length ? nexusOpts : options);
+  const hits = options.filter(function (opt) { return opt.hit; });
+  return pickScoredOption(match.rng, hits.length ? hits : options);
+}
+
+function simDefenseMovePawn(match, pawn) {
+  if (!pawn || pawn.state !== 'onboard' || pawn.hasMoved) return [];
+  const picked = pickDefenseMove(match, pawn);
   const events = [];
   if (picked && !picked.stay && (picked.row !== pawn.row || picked.col !== pawn.col)) {
     const path = pathBFS(match, pawn, picked.row, picked.col);
@@ -732,15 +737,17 @@ function simDefenseMovePawn(match, pawn) {
   return events;
 }
 
-function simDefenseMoveAndTelegraph(match) {
-  const events = [];
-  const pawns = defenseActQueue(match);
-  let i;
-  for (i = 0; i < pawns.length; i++) {
-    events.push.apply(events, simDefenseMovePawn(match, pawns[i]));
-    assignDefenseIntent(match, pawns[i]);
+function simDefenseBeat(match, beat, pawn) {
+  if (beat === 'strike') return simDefenseExecutePawn(match, pawn);
+  if (beat === 'emerge') return simDefenseEmerge(match);
+  if (beat === 'walk') {
+    const events = simDefenseMovePawn(match, pawn);
+    const aimed = assignDefenseIntent(match, pawn);
+    if (aimed) events.push(aimed);
+    return events;
   }
-  return events;
+  if (beat === 'mark') return markDefenseSpawns(match, defenseSpawnCount(match));
+  return [];
 }
 
 function simDefenseMove(match) {
@@ -753,31 +760,39 @@ function simDefenseMove(match) {
   return events;
 }
 
+function* defenseEnemyPhaseParts(match) {
+  resetActionFlagsFor(match, 'enemy');
+  stampDefenseStrikeOrder(match);
+  const strikers = defenseActQueue(match);
+  let i;
+  for (i = 0; i < strikers.length; i++) {
+    yield { kind: 'strike', events: simDefenseBeat(match, 'strike', strikers[i]), pawn: strikers[i] };
+  }
+  yield { kind: 'emerge', events: simDefenseBeat(match, 'emerge') };
+  const movers = defenseActQueue(match);
+  for (i = 0; i < movers.length; i++) {
+    if (movers[i].state !== 'onboard') continue;
+    yield { kind: 'walk', events: simDefenseBeat(match, 'walk', movers[i]), pawn: movers[i] };
+  }
+  yield { kind: 'mark', events: simDefenseBeat(match, 'mark') };
+}
+
 function simDefenseEnemyPhase(match) {
   const events = [];
-  events.push.apply(events, simDefenseExecute(match));
-  events.push.apply(events, simDefenseEmerge(match));
-  events.push.apply(events, simDefenseMoveAndTelegraph(match));
-  events.push.apply(events, markDefenseSpawns(match, defenseSpawnCount(match)));
+  const iter = defenseEnemyPhaseParts(match);
+  let step = iter.next();
+  while (!step.done) {
+    events.push.apply(events, step.value.events);
+    step = iter.next();
+  }
   return events;
 }
 
 function defenseIntentTiles(match, pawn) {
-  const tiles = [];
-  if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return tiles;
+  if (!pawn || pawn.state !== 'onboard' || !pawn.intent) return [];
   const spec = defensePawnSpec(pawn.pawnKind);
-  let i;
-  for (i = 1; i <= spec.range; i++) {
-    const nr = pawn.row + pawn.intent.dr * i;
-    const nc = pawn.col + pawn.intent.dc * i;
-    if (!inBounds(nr, nc)) break;
-    if (mountainAt(match, nr, nc)) break;
-    tiles.push({ row: nr, col: nc });
-    const victim = wizardAt(match, nr, nc);
-    const nex = nexusAt(match, nr, nc);
-    if (victim || nex) break;
-    if (pawn.pawnKind === 'charge' && hazardAt(match, nr, nc)) break;
-    if (pawn.pawnKind === 'melee') break;
-  }
-  return tiles;
+  return defenseRayTiles(match, pawn.row, pawn.col, pawn.intent.dr, pawn.intent.dc, spec.range, {
+    stopOnHazard: pawn.pawnKind === 'charge',
+    oneTile: pawn.pawnKind === 'melee'
+  });
 }
