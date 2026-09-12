@@ -25,7 +25,7 @@ function renderTodoPage() {
   return (
     '<article class="page">' +
       '<h1>To-do</h1>' +
-      '<p class="lede">What still makes a fight mean more. Done work is gone from this list.</p>' +
+      '<p class="lede">What is still leftover. Done work is gone from this list.</p>' +
 
       '<h2>Need from you</h2>' +
       '<p class="need-note">Element icons are in. Wizard poses and terrain tiles still help if you have them.</p>' +
@@ -44,8 +44,7 @@ function renderTodoPage() {
 
       '<h2>Combat</h2>' +
       '<ul class="todo-list">' +
-        item('<strong>Pull / grab spells</strong> — Tug yanks toward you. Done.', 'done') +
-        item('<strong>Unit statuses</strong> — Lock skips the next strike. Brand burns when they next act. Wet / rooted-on-the-body beyond that still open.') +
+        item('<strong>Wet</strong> — bolt can jump from a soaked wizard, not only water tiles.') +
         item('<strong>Overwatch</strong> — a spell that fires when someone steps a painted line.') +
         item('<strong>More bodies</strong> — new kits, not just more spells on the six.') +
         item('<strong>Hazard paint</strong> — drop a one-tile water or pit.') +
