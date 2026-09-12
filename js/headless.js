@@ -163,7 +163,7 @@ async function runSimSelfTests() {
   const hp0 = gale.hp;
   simAttack(state, ember, 0, 6, 'melee');
   assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
-  assert(gale.hp === hp0 - ember.meleeAttack - CRASH_DAMAGE, 'blocked push should deal flat crash damage');
+  assert(gale.hp === hp0 - ember.meleeAttack - 2, 'blocked 2-pip push smashes for leftover 2');
   const slammed = nexusAt(state, 0, 7);
   assert(slammed && slammed.hp === NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
 
@@ -187,8 +187,8 @@ async function runSimSelfTests() {
   wallWiz.hp = 8;
   simAttack(state, batter, 4, 3, 'melee');
   assert(shoved.row === 4 && shoved.col === 3, 'first wizard stops on the wizard they hit');
-  assert(shoved.hp === 12 - batter.meleeAttack - CRASH_DAMAGE, 'crashed wizard takes hit plus flat crash');
-  assert(wallWiz.hp === 8 - CRASH_DAMAGE, 'the wizard they hit takes the same flat crash');
+  assert(shoved.hp === 12 - batter.meleeAttack - 2, 'crashed wizard takes hit plus leftover smash');
+  assert(wallWiz.hp === 8 - 2, 'the wizard they hit takes the same smash');
   assert(wallWiz.row === 4 && wallWiz.col === 6, 'leftover knock slides the last wizard');
 
   resetMatch(state, 1);
@@ -214,9 +214,9 @@ async function runSimSelfTests() {
   assert(chainA.row === 4 && chainA.col === 2, 'packed first wizard stays');
   assert(chainB.row === 4 && chainB.col === 3, 'packed middle wizard stays');
   assert(chainC.row === 4 && chainC.col === 6, 'last wizard in the pile slides leftover pips');
-  assert(chainA.hp === 12 - chainAtk.meleeAttack - CRASH_DAMAGE, 'first collision hurts the lead wizard');
-  assert(chainB.hp === 8 - CRASH_DAMAGE - CRASH_DAMAGE, 'middle wizard is hurt by both collisions');
-  assert(chainC.hp === 14 - CRASH_DAMAGE, 'final wizard takes the last crash');
+  assert(chainA.hp === 12 - chainAtk.meleeAttack - 2, 'first collision smashes leftover 2 into the lead wizard');
+  assert(chainB.hp === 8 - 2 - 2, 'middle wizard is smashed by both collisions');
+  assert(chainC.hp === 14 - 2, 'final wizard takes the last smash');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -233,7 +233,7 @@ async function runSimSelfTests() {
   edgeHit.hp = 12;
   simAttack(state, edgeAtk, 4, BOARD_SIZE - 1, 'melee');
   assert(edgeHit.row === 4 && edgeHit.col === BOARD_SIZE - 1, 'arena edge does not knock them off the board');
-  assert(edgeHit.hp === 12 - edgeAtk.meleeAttack - CRASH_DAMAGE, 'hitting the arena edge still deals crash');
+  assert(edgeHit.hp === 12 - edgeAtk.meleeAttack - 2, 'hitting the arena edge smashes leftover pips');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -250,7 +250,57 @@ async function runSimSelfTests() {
   pinned.hp = 12;
   simAttack(state, gustCrash, 4, 3, 'cast');
   assert(pinned.row === 4 && pinned.col === 3, 'gust crash does not move the target');
-  assert(pinned.hp === 12 - gustCrash.castAttack - CRASH_DAMAGE, 'crash is 1 even when three pips are leftover');
+  assert(pinned.hp === 12 - gustCrash.castAttack - 3, 'leftover gust pips smash instead of a flat 1');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  state.mountains = { '4,5': true };
+  state.water = {};
+  const bumpAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const bumpHit = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  bumpAtk.state = 'onboard';
+  bumpAtk.row = 4;
+  bumpAtk.col = 2;
+  bumpHit.state = 'onboard';
+  bumpHit.row = 4;
+  bumpHit.col = 3;
+  bumpHit.hp = 12;
+  simAttack(state, bumpAtk, 4, 3, 'melee');
+  assert(bumpHit.row === 4 && bumpHit.col === 4, 'one free tile still slides');
+  assert(bumpHit.hp === 12 - bumpAtk.meleeAttack - 1, 'a one-pip leftover crash stays 1');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 8, col: 0 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 8, col: 1 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const overkillPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  overkillPyre.state = 'onboard';
+  overkillPyre.row = 4;
+  overkillPyre.col = 2;
+  overkillPyre.hasMoved = true;
+  const overkillPawn = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 4, col: 3, hp: 3, maxHp: 3, intent: null
+  });
+  const overkillHit = simAttack(state, overkillPyre, 4, 3, 'melee');
+  const overkillDmg = overkillHit.find(function (e) { return e.type === 'damage' && e.targetId === overkillPawn.id && e.cause === 'melee'; });
+  assert(overkillDmg && overkillDmg.overkill === 2, '5 into 3 pops 2 overkill');
+  assert(overkillPawn.state === 'dead', 'overkill still kills');
+  assert(overkillHit.some(function (e) { return e.type === 'push' && e.wizardId === overkillPawn.id && e.path && e.path.length === 2; }), 'overkill still slams the body');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -541,9 +591,9 @@ async function runSimSelfTests() {
   assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
   const mixed = randomPlayableLoadout(createRng(9));
   assert(mixed.length === TEAM_SIZE && mixed.every(function (s) { return kitPlayable(s.kit); }), 'randomize stays in Pyre Rime Squall');
-  assert(SPELLS.length === 18, 'spell catalog is eighteen');
+  assert(SPELLS.length === 21, 'spell catalog is twenty-one');
   assert(spellsForElement('ice').some(s => s.id === 'blizzard'), 'ice can take blizzard');
-  assert(CAST_HINT.blizzard && CAST_HINT.inferno, 'new spell hints exist');
+  assert(CAST_HINT.blizzard && CAST_HINT.inferno && CAST_HINT.tug && CAST_HINT.lock && CAST_HINT.brand, 'new spell hints exist');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -615,6 +665,93 @@ async function runSimSelfTests() {
   assert(rimes.map(w => w.spellId).sort().join(',') === 'blizzard,pulse,pulse,sheet', 'duplicate kits keep their own spells');
   const enemyFires = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.element === 'fire');
   assert(enemyFires.length === 2, 'enemy can roll duplicate kits');
+
+  resetMatch(state, 1, {
+    playerLoadout: [
+      { kit: 'wind', spell: 'tug' },
+      { kit: 'ice', spell: 'lock' },
+      { kit: 'fire', spell: 'brand' },
+      { kit: 'ice', spell: 'pulse' }
+    ],
+    gameMode: 'defense'
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [];
+  state.nexuses.enemy = [];
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  const tugger = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'tug');
+  const locker = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'lock');
+  const brander = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'brand');
+  assert(tugger && tugger.castKind === 'pull', 'Tug is a pull');
+  assert(locker && locker.spellRoot, 'Lock roots');
+  assert(brander && brander.spellBurn === 2, 'Brand burns 2');
+
+  tugger.state = 'onboard';
+  tugger.row = 4;
+  tugger.col = 1;
+  tugger.hasAttacked = false;
+  const yanked = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5 });
+  state.water = { '4,3': true };
+  const tugHit = simAttack(state, tugger, 4, 4, 'cast');
+  assert(tugHit.some(e => e.type === 'attack' && e.castKind === 'pull' && e.spellId === 'tug'), 'tug attack is a pull');
+  assert(yanked.state === 'dead', 'tug yanks a pawn into water');
+  assert(describeEvent(tugHit[0]).indexOf('tugs') !== -1, 'tug log says tugs');
+
+  locker.state = 'onboard';
+  locker.row = 2;
+  locker.col = 2;
+  locker.hasAttacked = false;
+  const lockPawn = createDefensePawn(state, 'charge', {
+    state: 'onboard',
+    row: 2,
+    col: 5,
+    hp: 4,
+    maxHp: 4,
+    intent: { kind: 'charge', dr: 0, dc: 1 }
+  });
+  const lockHit = simAttack(state, locker, 2, 5, 'cast');
+  assert(lockHit.some(e => e.type === 'root' && e.targetId === lockPawn.id), 'lock emits a root');
+  assert(lockPawn.rooted, 'lock marks the pawn rooted');
+  assert(!lockPawn.intent, 'lock drops the telegraph now');
+  const lockSkip = simDefenseExecutePawn(state, lockPawn);
+  assert(lockPawn.rooted === false, 'lock is spent on the skipped strike');
+  assert(!lockSkip.some(e => e.type === 'attack'), 'locked charger does not dash');
+  assert(lockPawn.state === 'onboard' && lockPawn.col === 5, 'locked charger stays put');
+
+  brander.state = 'onboard';
+  brander.row = 6;
+  brander.col = 2;
+  brander.hasAttacked = false;
+  const brandPawn = createDefensePawn(state, 'fireball', {
+    state: 'onboard',
+    row: 6,
+    col: 4,
+    hp: 2,
+    maxHp: 2,
+    intent: { kind: 'fireball', dr: 1, dc: 0 }
+  });
+  const brandHit = simAttack(state, brander, 6, 4, 'cast');
+  assert(brandPawn.hp === 1, 'brand chips 1 now');
+  assert(brandPawn.burn === 2, 'brand leaves 2 burn');
+  const pulsePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'pulse');
+  pulsePrey.state = 'onboard';
+  pulsePrey.row = 8;
+  pulsePrey.col = 4;
+  pulsePrey.hp = 12;
+  const brandTick = simDefenseExecutePawn(state, brandPawn);
+  assert(brandPawn.state === 'dead', 'burn kills the 2 HP bomber before the shot');
+  assert(brandTick.some(e => e.type === 'damage' && e.cause === 'burn'), 'burn ticks on execute');
+  assert(pulsePrey.hp === 12, 'dead bomber never fires');
 
   resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: DEFAULT_TEAM });
   state.fxEnabled = false;
@@ -1001,12 +1138,16 @@ async function runSimSelfTests() {
   assert(state.gameMode === 'defense', 'defense mode is explicit');
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
-  assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
+  assert(defensePawns(state, ['onboard']).length === 1, 'defense opens with one pawn on the board');
   assert(defensePawns(state, ['emerging']).length === 0, 'turn 1 has no incoming spawn marks');
   assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
   simDefenseEnemyPhase(state);
-  assert(defensePawns(state, ['onboard']).every(w => w.intent && w.intent.dr != null), 'opening pawns telegraph after the first enemy loop');
-  assert(defensePawns(state, ['emerging']).length >= 1, 'incoming marks appear after the first enemy loop');
+  assert(defensePawns(state, ['emerging']).length <= 1, 'first incoming is at most one hole');
+  assert(defensePawns(state, ['onboard', 'emerging']).length <= DEFENSE_PAWN_CAP, 'the board never opens at the old five-body crush');
+  defensePawns(state, ['onboard']).forEach(function (w) {
+    if (!w.intent) return;
+    assert(defenseShotScore(state, w, w.row, w.col, w.intent.dr, w.intent.dc) > 0, 'opening telegraphs hit a wizard or the city');
+  });
   assert(state.nexuses.enemy.length === 0, 'defense has no enemy nexuses');
   assert(state.nexuses.player.length >= DEFENSE_NEXUS_MIN && state.nexuses.player.length <= DEFENSE_NEXUS_MAX, 'defense city size varies');
   assert(state.nexuses.player.every(n => n.hp === 2 && n.maxHp === 2), 'defense nexuses have 2 HP');
@@ -1023,8 +1164,31 @@ async function runSimSelfTests() {
     });
   }
   assert(packedBlobs(state.nexuses.player), 'defense nexuses sit in packed city blobs');
+  assert(state.mapId && state.mapName, 'defense names the island');
+
+  const islandIds = {};
+  let waterTouchesCity = 0;
+  let islandSeed;
+  for (islandSeed = 1; islandSeed <= 48; islandSeed++) {
+    resetMatch(state, islandSeed, { gameMode: 'defense' });
+    assert(state.mapId && state.mapName, 'every seed names the island');
+    islandIds[state.mapId] = true;
+    assert(packedBlobs(state.nexuses.player), 'island city stays packed on seed ' + islandSeed);
+    assert(campsConnected(state, state.mountains, state.water), 'island stays walkable on seed ' + islandSeed);
+    assert(state.nexuses.player.every(function (n) {
+      return n.row >= 3 && n.row <= 7;
+    }), 'island city stays off the far spawn edge');
+    state.nexuses.player.forEach(function (n) {
+      CARDINALS.forEach(function (d) {
+        if (waterAt(state, n.row + d[0], n.col + d[1])) waterTouchesCity += 1;
+      });
+    });
+  }
+  assert(Object.keys(islandIds).length >= 4, 'islands vary across seeds (' + Object.keys(islandIds).join(',') + ')');
+  assert(waterTouchesCity >= 1, 'some islands put water against the city');
   assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
   assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
+  assert(defensePawns(state, ['onboard']).length > 0, 'opening pawns still keep the fight going');
 
   const citySizes = {};
   const openOnboard = {};
@@ -1036,13 +1200,14 @@ async function runSimSelfTests() {
     openOnboard[defensePawns(state, ['onboard']).length] = true;
     assert(defensePawns(state, ['emerging']).length === 0, 'no seed opens with incoming marks');
     simDefenseEnemyPhase(state);
+    state.turnCount += 1;
+    simDefenseEnemyPhase(state);
     if (defensePawns(state, ['emerging']).some(function (w) {
       return w.col === 0 || w.col === BOARD_SIZE - 1 || w.row >= ENEMY_ROW_END;
     })) flankIncoming = true;
   }
   assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
-  assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
-  assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
+  assert(Object.keys(openOnboard).length === 1 && openOnboard[1], 'every seed opens with exactly one pawn');
   assert(flankIncoming, 'incoming after the first enemy loop can use edges');
 
   let asym = false;
@@ -1065,8 +1230,12 @@ async function runSimSelfTests() {
   state.water = {};
   state.voids = {};
   simDefenseEnemyPhase(state);
+  if (!defensePawns(state, ['emerging']).length) {
+    state.turnCount += 1;
+    simDefenseEnemyPhase(state);
+  }
   const incoming = defensePawns(state, ['emerging'])[0];
-  assert(incoming && incoming.row != null, 'incoming marker has a tile after the first enemy loop');
+  assert(incoming && incoming.row != null, 'incoming marker has a tile after an enemy loop');
   assert(!canSummonAt(state, incoming.row, incoming.col, 'player'), 'cannot drop on an emerging pawn');
   const midTiles = getPlayerSummonTiles(state).filter(function (t) { return t.row < SUMMON_ROW_START; });
   assert(midTiles.length > 0, 'defense can drop outside the back 3 rows');
@@ -1086,7 +1255,6 @@ async function runSimSelfTests() {
     makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
   ];
   state.nexuses.enemy = [];
-  state.mana = 10;
   const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
   const drop = simSummon(state, dropper, 3, 4, 'player');
@@ -1109,6 +1277,61 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   assert(!canSummonAt(state, 3, 4, 'player'), 'vs still cannot summon mid-board');
+
+  resetMatch(state, 1, {
+    gameMode: 'defense',
+    playerLoadout: [
+      { kit: 'fire', spell: 'stream' },
+      { kit: 'fire', spell: 'inferno' },
+      { kit: 'wind', spell: 'gust' },
+      { kit: 'wind', spell: 'draft' }
+    ]
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  const enemyNear = {};
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team !== 'enemy' || w.row == null) return;
+    let dr;
+    let dc;
+    for (dr = -1; dr <= 1; dr++) {
+      for (dc = -1; dc <= 1; dc++) enemyNear[(w.row + dr) + ',' + (w.col + dc)] = true;
+    }
+  });
+  const dropTiles = getPlayerSummonTiles(state).filter(function (t) {
+    return !enemyNear[t.row + ',' + t.col];
+  });
+  assert(dropTiles.length >= 2, 'defense has open drop tiles away from pawns');
+  const pyres = Object.values(state.wizards).filter(function (x) {
+    return x.team === 'player' && x.element === 'fire' && x.state === 'summoned';
+  });
+  assert(pyres.length === 2, 'loadout has two Pyres in hand');
+  assert(pyres[0].cost === 3 && state.mana === 2, 'round 1 mana is still 2, Pyre still costs 3');
+  assert(canPaySummon(state, pyres[0], 'player'), 'defense round 1 can drop a 3-cost Pyre');
+  assert(playerHasLegalAction(state), 'defense round 1 without Rime still has a drop');
+  const firstDrop = simSummon(state, pyres[0], dropTiles[0].row, dropTiles[0].col, 'player');
+  assert(firstDrop.some(function (e) { return e.type === 'summon'; }), 'first defense drop lands');
+  assert(state.playerSummonedThisTurn, 'defense marks the drop as spent');
+  assert(state.mana === 2, 'defense drop does not spend mana');
+  assert(!canPaySummon(state, pyres[1], 'player'), 'second drop is blocked the same turn');
+  const blockedDrop = simSummon(state, pyres[1], dropTiles[1].row, dropTiles[1].col, 'player');
+  assert(!blockedDrop.length, 'simSummon refuses a second defense drop');
+  assert(pyres[1].state === 'summoned', 'second wizard stays in hand');
+  simEndPlayerTurn(state);
+  simEndEnemyTurn(state);
+  assert(!state.playerSummonedThisTurn, 'a new player turn restores the drop');
+  assert(state.mana === 2, 'defense does not grow a mana pool');
+  assert(canPaySummon(state, pyres[1], 'player'), 'next round can drop the next body');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const vsTile = getPlayerSummonTiles(state)[0];
+  assert(vsTile, 'vs has a portal tile');
+  const vsBlocked = simSummon(state, vsPyre, vsTile.row, vsTile.col, 'player');
+  assert(!vsBlocked.length && vsPyre.state === 'summoned', 'vs still cannot portal a 3-cost on 2 mana');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1155,7 +1378,7 @@ async function runSimSelfTests() {
   pyre.row = 5;
   pyre.col = 3;
   simDefenseExecute(state);
-  assert(pyre.hp === 8, 'fireball hits 4 range in the aimed direction (' + pyre.hp + ')');
+  assert(pyre.hp === 9, 'fireball hits 4 range for 1 in the aimed direction (' + pyre.hp + ')');
 
   Object.values(state.wizards).forEach(function (w) {
     if (w.team === 'enemy') {
@@ -1215,7 +1438,7 @@ async function runSimSelfTests() {
   prey.state = 'onboard';
   prey.row = 5;
   prey.col = 4;
-  prey.hp = 2;
+  prey.hp = 1;
   const firstSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
   const secondSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 5, col: 5, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 0, dc: -1 } });
   const killHit = simDefenseExecutePawn(state, firstSwing);
@@ -1229,7 +1452,7 @@ async function runSimSelfTests() {
   lanePrey.state = 'onboard';
   lanePrey.row = 5;
   lanePrey.col = 2;
-  lanePrey.hp = 2;
+  lanePrey.hp = 1;
   state.water = { '5,3': true };
   const laneBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 2, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 } });
   const laneCharge = createDefensePawn(state, 'charge', { state: 'onboard', row: 5, col: 0, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
@@ -1242,18 +1465,114 @@ async function runSimSelfTests() {
   resetMatch(state, 2, { gameMode: 'defense' });
   state.fxEnabled = false;
   simDefenseEnemyPhase(state);
-  assert(defensePawns(state, ['onboard']).every(w => w.intent), 'after the enemy loop every pawn telegraphs');
+  defensePawns(state, ['onboard']).forEach(function (w) {
+    if (!w.intent) return;
+    assert(defenseShotScore(state, w, w.row, w.col, w.intent.dr, w.intent.dc) > 0, 'a telegraph is a real shot, not empty air');
+  });
   let wave;
   let sawIncoming = false;
-  let sawBusyWave = false;
+  let overCapWaves = 0;
+  let doubleHole = 0;
   for (wave = 0; wave < 8; wave++) {
     simDefenseEnemyPhase(state);
+    state.turnCount += 1;
     const incoming = defensePawns(state, ['emerging']).length;
+    const livingNow = defensePawns(state, ['onboard', 'emerging']).length;
     if (incoming >= 1) sawIncoming = true;
-    if (incoming >= 2 || defensePawns(state, ['onboard']).length >= 4) sawBusyWave = true;
+    if (incoming > 1) doubleHole += 1;
+    if (livingNow > DEFENSE_PAWN_CAP) overCapWaves += 1;
   }
   assert(sawIncoming, 'waves keep streaming after execute-move-telegraph');
-  assert(sawBusyWave, 'later waves can stack more bodies');
+  assert(doubleHole === 0, 'a wave never opens two holes at once');
+  assert(overCapWaves === 0, 'living plus incoming never exceed 3');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  state.water = {};
+  state.mountains = {};
+  state.voids = {};
+  const openCount = defenseEverSpawned(state);
+  assert(openCount === 1 || openCount === 2, 'opening counts toward the match budget');
+  assert(defenseBudgetLeft(state) === DEFENSE_SPAWN_BUDGET - openCount, 'budget leftover after opening');
+  state.turnCount = 2;
+  let fillGuard = 0;
+  while (defenseBudgetLeft(state) > 0 && fillGuard++ < 24) {
+    const livingNow = defensePawns(state, ['onboard', 'emerging']).length;
+    if (livingNow >= DEFENSE_PAWN_CAP) {
+      const extra = defensePawns(state, ['onboard', 'emerging'])[0];
+      extra.state = 'dead';
+      extra.row = null;
+      extra.col = null;
+      extra.intent = null;
+    }
+    const n = defenseSpawnCount(state);
+    if (n <= 0) break;
+    markDefenseSpawns(state, n);
+    simDefenseEmerge(state);
+    state.turnCount += 1;
+  }
+  assert(defenseEverSpawned(state) === DEFENSE_SPAWN_BUDGET, 'a match never queues more than 10 invaders');
+  assert(defenseBudgetLeft(state) === 0, 'budget is spent after 10');
+  assert(defenseSpawnCount(state) === 0, 'no further marks once the 10 are out');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  const southStriker = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, intent: { kind: 'melee', dr: 1, dc: 0 }
+  });
+  const eastStriker = createDefensePawn(state, 'charge', {
+    state: 'onboard', row: 1, col: 6, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 1, dc: 0 }
+  });
+  const northStriker = createDefensePawn(state, 'fireball', {
+    state: 'onboard', row: 1, col: 2, hp: 3, maxHp: 3, intent: { kind: 'fireball', dr: 1, dc: 0 }
+  });
+  const strikeQueue = defenseStrikeQueue(state);
+  assert(strikeQueue[0].id === northStriker.id, 'north-west strikes first');
+  assert(strikeQueue[1].id === eastStriker.id, 'same row, west before east');
+  assert(strikeQueue[2].id === southStriker.id, 'south strikes last');
+  assert(defenseStrikeIndex(state, northStriker) === 0, 'north is 1st on the telegraph');
+  const executed = simDefenseExecute(state);
+  assert(executed.filter(function (e) { return e.type === 'attack'; }).map(function (e) { return e.attackerId; }).join(',') ===
+    [northStriker.id, eastStriker.id, southStriker.id].join(','), 'execute uses the numbered order');
+
+  let multiSector = 0;
+  let midFieldSpawn = 0;
+  let campSpawn = 0;
+  let overCap = 0;
+  let spreadSeed;
+  for (spreadSeed = 1; spreadSeed <= 36; spreadSeed++) {
+    resetMatch(state, spreadSeed, { gameMode: 'defense' });
+    const openPawns = defensePawns(state, ['onboard']);
+    openPawns.forEach(function (p) {
+      if (p.row >= BOARD_SIZE - 2) campSpawn += 1;
+      if (p.row >= 3 && p.row <= 6) midFieldSpawn += 1;
+    });
+    simDefenseEnemyPhase(state);
+    const after = {};
+    defensePawns(state, ['onboard', 'emerging']).forEach(function (p) {
+      if (p.row == null) return;
+      after[defenseSpawnSector(p.row, p.col)] = true;
+    });
+    defensePawns(state, ['emerging']).forEach(function (p) {
+      if (p.row == null) return;
+      if (p.row >= BOARD_SIZE - 2) campSpawn += 1;
+      if (p.row >= 3 && p.row <= 6) midFieldSpawn += 1;
+    });
+    if (Object.keys(after).length >= 2) multiSector += 1;
+    if (defensePawns(state, ['onboard', 'emerging']).length > DEFENSE_PAWN_CAP) overCap += 1;
+  }
+  assert(multiSector >= 18, 'the first wave is not all piled on one edge (' + multiSector + ')');
+  assert(campSpawn === 0, 'holes never open on the last two rows');
+  assert(midFieldSpawn >= 8, 'holes can sit on open mid-field ground (' + midFieldSpawn + ')');
+  assert(overCap === 0, 'living plus incoming never exceed 3');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1279,15 +1598,83 @@ async function runSimSelfTests() {
   cityBait.row = 4;
   cityBait.col = 3;
   cityBait.hp = 8;
-  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 5, maxHp: 5, hasMoved: true });
+  const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBrute.intent = pickDefenseIntent(state, cityBrute);
-  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute aims at the nexus, not the wizard');
-  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5, hasMoved: false, intent: null });
+  assert(
+    defenseShotScore(state, cityBrute, 4, 4, 1, 0) > defenseShotScore(state, cityBrute, 4, 4, 0, -1),
+    'a nexus strike outranks punching a wizard'
+  );
+  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute beelines the city, not the wizard');
+  const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
   simDefenseMove(state);
   assert(cityWalker.row > 1, 'brute marches toward the city instead of sitting on the spawn line');
-  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 2, maxHp: 2, hasMoved: true });
+  cityBrute.state = 'dead';
+  cityBrute.row = null;
+  cityBrute.col = null;
+  cityWalker.state = 'dead';
+  cityWalker.row = null;
+  cityWalker.col = null;
+  cityBait.state = 'dead';
+  cityBait.row = null;
+  cityBait.col = null;
+  const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBomber.intent = pickDefenseIntent(state, cityBomber);
-  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city even with a wizard beside it');
+  assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city when that is the only shot');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    w.state = 'dead';
+    w.row = null;
+    w.col = null;
+    w.intent = null;
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 7, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 7, col: 5 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 8, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const westBait = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  westBait.state = 'onboard';
+  westBait.row = 2;
+  westBait.col = 0;
+  westBait.hp = 8;
+  const farBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const cityBefore = nearestDefenseNexus(state, farBrute.row, farBrute.col);
+  const distCityBefore = manhattan(farBrute.row, farBrute.col, cityBefore.row, cityBefore.col);
+  const distWizBefore = manhattan(farBrute.row, farBrute.col, westBait.row, westBait.col);
+  assert(distWizBefore < distCityBefore, 'the closer body is a wizard, not the city');
+  assert(distWizBefore > farBrute.moveRange + 1, 'that wizard is still out of melee this turn');
+  assignDefenseIntent(state, farBrute);
+  assert(!farBrute.intent, 'far brute does not telegraph empty air');
+  simDefenseMovePawn(state, farBrute);
+  assignDefenseIntent(state, farBrute);
+  const cityAfter = nearestDefenseNexus(state, farBrute.row, farBrute.col);
+  const distCityAfter = manhattan(farBrute.row, farBrute.col, cityAfter.row, cityAfter.col);
+  assert(distCityAfter < distCityBefore, 'far brute closes on the city');
+  assert(farBrute.col >= 3, 'far brute does not peel west toward the out-of-range wizard (' + farBrute.row + ',' + farBrute.col + ')');
+  assert(!farBrute.intent, 'still no telegraph until a body is in range');
+  farBrute.state = 'dead';
+  farBrute.row = null;
+  farBrute.col = null;
+  westBait.row = 2;
+  westBait.col = 4;
+  const punchWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  simDefenseMovePawn(state, punchWalker);
+  assignDefenseIntent(state, punchWalker);
+  assert(punchWalker.intent, 'brute punches the wizard when the city is out of reach this turn');
+  assert(defenseShotScore(state, punchWalker, punchWalker.row, punchWalker.col, punchWalker.intent.dr, punchWalker.intent.dc) > 0, 'that punch is a real wizard, not empty air');
+  assert(defenseShotScore(state, punchWalker, punchWalker.row, punchWalker.col, punchWalker.intent.dr, punchWalker.intent.dc) < 100, 'the in-range shot is the wizard, not a nexus');
+  punchWalker.state = 'dead';
+  punchWalker.row = null;
+  punchWalker.col = null;
+  westBait.state = 'dead';
+  westBait.row = null;
+  westBait.col = null;
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -1308,26 +1695,179 @@ async function runSimSelfTests() {
     makeNexus({ id: 'player-cluster-2', row: 7, col: 4 }, 'player', DEFENSE_NEXUS_HP)
   ];
   state.nexuses.enemy = [];
+  const wetPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  wetPrey.state = 'onboard';
+  wetPrey.row = 3;
+  wetPrey.col = 6;
+  wetPrey.hp = 12;
   const wetCharger = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 4, hp: 4, maxHp: 4, hasMoved: true });
   wetCharger.intent = pickDefenseIntent(state, wetCharger);
+  assert(wetCharger.intent, 'charger still aims if a wizard is in range to the side');
   assert(wetCharger.intent.dr !== 1 || wetCharger.intent.dc !== 0, 'charger does not aim south into water toward the city');
   assert(!defenseChargeWouldFall(state, wetCharger.row, wetCharger.col, wetCharger.intent.dr, wetCharger.intent.dc), 'picked charge path does not fall in a hazard');
+  assert(defenseShotScore(state, wetCharger, 3, 4, wetCharger.intent.dr, wetCharger.intent.dc) > 0, 'charge telegraph hits someone');
   const shovedCharger = createDefensePawn(state, 'charge', { state: 'onboard', row: 3, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
   state.water['3,3'] = true;
   simDefenseExecutePawn(state, shovedCharger);
   assert(shovedCharger.state === 'dead', 'an already-aimed charge into water still falls');
 
+  state.water = {};
+  state.voids = {};
+  const rammed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  rammed.state = 'onboard';
+  rammed.row = 4;
+  rammed.col = 5;
+  rammed.hp = 10;
+  const beetle = createDefensePawn(state, 'charge', { state: 'onboard', row: 4, col: 2, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 } });
+  simDefenseExecutePawn(state, beetle);
+  assert(rammed.hp === 9, 'charger deals 1 like a Beetle ram (' + rammed.hp + ')');
+  assert(rammed.state === 'onboard' && rammed.col === 6, 'charger then pushes the living wizard one tile');
+
+  rammed.state = 'dead';
+  rammed.row = null;
+  rammed.col = null;
+  const claimedStand = createDefensePawn(state, 'melee', { state: 'onboard', row: 2, col: 2, hp: 3, maxHp: 3, intent: null });
+  const claimedWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 2, col: 6, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const freeStand = scoreDefenseTile(state, claimedWalker, 3, 2);
+  claimedStand.intent = { kind: 'melee', dr: 1, dc: 0 };
+  const busyStand = scoreDefenseTile(state, claimedWalker, 3, 2);
+  assert(defenseClaimedTiles(state, claimedWalker.id)[tileKey(3, 2)], 'an earlier melee claims the tile it aims at');
+  assert(busyStand.score === freeStand.score - 120, 'later pawns pay 120 to stand on that telegraph');
+  claimedStand.state = 'dead';
+  claimedStand.row = null;
+  claimedStand.col = null;
+  claimedStand.intent = null;
+  claimedWalker.state = 'dead';
+  claimedWalker.row = null;
+  claimedWalker.col = null;
+
+  const firstPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  firstPrey.state = 'onboard';
+  firstPrey.row = 1;
+  firstPrey.col = 3;
+  firstPrey.hp = 12;
   const firstAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 2, hp: 5, maxHp: 5, hasMoved: false, intent: null });
   const laterAim = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 6, hp: 5, maxHp: 5, hasMoved: false, intent: null });
   simDefenseMovePawn(state, firstAim);
   assignDefenseIntent(state, firstAim);
   assert(firstAim.intent && firstAim.intent.dr != null, 'first walker telegraphs as soon as it moves');
+  assert(defenseShotScore(state, firstAim, firstAim.row, firstAim.col, firstAim.intent.dr, firstAim.intent.dc) > 0, 'that telegraph hits the adjacent wizard');
   assert(!laterAim.intent, 'later walker has no telegraph until it moves');
+  firstPrey.state = 'dead';
+  firstPrey.row = null;
+  firstPrey.col = null;
+  firstAim.state = 'dead';
+  firstAim.row = null;
+  firstAim.col = null;
+  laterAim.state = 'dead';
+  laterAim.row = null;
+  laterAim.col = null;
+
+  const planner = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 0, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const plan = pickDefenseMove(state, planner);
+  assert(plan && plan.row != null, 'pickDefenseMove returns a tile');
+  assert(!planner.hasMoved && planner.row === 0 && planner.col === 0, 'picking a walk does not move the pawn');
+
+  planner.state = 'dead';
+  planner.row = null;
+  planner.col = null;
+
+  const dashPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  dashPrey.state = 'onboard';
+  dashPrey.row = 0;
+  dashPrey.col = 4;
+  dashPrey.hp = 10;
+  const dasher = createDefensePawn(state, 'charge', {
+    state: 'onboard', row: 0, col: 1, hp: 4, maxHp: 4, intent: { kind: 'charge', dr: 0, dc: 1 }
+  });
+  const dashHit = simDefenseExecutePawn(state, dasher);
+  const dashAtk = dashHit.find(function (e) { return e.type === 'attack'; });
+  assert(dashAtk && dashAtk.path && dashAtk.path.length >= 1, 'charge records its own path on the attack');
+  assert(!dashHit.some(function (e) { return e.type === 'push' && e.wizardId === dasher.id; }), 'charge no longer fakes a self-push');
+  assert(dashHit.some(function (e) { return e.type === 'push' && e.wizardId === dashPrey.id; }), 'beetle shove is still a real push');
+  assert(typeof dashAtk.strikeOrder === 'number', 'strike carries its number');
+  assert(dashAtk.tiles && dashAtk.tiles.length >= 1, 'charge attack keeps the aimed tiles for FX');
+
+  const shotPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  shotPrey.state = 'onboard';
+  shotPrey.row = 2;
+  shotPrey.col = 6;
+  shotPrey.hp = 10;
+  const lineBomber = createDefensePawn(state, 'fireball', {
+    state: 'onboard', row: 2, col: 2, hp: 3, maxHp: 3, intent: { kind: 'fireball', dr: 0, dc: 1 }
+  });
+  const shotHit = simDefenseExecutePawn(state, lineBomber);
+  const shotAtks = shotHit.filter(function (e) { return e.type === 'attack'; });
+  assert(shotAtks.length === 1, 'bomber emits one attack event');
+  assert(shotAtks[0].tiles && shotAtks[0].tiles.length === 4, 'bomber attack lists the whole shot line');
+  assert(shotPrey.hp === 9, 'bomber still deals 1');
+
+  const punchPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  punchPrey.state = 'onboard';
+  punchPrey.row = 8;
+  punchPrey.col = 1;
+  punchPrey.hp = 10;
+  const puncher = createDefensePawn(state, 'melee', {
+    state: 'onboard', row: 8, col: 0, hp: 3, maxHp: 3, intent: { kind: 'melee', dr: 0, dc: 1 }
+  });
+  const punchHit = simDefenseExecutePawn(state, puncher);
+  const punchAtk = punchHit.find(function (e) { return e.type === 'attack'; });
+  assert(punchAtk && punchAtk.tiles && punchAtk.tiles.length === 1, 'melee attack keeps its one tile');
+  assert(punchAtk.kind === 'melee', 'melee stays a melee event');
+
+  const aimer = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 7, hp: 3, maxHp: 3, hasMoved: true, intent: null });
+  const bait = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  bait.state = 'onboard';
+  bait.row = 1;
+  bait.col = 7;
+  bait.hp = 8;
+  const aimed = assignDefenseIntent(state, aimer);
+  assert(aimed && aimed.type === 'intent' && aimer.intent, 'telegraph is an intent event when a target is adjacent');
+  assert(aimer.intent.dr === 1 && aimer.intent.dc === 0, 'adjacent brute aims at the wizard');
+  bait.state = 'dead';
+  bait.row = null;
+  bait.col = null;
+  const airSwing = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 0, hp: 3, maxHp: 3, hasMoved: true, intent: null });
+  assert(!pickDefenseIntent(state, airSwing), 'brute does not melee into empty air');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+      w.intent = null;
+    }
+  });
+  assert(defenseFieldClear(state), 'killing every pawn clears the field');
+  assert(defenseSpawnCount(state) === 0, 'a clear field does not queue a new wave');
+  assert(checkWinLoss(state) === 'player', 'defense wins when the field is clear');
+  const wipePhase = simDefenseEnemyPhase(state);
+  assert(!wipePhase.some(function (e) { return e.type === 'emergeMark'; }), 'enemy phase does not spawn after a wipe');
+  assert(defensePawns(state, ['emerging']).length === 0, 'no incoming marks after a wipe');
+  assert(checkWinLoss(state) === 'player', 'wipe still wins after the empty enemy phase');
+  const wipeEnd = simEndPlayerTurn(state);
+  assert(wipeEnd.some(function (e) { return e.type === 'gameOver' && e.result === 'player'; }), 'ending the turn after a wipe emits you win');
+  assert(state.gameOverResult === 'player', 'match records a player win');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  const leftover = defensePawns(state, ['onboard'])[0];
+  leftover.state = 'dead';
+  leftover.row = null;
+  leftover.col = null;
+  leftover.intent = null;
+  if (defensePawns(state, ['onboard']).length === 0) {
+    createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 5, maxHp: 5 });
+  }
+  assert(checkWinLoss(state) === null, 'one living pawn keeps the fight going');
+  assert(defenseSpawnCount(state) > 0, 'a living pawn still draws reinforcements');
 
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);

@@ -183,6 +183,7 @@ function getCastTiles(match, wizard) {
   const kind = wizard.castKind || 'stream';
   if (kind === 'pulse') return getPulseTiles(match, wizard);
   if (kind === 'gust') return getLineCastTiles(match, wizard, wizard.castRange || 3);
+  if (kind === 'pull') return getLineCastTiles(match, wizard, wizard.castRange || 3);
   if (kind === 'raise') return getRaiseTiles(match, wizard);
   if (kind === 'bolt') return getBoltTiles(match, wizard);
   if (kind === 'swap') return getSwapTiles(match, wizard);

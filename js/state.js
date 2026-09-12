@@ -25,11 +25,14 @@ const state = {
   maxMana: 0,
   enemyMana: 0,
   enemyMaxMana: 0,
+  playerSummonedThisTurn: false,
   seed: 1,
   rng: null,
   log: [],
   fxEnabled: true,
   matchId: 0,
   aiBrain: 'hunter',
-  gameMode: 'defense'
+  gameMode: 'defense',
+  mapId: '',
+  mapName: ''
 };

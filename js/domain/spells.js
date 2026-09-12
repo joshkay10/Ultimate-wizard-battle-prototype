@@ -2,12 +2,15 @@ const SPELLS = [
   { id: 'stream', name: 'Stream', element: 'fire', kind: 'stream', hint: 'line of 4 — paints fire', castRange: 4, castAttack: 3, castDisplacement: 1, paint: true },
   { id: 'inferno', name: 'Inferno', element: 'fire', kind: 'burst', hint: '3×3 fire — burns, paints magma', castRange: 3, castAttack: 2, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 1 },
   { id: 'cinder', name: 'Cinder', element: 'fire', kind: 'burst', hint: 'one tile — paints fire', castRange: 4, castAttack: 2, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 0 },
+  { id: 'brand', name: 'Brand', element: 'fire', kind: 'stream', hint: 'line of 3 — 1 now, 2 burn when they next act', castRange: 3, castAttack: 1, castDisplacement: 0, paint: true, burn: 2 },
   { id: 'pulse', name: 'Pulse', element: 'ice', kind: 'pulse', hint: 'hits every neighbor', castRange: 1, castAttack: 2, castDisplacement: 1, paint: true },
   { id: 'blizzard', name: 'Blizzard', element: 'ice', kind: 'burst', hint: '3×3 ice — freezes the ground', castRange: 3, castAttack: 1, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 1 },
   { id: 'sheet', name: 'Sheet', element: 'ice', kind: 'stream', hint: 'line of 4 — paints ice, no push', castRange: 4, castAttack: 1, castDisplacement: 0, paint: true },
+  { id: 'lock', name: 'Lock', element: 'ice', kind: 'stream', hint: 'line of 3 — skip their next strike', castRange: 3, castAttack: 1, castDisplacement: 0, paint: true, root: true },
   { id: 'gust', name: 'Gust', element: 'wind', kind: 'gust', hint: 'line of 3 — big push, paints wind', castRange: 3, castAttack: 1, castDisplacement: 3, paint: true },
   { id: 'gale', name: 'Gale', element: 'wind', kind: 'burst', hint: '3×3 wind — shove out, paints wind', castRange: 3, castAttack: 0, castDisplacement: 1, paint: true, hitNexus: false, burstRadius: 1 },
   { id: 'draft', name: 'Draft', element: 'wind', kind: 'stream', hint: 'line of 4 — huge push, paints wind', castRange: 4, castAttack: 0, castDisplacement: 4, paint: true },
+  { id: 'tug', name: 'Tug', element: 'wind', kind: 'pull', hint: 'line of 3 — yank toward you, paints wind', castRange: 3, castAttack: 1, castDisplacement: 3, paint: true },
   { id: 'raise', name: 'Raise', element: 'earth', kind: 'raise', hint: 'empty tile becomes a mountain', castRange: 2, castAttack: 0, castDisplacement: 0, paint: false },
   { id: 'quake', name: 'Quake', element: 'earth', kind: 'burst', hint: '3×3 shock — hits crystals too', castRange: 2, castAttack: 2, castDisplacement: 1, paint: false, hitNexus: true, burstRadius: 1 },
   { id: 'spike', name: 'Spike', element: 'earth', kind: 'burst', hint: 'one tile smash — hits crystals', castRange: 2, castAttack: 3, castDisplacement: 0, paint: false, hitNexus: true, burstRadius: 0 },
@@ -63,6 +66,8 @@ function applySpellToWizard(wizard, spell) {
   wizard.spellPaint = spell.paint !== false;
   wizard.spellSilence = !!spell.silence;
   wizard.spellHitNexus = !!spell.hitNexus;
+  wizard.spellRoot = !!spell.root;
+  wizard.spellBurn = spell.burn || 0;
   wizard.burstRadius = spell.burstRadius == null ? 1 : spell.burstRadius;
 }
 

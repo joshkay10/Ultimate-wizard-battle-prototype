@@ -61,7 +61,7 @@ function wizardActPriority(wizard, team) {
 async function teamSummonPhase(team) {
   while (true) {
     const affordable = Object.values(state.wizards).filter(
-      w => w.team === team && w.state === 'summoned' && teamMana(state, team) >= w.cost
+      w => canPaySummon(state, w, team)
     );
     if (!affordable.length) break;
 
@@ -194,6 +194,13 @@ function attackScore(wizard, tile, kind, team) {
       const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
       if (hazardAt(state, tile.row + dir.dr, tile.col + dir.dc)) score += 95;
     }
+    if (kind === 'cast' && wizard.castKind === 'pull') {
+      score += wizard.castDisplacement * 4;
+      const dir = directionBetween(wizard.row, wizard.col, tile.row, tile.col);
+      if (hazardAt(state, tile.row - dir.dr, tile.col - dir.dc)) score += 95;
+    }
+    if (kind === 'cast' && wizard.spellRoot) score += 70;
+    if (kind === 'cast' && wizard.spellBurn) score += 40;
   }
   if (kind === 'cast' && wizard.castKind === 'bolt') {
     score += countBoltJumpFoes(wizard, tile, team) * 70;

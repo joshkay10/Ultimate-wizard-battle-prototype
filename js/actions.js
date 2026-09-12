@@ -2,7 +2,7 @@ function pickWizardToSummon(id) {
   if (state.animating || !canAct()) return;
   const wizard = state.wizards[id];
   if (!wizard || wizard.state !== 'summoned') return;
-  if (state.mana < wizard.cost) return;
+  if (!canPaySummon(state, wizard, 'player')) return;
   state.selectedWizardId = null;
   state.placingWizardId = (state.placingWizardId === id) ? null : id;
   render();

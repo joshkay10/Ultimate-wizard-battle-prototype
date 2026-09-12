@@ -36,16 +36,16 @@ function renderTodoPage() {
 
       '<h2>Loop</h2>' +
       '<ul class="todo-list">' +
+        item('<strong>Badges and bosses</strong> — named missions. Stamp a badge when you clear. A boss at the end of a track.') +
+        item('<strong>Power spikes</strong> — unlock a spell, a kit, or a big stat bump between badges. Not a relic shop, not a roguelike run.') +
         item('<strong>Seeded daily / share seed</strong> — one board + enemy roll to race and send.') +
-        item('<strong>Short run</strong> — three fights, pick a spell upgrade between them.') +
-        item('<strong>Draft bigger</strong> — see more spells, lock one per body, leftover become the shop.') +
         item('<strong>First-fight tutorial</strong> — one scripted board for portal, crash chain, ice slide, undo.') +
       '</ul>' +
 
       '<h2>Combat</h2>' +
       '<ul class="todo-list">' +
-        item('<strong>Pull / grab spells</strong> — yank so chains go both ways.') +
-        item('<strong>Unit statuses</strong> — burn on the body, wet, rooted. Trails stay; this is extra.') +
+        item('<strong>Pull / grab spells</strong> — Tug yanks toward you. Done.', 'done') +
+        item('<strong>Unit statuses</strong> — Lock skips the next strike. Brand burns when they next act. Wet / rooted-on-the-body beyond that still open.') +
         item('<strong>Overwatch</strong> — a spell that fires when someone steps a painted line.') +
         item('<strong>More bodies</strong> — new kits, not just more spells on the six.') +
         item('<strong>Hazard paint</strong> — drop a one-tile water or pit.') +
@@ -90,9 +90,9 @@ function renderElementsPage() {
 
       '<h2>Kits</h2>' +
       '<div class="kit-grid">' +
-        kitCard('fire', 'Pyre', 'Stream · Inferno · Cinder', 'Line, 3×3 fire, or one-tile cinder') +
-        kitCard('ice', 'Rime', 'Pulse · Blizzard · Sheet', 'Neighbors, 3×3 freeze, or ice line') +
-        kitCard('wind', 'Squall', 'Gust · Gale · Draft', 'Line shove, 3×3 shove, or long shove') +
+        kitCard('fire', 'Pyre', 'Stream · Inferno · Cinder · Brand', 'Line, 3×3 fire, one-tile cinder, or burn for later') +
+        kitCard('ice', 'Rime', 'Pulse · Blizzard · Sheet · Lock', 'Neighbors, 3×3 freeze, ice line, or skip their next strike') +
+        kitCard('wind', 'Squall', 'Gust · Gale · Draft · Tug', 'Line shove, 3×3 shove, long shove, or yank toward you') +
         kitCard('earth', 'Cairn', 'Raise · Quake · Spike', 'On the bench for now') +
         kitCard('lightning', 'Volt', 'Bolt · Arc · Jolt', 'On the bench for now') +
         kitCard('temporal', 'Chrono', 'Swap · Step · Loop', 'On the bench for now') +

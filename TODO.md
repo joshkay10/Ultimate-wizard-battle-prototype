@@ -11,9 +11,9 @@ Element icons are in (`img/elements.png`, 6×256 white-on-transparent). Wizard p
 
 ## Loop
 
+- [ ] **Badges and bosses** — named missions. Stamp a badge when you clear. A boss at the end of a track.
+- [ ] **Power spikes** — unlock a spell, a kit, or a big stat bump between badges. Not a relic shop, not a roguelike run.
 - [ ] **Seeded daily / share seed** — one board + enemy roll to race and send to a friend.
-- [ ] **Short run** — three fights in a row, pick a spell upgrade between them (Slay the Spire without the 50-floor slog).
-- [ ] **Draft bigger, bring four** — see six spells per element, lock one per body, leftover become the shop.
 - [ ] **First-fight tutorial** — one scripted board that teaches portal, crash chain, ice slide, and undo.
 
 ## Combat

@@ -4,20 +4,20 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Weak black-disc enemies telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Each strike finishes — damage, death, and voids — before the next pawn winds up. They hunt the city first. They will not aim a charge into water or a void; you can still shove them into one. New bodies stream in at a varying rate (quiet turns and busy turns, cap 7). **1–2** pawns can already be on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. Drop a wizard **anywhere** on an open tile — they land **immediately**, burst (push only), then are spent that turn. The map is not mirrored. You lose if the cluster falls or your wizards are wiped. Clearing a wave does not end the fight.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **3** on the board at once (Into the Breach’s usual island). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. No mana. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
 
-Black discs, white icons, 2–5 HP. Each body has one trick. Red tiles show the strike they will take after your turn.
+Black chevrons, white icons. Each body is one Into the Breach archetype, 1 damage. They attack **wizards and the city**. Red tiles show the strike they will take after your turn — only if that strike hits someone.
 
-| Body | HP | Trick |
-| --- | --- | --- |
-| Brute | 4–5 | Melee the adjacent tile in the aimed direction |
-| Charger | 3–4 | Charge up to 3 tiles that way. Hits the first body or nexus. Runs into water or a void and falls |
-| Bomber | 2–3 | Fireball, line 4, first wizard or nexus |
+| Body | HP | Move | Trick |
+| --- | --- | --- | --- |
+| Brute | 3 | 3 | Melee the adjacent tile (Scorpion) |
+| Charger | 4 | 3 | Charge up to 3 tiles. 1 dmg, then **push 1** if they live. Dies in water (Beetle) |
+| Bomber | 3 | 2 | Line 4, 1 dmg, first wizard or nexus (Firefly) |
 
-If you push them, they still fire in the **same direction** from the new tile. Strikes resolve one body at a time: the hit, any death, and any void it opens are on the board before the next pawn acts. Then each body walks and **declares its next strike** before the next body moves. They will not aim a charge into water or a void. Incoming marks appear on the far edge and flanks and arrive after they execute. There are **no incoming marks on round 1** — they show up after the first enemy phase. They hunt your nexuses: a crystal shot beats a wizard shot, and they march on the city if they cannot hit a crystal this turn. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **1–2** of them can already be on the board with **no telegraph yet** — they aim after the first enemy phase.
+If you push them, they still fire in the **same direction** from the new tile. Strikes resolve one body at a time, **north to south, then west to east** (the telegraph shows 1, 2, 3). Pushing someone south can make them strike later. The hit, any death, and any void it opens are on the board before the next pawn acts. Then each body walks in that same order and **declares its next strike** before the next body moves — or walks without a telegraph if nothing is in range. Later walkers treat tiles already aimed by an earlier pawn as bad ground to stand on. They will not aim a charge into water or a void. A match is **10 invaders** including the opening bodies. At most **3** on the board at once. Incoming is **one hole per enemy phase**. Holes open on open field ground, not the last two rows, and not on city, water, or mountains. They can start far from the city. Standing on a hole blocks it. There are **no incoming marks on round 1** — they show up after the first enemy phase. They **beeline the city**. If they cannot hit a nexus this turn they punch a wizard in range, otherwise they walk toward the city. They never telegraph empty air. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **one** of them is already on the board with **no telegraph yet** — they aim after the first enemy phase if a target is in range.
 
 ## Team
 
@@ -25,22 +25,23 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
-- Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
+- **Defense:** one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.
+- **Vs:** pay mana. Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
 
-- **Defense** — only your camp. **3–6 nexuses** at **2 HP**, packed in one or two connected city blobs (Into the Breach style) in the lower-middle of the board. No enemy crystals. Opening: **1–2** pawns already on the board with no telegraph and **no incoming marks**. Incoming shows up after the first enemy phase. Later incoming counts vary by seed.
+- **Defense** — only your camp. **3–6 nexuses** at **2 HP**, packed in one or two connected city blobs on a **named island** (the pass, the canal, the moat, twin towns, the alley, and more) in the lower-middle of the board. Terrain can sit against the city. No enemy crystals. Opening: **one** pawn on the board with no telegraph and **no incoming marks**. Incoming is one hole per enemy phase, after the first enemy phase. A match is **10 invaders** including the opening. At most **3** on the board at once. Incoming holes open on open field ground, not the last two rows. They can start far from the city.
 - **Vs** — each player has **three nexuses** (5 HP each): two on the back line (wings) and one a step forward in the center. You must drop **all** of a side’s crystals to win that way.
-- **Mountains** sit in edge ridges. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
-- **Water** appears on some maps (not every seed). You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
+- **Mountains** sit in ridges, walls, and gates. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
+- **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
-- **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. **Defense** maps are not mirrored — ridges and water can sit on one side only.
-- Round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn.
+- **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. Some Vs maps open a mountain **gate** in the mid file. **Defense** maps are named islands and are not mirrored.
+- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. **Defense has no mana** — one drop per round instead.
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought.
+Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores it. On the board, your wizards are **hex gems**. Defense vek are **dark chevrons** that point at the strike when they have one, otherwise toward the city.
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
 | --- | --- | --- | --- | --- | --- |
@@ -89,9 +90,9 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 
 On your turn you may, in any order:
 
-1. **Summon** — pay a wizard’s cost.
-   - **Defense:** drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
-   - **Vs:** open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, also bursts, then is sick that turn. If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
+1. **Summon**
+   - **Defense:** **one wizard per round**. Cost is ignored. Drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
+   - **Vs:** pay the wizard’s cost. Open a **portal** in your back 3 rows (not on a nexus, mountain, water, occupied tile, or another portal). The wizard arrives at the start of your **next** turn, also bursts, then is sick that turn. If **anyone** (ally or enemy) is standing on the portal when it resolves, the incoming wizard **and** the one standing there both die. Same rules for the enemy.
 2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
 4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
@@ -100,7 +101,8 @@ On your turn you may, in any order:
 
 - **Melee** hits an adjacent tile (up, down, left, right). Mountains, water, and voids are not melee targets.
 - A hit deals that attack’s damage, then **pushes** the target that many tiles away (0 push means they stay).
-- **Crash:** if the push hits a wall (edge, mountain, or living nexus), the pushed wizard takes **1** damage — even if they never leave their tile. A crash into a **nexus** also deals 1 to the crystal. Hitting **another wizard** deals 1 to both, then leftover knockback transfers into that wizard: they may crash the next body in line, and the last one slides. A line of five can hurt five. Water and voids are not walls — you are pushed onto the tile and you fall (the token shrinks down). Wind carry into a wall or wizard also crashes.
+- **Crash:** if the push hits a wall (edge, mountain, or living nexus), leftover knockback **smashes**. Crash damage on a wizard is the leftover pips (at least 1). Pin them with a 3-pip gust and they take 3, not a flat 1. Hitting **another wizard** smashes both, then leftover knock transfers — a packed line can hurt everyone, and the last wizard slides. A crash into a **nexus** still deals **1** to the crystal, so leftover force does not delete the city. Water and voids are not walls — you are pushed onto the tile and you fall (the token shrinks down). Wind carry into a wall or wizard also crashes.
+- A hit that deals more than remaining HP still **pushes the body**. Overflow pops as overkill. Mega damage bowls; it does not delete the slam.
 - Friendly fire is on — you can melee or cast your own wizards. Pulse, jolt, and bursts hit everyone in the area.
 - HP 0 = dead, token leaves the board.
 - Stream, gust, sheet, draft, pulse, inferno, blizzard, gale, and cinder leave an elemental trail on tiles they travel / hit. Hitting an **empty tile is valid** for paint spells — that is how you paint the ground. Trails last about one round (through the opponent’s turn).
@@ -110,8 +112,8 @@ On your turn you may, in any order:
 
 ## Winning
 
-Checked after each side’s turn (not on that side’s very first turn):
+Checked after each side’s turn (not on that side’s very first turn, except a Defense wipe, which also checks as soon as the last pawn dies):
 
-- **Defense:** you lose if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. Waves do not end the fight. There is no enemy camp to knock out.
+- **Defense:** you **win** if no enemy pawns are on the board or incoming. You **lose** if **all** of your clustered nexuses are at 0 HP, or you have no wizards left in hand or on the board. New bodies only stream in if someone is still standing and the **10 invaders** are not all out. There is no enemy camp to knock out.
 - **Vs:** you win if **all** enemy nexuses are at 0 HP, or they have no wizards left in hand or on the board.
 - Draw if both sides lose at the same time (Vs).
