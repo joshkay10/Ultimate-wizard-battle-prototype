@@ -285,6 +285,14 @@ html, body {
   border-color: var(--wind);
   color: var(--wind);
 }
+.track-pip.is-star:not(.is-now) {
+  border-color: var(--lightning);
+  color: var(--lightning);
+  box-shadow: 0 0 0 1px var(--lightning);
+}
+.track-pip.is-star.is-now {
+  box-shadow: 0 0 0 2px var(--lightning);
+}
 .track-pip.is-locked {
   opacity: 0.35;
   cursor: default;

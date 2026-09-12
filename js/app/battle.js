@@ -21,6 +21,8 @@ function startBattle(seed) {
   if (seed == null) seed = opts.seed || ((Date.now() >>> 0) || 1);
   resetMatch(state, seed, opts);
   state.matchBestCombo = 0;
+  state.matchDunks = 0;
+  state.justUnlocked = false;
   state.resultRecorded = false;
   state.matchSummary = null;
 }

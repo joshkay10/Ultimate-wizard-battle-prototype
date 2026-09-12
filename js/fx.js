@@ -124,6 +124,18 @@ function countEnemyDeaths(events) {
   return n;
 }
 
+function countHazardEnemyDeaths(events) {
+  let n = 0;
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    if (ev.type !== 'death') continue;
+    if (ev.cause !== 'water' && ev.cause !== 'void') continue;
+    const team = ev.team || (state.wizards[ev.wizardId] && state.wizards[ev.wizardId].team);
+    if (team === 'enemy') n += 1;
+  }
+  return n;
+}
+
 function triggerCombo(count) {
   if (count < 2) return;
   const sub = count >= 4 ? 'devastating!' : (count === 3 ? 'unstoppable!' : 'nice chain!');
@@ -143,6 +155,24 @@ function triggerCombo(count) {
   ensureFxLoop();
 }
 
+function triggerDunk(count) {
+  if (count < 1) return;
+  boardFx.combo = { text: dunkLabel(count), sub: 'into the drink!', count: count, t: 0 };
+  boardFx.shake = Math.max(boardFx.shake, 8 + count * 3);
+  boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.28 + Math.min(0.3, count * 0.1));
+  if (typeof boardLayout === 'function') {
+    const layout = boardLayout();
+    if (layout) {
+      const cx = layout.css / 2;
+      const cy = layout.css * 0.4;
+      spawnBurst(cx, cy, BOARD_COLORS.water || '#4aa3c7', 16 + count * 4, 5);
+      spawnBurst(cx, cy, '#ffffff', 8, 3.2);
+    }
+  }
+  if (count > (state.matchBestCombo || 0)) state.matchBestCombo = count;
+  ensureFxLoop();
+}
+
 async function playEvents(events) {
   if (!events || !events.length) {
     if (typeof render === 'function') render();
@@ -151,6 +181,7 @@ async function playEvents(events) {
   state.animating = true;
   const matchId = state.matchId;
   const comboKills = state.currentTurn === 'player' ? countEnemyDeaths(events) : 0;
+  const dunkKills = state.currentTurn === 'player' ? countHazardEnemyDeaths(events) : 0;
   try {
     rewindForFx(events);
     pinRewindHolds(events);
@@ -173,7 +204,11 @@ async function playEvents(events) {
         i++;
       }
     }
-    if (comboKills >= 2 && state.matchId === matchId) triggerCombo(comboKills);
+    if (state.matchId === matchId) {
+      if (dunkKills >= 1 && dunkKills >= comboKills) triggerDunk(dunkKills);
+      else if (comboKills >= 2) triggerCombo(comboKills);
+      else if (dunkKills >= 1) triggerDunk(dunkKills);
+    }
   } finally {
     boardFx.flash = null;
     boardFx.projectile = null;
@@ -1248,6 +1283,12 @@ async function playDeath(ev) {
   const fall = ev.cause === 'water' || ev.cause === 'void';
   if (ev.row != null && !fall) {
     boardFx.popups.push({ row: ev.row, col: ev.col, text: 'out', t: 0 });
+  }
+  if (fall && ev.team === 'enemy') {
+    state.matchDunks = (state.matchDunks || 0) + 1;
+    if (ev.row != null) {
+      boardFx.popups.push({ row: ev.row, col: ev.col, text: 'dunk', t: 0, element: 'wind' });
+    }
   }
   const w = state.wizards[ev.wizardId];
   const layout = boardLayout();

@@ -2098,6 +2098,18 @@ async function runSimSelfTests() {
     assert(mission.goal && mission.hint && mission.name, mission.id + ' has player-facing copy');
   });
 
+  resetMatch(state, 11, { missionId: 'mission-2' });
+  state.fxEnabled = false;
+  const canalOpener = defensePawns(state, ['onboard'])[0];
+  assert(canalOpener && canalOpener.pawnKind === 'charge', 'the canal opens with a charger');
+  assert(waterAt(state, canalOpener.row, canalOpener.col - 1), 'the charger sits one tile from the river — a dunk');
+
+  resetMatch(state, 23, { missionId: 'mission-4' });
+  state.fxEnabled = false;
+  const moatOpener = defensePawns(state, ['onboard'])[0];
+  assert(moatOpener && moatOpener.pawnKind === 'golem', 'the moat opens with a golem');
+  assert(waterAt(state, moatOpener.row, moatOpener.col + 2), 'a 3-pip gust from the west dunks the golem');
+
   resetMatch(state, 7, { missionId: 'mission-1' });
   state.fxEnabled = false;
   const passOpener = defensePawns(state, ['onboard'])[0];

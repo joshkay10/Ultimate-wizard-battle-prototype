@@ -68,6 +68,10 @@ function maybeRecordResult() {
     ? recordMatchStats(mode, state.gameOverResult, flawless)
     : { stats: { streak: 0, best: 0, flawless: 0, wins: 0 }, prevStreak: 0 };
   const playerNex = state.nexuses && state.nexuses.player ? state.nexuses.player : [];
+  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
+  const next = mission && typeof nextMission === 'function' ? nextMission(mission) : null;
+  const campaignBefore = typeof loadCampaign === 'function' ? loadCampaign() : null;
+  const nextWasOpen = !!(next && typeof missionIsUnlocked === 'function' && campaignBefore && missionIsUnlocked(next, campaignBefore));
   state.matchSummary = {
     result: state.gameOverResult,
     mode: mode,
@@ -75,12 +79,11 @@ function maybeRecordResult() {
     invaders: typeof defenseEverSpawned === 'function' ? defenseEverSpawned(state) : 0,
     invadersTotal: typeof defenseSpawnBudget === 'function' ? defenseSpawnBudget(state) : DEFENSE_SPAWN_BUDGET,
     missionTitle: state.missionTitle || '',
-    missionName: (typeof missionById === 'function' && state.missionId && missionById(state.missionId))
-      ? (missionById(state.missionId).name || state.missionTitle)
-      : (state.missionTitle || ''),
+    missionName: mission ? (mission.name || state.missionTitle) : (state.missionTitle || ''),
     crystals: playerNex.filter(function (n) { return n.hp > 0; }).length,
     crystalsTotal: playerNex.length,
     flawless: flawless,
+    dunks: state.matchDunks || 0,
     bestCombo: state.matchBestCombo || 0,
     stats: rec.stats,
     prevStreak: rec.prevStreak
@@ -88,6 +91,7 @@ function maybeRecordResult() {
   if (state.gameOverResult === 'player' && state.missionId && typeof recordCampaignClear === 'function') {
     recordCampaignClear(state.missionId, flawless);
   }
+  state.justUnlocked = !!(state.gameOverResult === 'player' && next && !nextWasOpen);
 }
 
 function renderPanel() {
@@ -286,6 +290,9 @@ function renderGameOverStats() {
   if (isDefense && win) {
     chips.push(statChip('crystals held', s.crystals + '/' + s.crystalsTotal, s.flawless ? 'good' : ''));
   }
+  if (s.dunks >= 1) {
+    chips.push(statChip('dunks', s.dunks, 'hot'));
+  }
   if (s.bestCombo >= 2) {
     chips.push(statChip('best combo', '\u00d7' + s.bestCombo, 'hot'));
   }
@@ -310,7 +317,8 @@ function renderGameOverOverlay() {
     sub = 'all nexuses on both sides fell at the same time';
   } else if (win) {
     heading = mission ? (mission.name || mission.title) : 'you win';
-    if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
+    if (mission && next && state.justUnlocked) sub = next.name + ' is open.';
+    else if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
     else if (mission) sub = 'The four islands are yours.';
     else sub = 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
@@ -448,7 +456,8 @@ function renderCampaignTrack() {
     const open = typeof missionIsUnlocked === 'function' ? missionIsUnlocked(m, campaign) : true;
     const on = selected === m.id;
     const cleared = !!(campaign.cleared && campaign.cleared[m.id]);
-    html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
+    const star = !!(cleared && campaign.cleared[m.id].flawless);
+    html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (star ? ' is-star' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (star ? ' · flawless' : (cleared ? ' · clear' : '')) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
   });
   html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
   html += '</div>';

@@ -22,7 +22,7 @@ Team and Elements stay hand-built in `js/pages.js` / `js/app/team-page.js`.
 
 `js/domain/missions.js` is the four named Defense fights. Each pins `islandId`, `loadout`, `spawnBudget`, `pawnCap`, `spawnKinds`, `cityExtra`, opening kind/tile, and player-facing `goal` / `hint`. Add a mission there. The battle track reads `MISSIONS`. Do not copy the list into `js/ui.js`.
 
-Named missions keep the remaining spawn budget after a wipe (killing the opener does not win). Clearing an island unlocks the next (`applyMissionClear`). Mission loadouts are **not** padded to four — island 1 is one wizard, then 2, 3, and a full four. Random Defense (no `missionId`) still ends on a wipe and still fields four. Vs is free-play with the Team-page loadout.
+Named missions keep the remaining spawn budget after a wipe (killing the opener does not win). Clearing an island unlocks the next (`applyMissionClear`). Mission loadouts are **not** padded to four — island 1 is one wizard, then 2, 3, and a full four. Random Defense (no `missionId`) still ends on a wipe and still fields four. Vs is free-play with the Team-page loadout. Defense vek are **dark discs** (facing wedge for aim); wizards stay hexes.
 
 ## Tests
 
