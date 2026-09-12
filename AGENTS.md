@@ -39,6 +39,7 @@ That runs `test/sim-node.js`, `test/combo-check.js`, and `test/markdown-check.js
 - Beeline the nearest city nexus. Wizard shot only if the city is out of reach this turn.
 - `pickDefenseIntent` never aims empty air.
 - Cap **3** vek on the board. **10** invaders total. **One** incoming hole per enemy phase.
-- No Defense mana. **One drop per round**, land immediately.
+- **One drop per round**, land immediately. Defense mana (start 2, +1/round, cap 6) is **specials only**.
+- Mites are 1 HP fodder and may stack (still 1 HP, hit ×2). Golems are heavies you shove into hazards.
 - Charge: body walks the path; the attack event has `path`, `spellName: 'Charge'`, `castKind: 'gust'`, 1 dmg + push 1.
 - Smash leftover knockback. City crash stays 1.

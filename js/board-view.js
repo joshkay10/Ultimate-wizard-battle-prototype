@@ -151,7 +151,7 @@ function highlightSet() {
     if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
       return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
     }
-    if (state.selectedAction === 'cast' && canAttack(selectedWizard)) {
+    if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
       return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }
@@ -193,7 +193,7 @@ function tileFill(row, col, highlight, kind, castKind) {
       if (castKind === 'raise') return '#e8ddc8';
       if (castKind === 'bolt') return '#f3e9c4';
       if (castKind === 'swap' || castKind === 'blink') return '#eadff3';
-      if (castKind === 'stream') return '#f4ddd6';
+      if (castKind === 'stream' || castKind === 'pierce') return '#f4ddd6';
       return BOARD_COLORS.cast;
     }
     return BOARD_COLORS.move;
@@ -638,16 +638,17 @@ function drawEmerging(ctx, box, pawn) {
   const t = performance.now() / 380;
   const style = defenseTelegraphStyle(pawn.pawnKind);
   const face = vekFacing(pawn);
+  const sizeF = (typeof pawnSizeFactor === 'function' ? pawnSizeFactor(pawn) : 0.36) / 0.36;
   ctx.save();
   ctx.strokeStyle = style.edge;
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
   ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
-  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32, face.dr, face.dc));
+  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32 * sizeF, face.dr, face.dc));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
-  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18, style.edge);
+  drawElementIcon(ctx, pawn.element, cx, cy, box.s * 0.18 * sizeF, style.edge);
   ctx.save();
   ctx.fillStyle = style.edge;
   ctx.globalAlpha = 0.9;
@@ -968,6 +969,12 @@ function tokenShapePts(wizard, cx, cy, r) {
   return hexVerts(cx, cy, r);
 }
 
+function pawnSizeFactor(wizard) {
+  if (wizard && wizard.pawnKind === 'golem') return 0.52;
+  if (wizard && wizard.pawnKind === 'mite') return (wizard.stack || 1) >= 2 ? 0.23 : 0.2;
+  return 0.36;
+}
+
 function drawActionPip(ctx, x, y, r, spent, yours) {
   ctx.beginPath();
   canvasArc(ctx, x, y, r);
@@ -988,7 +995,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   const fall = boardFx.fall[wizard.id] || 0;
   const cy = box.y + box.s / 2 + fall;
   scale = tokenPopScale(scale);
-  const r = box.s * 0.36;
+  const r = box.s * pawnSizeFactor(wizard);
   const yours = wizard.team !== 'enemy';
   const colors = puckStyle(wizard, flash);
   const spentTurn = wizard.team === state.currentTurn && (
@@ -999,6 +1006,10 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   if (spentTurn && !flash) ctx.globalAlpha = 0.55;
+  if (!flash && wizard.pawnKind === 'mite' && (wizard.stack || 1) >= 2) {
+    const backPts = tokenShapePts(wizard, cx - r * 1.0, cy - r * 0.75, r * 0.95);
+    drawShapedBody(ctx, backPts, Math.max(3, r * 0.28), false, colors);
+  }
   const pts = tokenShapePts(wizard, cx, cy, r);
   drawShapedBody(ctx, pts, Math.max(3.2, r * 0.3), flash, colors);
   if (!flash && !yours && !wizard.pawnKind) {
@@ -1065,6 +1076,18 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
+  if (!flash && wizard.pawnKind === 'mite' && (wizard.stack || 1) >= 2) {
+    ctx.save();
+    ctx.font = '800 ' + Math.max(9, box.s * 0.17) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = Math.max(2, box.s * 0.032);
+    ctx.strokeStyle = 'rgba(28,30,27,0.9)';
+    ctx.fillStyle = '#f4f5f2';
+    ctx.strokeText('\u00d72', cx + r * 0.9, cy - r * 0.85);
+    ctx.fillText('\u00d72', cx + r * 0.9, cy - r * 0.85);
+    ctx.restore();
+  }
   if (!flash && wizard.pawnKind && wizard.intent) {
     const ring = defenseTelegraphStyle(wizard.pawnKind);
     ctx.save();
@@ -1545,7 +1568,7 @@ function drawBoard() {
           : marks.kind === 'cast' && marks.castKind === 'burst' ? BOARD_COLORS[(state.selectedWizardId && state.wizards[state.selectedWizardId] && state.wizards[state.selectedWizardId].element) || 'cast']
           : marks.kind === 'cast' && marks.castKind === 'gust' ? BOARD_COLORS.wind
           : marks.kind === 'cast' && marks.castKind === 'pull' ? BOARD_COLORS.wind
-          : marks.kind === 'cast' && marks.castKind === 'stream' ? BOARD_COLORS.fire
+          : marks.kind === 'cast' && (marks.castKind === 'stream' || marks.castKind === 'pierce') ? BOARD_COLORS.fire
           : marks.kind === 'cast' ? BOARD_COLORS.castBorder
           : BOARD_COLORS.moveBorder;
         ctx.setLineDash([4, 3]);

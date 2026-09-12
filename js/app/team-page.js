@@ -19,31 +19,44 @@ function kitCount(draft, kitId) {
   return n;
 }
 
+function teamSpellButtons(slot, index, pool, slotKind) {
+  return pool.map(function (spell) {
+    const active = (slotKind === 'special' ? slot.special : slot.spell) === spell.id;
+    const costTag = slotKind === 'special'
+      ? ' <span class="spell-cost">' + spell.special + ' mana</span>'
+      : '';
+    return (
+      '<button type="button" class="team-spell' + (active ? ' selected' : '') + '" data-slot-index="' + index + '" data-spell-slot="' + slotKind + '" data-spell-id="' + spell.id + '">' +
+        '<span class="spell-name">' + spell.name + costTag + '</span>' +
+        '<span class="spell-hint">' + spell.hint + '</span>' +
+      '</button>'
+    );
+  }).join('');
+}
+
 function renderTeamPage() {
   const selected = teamDraftList();
   const roster = selected.map(function (slot, index) {
     const kit = kitById(slot.kit);
-    const spells = spellsForElement(kit.element).map(function (spell) {
-      const picked = slot.spell === spell.id;
-      return (
-        '<button type="button" class="team-spell' + (picked ? ' selected' : '') + '" data-slot-index="' + index + '" data-spell-id="' + spell.id + '">' +
-          '<span class="spell-name">' + spell.name + '</span>' +
-          '<span class="spell-hint">' + spell.hint + '</span>' +
-        '</button>'
-      );
-    }).join('');
+    const basics = teamSpellButtons(slot, index, basicsForElement(kit.element), 'basic');
+    const specials = teamSpellButtons(slot, index, specialsForElement(kit.element), 'special');
+    const basicName = (spellById(slot.spell) || {}).name || slot.spell;
+    const specialName = (spellById(slot.special) || {}).name || slot.special;
     return (
       '<div class="team-slot ' + kit.element + ' selected">' +
         '<div class="team-kit ' + kit.element + ' selected">' +
           '<div class="wizard-card-icon ' + kit.element + '">' + iconSpan(kit.element, '#ffffff') + '</div>' +
           '<div class="team-kit-copy">' +
             '<div class="kit-name">' + kit.name + '</div>' +
-            '<div class="kit-cast">' + ((spellById(slot.spell) || {}).name || slot.spell) + '</div>' +
+            '<div class="kit-cast">' + basicName + ' + ' + specialName + '</div>' +
             '<div class="kit-detail">cost ' + kit.cost + ' · ' + kit.hp + ' hp · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + '</div>' +
           '</div>' +
           '<button type="button" class="team-slot-remove" data-slot-remove="' + index + '">remove</button>' +
         '</div>' +
-        '<div class="team-spells">' + spells + '</div>' +
+        '<div class="team-spells">' +
+          '<p class="team-spell-label">basic cast · free</p>' + basics +
+          '<p class="team-spell-label">special · costs mana</p>' + specials +
+        '</div>' +
       '</div>'
     );
   }).join('');
@@ -80,7 +93,7 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body picks one spell — Brand, Lock, and Tug are the extra verbs. Saved on this device. Cost is <strong>Vs mana</strong>. Defense drops one wizard per round, any kit.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> — the multi-hit payoff spells that <strong>cost mana</strong>. Saved on this device. Summon cost is <strong>Vs mana</strong>; Defense drops one wizard per round, any kit, and has a small mana pool for specials.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
@@ -91,7 +104,7 @@ function renderTeamPage() {
       '<div class="team-actions">' +
         '<button type="button" class="end-turn-btn" id="team-fight-btn"' + (ready ? '' : ' disabled') + '>fight</button>' +
         '<button type="button" class="team-random-btn" id="team-random-btn">randomize from Pyre, Rime, Squall</button>' +
-        '<a class="team-reset" href="#" id="team-reset-btn">reset to Pyre, Rime, Squall, Rime</a>' +
+        '<a class="team-reset" href="#" id="team-reset-btn">reset to the default team</a>' +
       '</div>' +
     '</article>'
   );
@@ -114,11 +127,12 @@ function removeTeamSlot(index) {
   render();
 }
 
-function pickTeamSpell(index, spellId) {
+function pickTeamSpell(index, spellId, slotKind) {
   const draft = teamDraftList();
   const slot = draft[index];
   if (!slot) return;
-  slot.spell = normalizeSpellId(slot.kit, spellId);
+  if (slotKind === 'special') slot.special = normalizeSpecialSpellId(slot.kit, spellId);
+  else slot.spell = normalizeBasicSpellId(slot.kit, spellId);
   persistTeamDraft();
   render();
 }
@@ -136,7 +150,7 @@ function bindTeamPage() {
   });
   document.querySelectorAll('[data-spell-id]').forEach(function (el) {
     el.addEventListener('click', function () {
-      pickTeamSpell(parseInt(el.getAttribute('data-slot-index'), 10), el.getAttribute('data-spell-id'));
+      pickTeamSpell(parseInt(el.getAttribute('data-slot-index'), 10), el.getAttribute('data-spell-id'), el.getAttribute('data-spell-slot'));
     });
   });
   const fight = document.getElementById('team-fight-btn');

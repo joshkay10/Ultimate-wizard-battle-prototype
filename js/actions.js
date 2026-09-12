@@ -32,6 +32,7 @@ function selectWizard(id) {
     state.selectedWizardId = null;
   } else {
     state.selectedWizardId = id;
+    if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
     state.selectedAction = wizard.team === 'player' && !wizard.summoningSickness ? 'move' : null;
   }
   render();
@@ -47,7 +48,14 @@ function setAction(action) {
   if (!state.selectedWizardId || state.animating || !canAct()) return;
   const wizard = state.wizards[state.selectedWizardId];
   if (!wizard || wizard.team !== 'player') return;
-  state.selectedAction = action;
+  if (action === 'special') {
+    if (!wizard.specialSpellId) return;
+    if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'special');
+    state.selectedAction = 'special';
+  } else {
+    if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
+    state.selectedAction = action;
+  }
   render();
 }
 
@@ -100,8 +108,9 @@ function handleTileClick(row, col) {
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }
     resolveMeleeAttack(wizard, row, col);
-  } else if (state.selectedAction === 'cast') {
+  } else if (state.selectedAction === 'cast' || state.selectedAction === 'special') {
     if (!canAttack(wizard)) { reselectOrBail(); return; }
+    if (state.selectedAction === 'special' && !canCastSpecial(state, wizard, 'player')) { reselectOrBail(); return; }
     const tiles = getCastTiles(state, wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }

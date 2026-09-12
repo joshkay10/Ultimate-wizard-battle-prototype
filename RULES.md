@@ -4,7 +4,7 @@ A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) o
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **3** on the board at once (Into the Breach’s usual island). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. No mana. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
+- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **3** on the board at once (Into the Breach’s usual island). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -13,9 +13,13 @@ Black chevrons, white icons. Each body is one Into the Breach archetype, 1 damag
 
 | Body | HP | Move | Trick |
 | --- | --- | --- | --- |
+| Mite | 1 | 4 | Small, fast melee fodder. **One hit and it pops.** Two can **stack on one tile** to hit for **2** — but the doubled tile is still 1 HP, so a single hit clears both |
 | Brute | 3 | 3 | Melee the adjacent tile (Scorpion) |
 | Charger | 4 | 3 | Charge up to 3 tiles. 1 dmg, then **push 1** if they live. Dies in water (Beetle) |
 | Bomber | 3 | 2 | Line 4, 1 dmg, first wizard or nexus (Firefly) |
+| Golem | 7–8 | 2 | Melee the adjacent tile, **push 1**. Too tough to trade blows with — **shove it into water or a void** instead |
+
+The field mixes fodder and heavies on purpose: little ones (Mites) are drawn small and die to a single hit, so area spells lay waste to a whole cluster, while Golems loom large on their tile, shrug off damage, and are meant to be pushed into hazards rather than killed outright. Mites can also **double up on a single tile**: a stacked pair deals **two** damage (enough for a doubled Mite to crack a 2-HP crystal in one strike), but because the tile is still only 1 HP, one hit from you clears the whole stack — stacking is a risk they take to hit harder.
 
 If you push them, they still fire in the **same direction** from the new tile. Strikes resolve one body at a time, **north to south, then west to east** (the telegraph shows 1, 2, 3). Pushing someone south can make them strike later. The hit, any death, and any void it opens are on the board before the next pawn acts. Then each body walks in that same order and **declares its next strike** before the next body moves — or walks without a telegraph if nothing is in range. Later walkers treat tiles already aimed by an earlier pawn as bad ground to stand on. They will not aim a charge into water or a void. A match is **10 invaders** including the opening bodies. At most **3** on the board at once. Incoming is **one hole per enemy phase**. Holes open on open field ground, not the last two rows, and not on city, water, or mountains. They can start far from the city. Standing on a hole blocks it. There are **no incoming marks on round 1** — they show up after the first enemy phase. They **beeline the city**. If they cannot hit a nexus this turn they punch a wizard in range, otherwise they walk toward the city. They never telegraph empty air. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **one** of them is already on the board with **no telegraph yet** — they aim after the first enemy phase if a target is in range.
 
@@ -26,7 +30,7 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
 - **Defense:** one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.
-- **Vs:** pay mana. Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
+- **Vs:** pay mana. Rime is the cheapest at **1**, and Pyre, Squall, and Volt each cost **2**, so with 2 starting mana you can open with any of the live kits — cheaper costs mean you get bodies out earlier.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
@@ -37,20 +41,24 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. Some Vs maps open a mountain **gate** in the mid file. **Defense** maps are named islands and are not mirrored.
-- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. **Defense has no mana** — one drop per round instead.
+- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. Mana pays for summoning **and** for specials. **Defense** keeps its free one drop per round, and also has its own small mana pool (start 2, +1/round, cap 6) spent only on specials.
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores it. On the board, your wizards are **hex gems**. Defense vek are **dark chevrons** that point at the strike when they have one, otherwise toward the city.
+Melee is a simple adjacent punch for everyone. Each wizard also carries **two spells**: a free **basic cast** and a mana-cost **special** (see below). You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores summon cost. On the board, your wizards are **hex gems**. Defense vek are **dark chevrons** that point at the strike when they have one, otherwise toward the city.
 
-| Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
+| Wizard | Cost | Move | HP | Melee (dmg / push) | Free cast |
 | --- | --- | --- | --- | --- | --- |
-| Pyre (fire) | 3 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
-| Rime (ice) | 2 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
-| Squall (wind) | 3 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
-| Cairn (earth) | 4 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
-| Volt (lightning) | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
-| Chrono (temporal) | 4 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+| Pyre (fire) | 2 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
+| Rime (ice) | 1 | 3 | 12 | 4 / 2 | **Sheet** — line 4, 1 dmg, paints ice |
+| Squall (wind) | 2 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
+| Cairn (earth) | 3 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
+| Volt (lightning) | 2 | 3 | 9 | 3 / 1 | **Jolt** — neighbors, 1 dmg, silence |
+| Chrono (temporal) | 3 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+
+### Specials — the third action
+
+Melee and the free basic cast cost nothing, so you always have a play. The **special** is a third action: the multi-hit / high-impact spells (**Lance, Inferno, Pulse, Blizzard, Draft, Gale, Quake, Spike, Bolt, Arc, Loop**) live here, and casting one **costs mana** — a tactical payoff you can't spam. You equip one basic and one special per wizard on the Team page. Both modes now have a mana pool for specials: **Defense** grows a small pool each round (start 2, +1/round, cap 6) on top of its free one-drop-per-round; **Vs** specials draw from the same pool that pays for summoning, so nuking now competes with reinforcing.
 
 ## Spells
 
@@ -59,6 +67,7 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 | Spell | Kit | Shape | What it does |
 | --- | --- | --- | --- |
 | Stream | Pyre | line 4 | 3 dmg / 1 push, paints fire |
+| Lance | Pyre | pierce 4 | 2 dmg to **everything** in the line, paints fire, flies over crystals |
 | Inferno | Pyre | 3×3 | 2 dmg, paints fire, skips nexuses |
 | Cinder | Pyre | one tile | 2 dmg, paints fire |
 | Pulse | Rime | neighbors | 2 dmg / 1 out, paints ice |
@@ -80,6 +89,7 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 ## Unique casts
 
 - **Stream / gust / sheet / draft** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.
+- **Lance** — a piercing beam. Unlike stream it does **not** stop on the first body: it hits **every** wizard along the line of 4 and paints fire the whole way, so one cast can wipe a row of fodder. Mountains block it; it flies over crystals without chipping the city.
 - **Pulse / jolt** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Pulse survivors are pushed away from the caster.
 - **Burst (inferno, blizzard, gale, quake, arc, cinder, spike)** — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.
 - **Raise** — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.

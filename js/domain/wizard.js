@@ -1,4 +1,4 @@
-function createWizard(match, typeId, team, spellId) {
+function createWizard(match, typeId, team, spellId, specialId) {
   const type = kitById(typeId);
   const id = 'w' + (match.nextId++);
   const wizard = {
@@ -20,9 +20,19 @@ function createWizard(match, typeId, team, spellId) {
     summoningSickness: false,
     silenced: false,
     silenceSkip: false,
-    moveUndo: null
+    moveUndo: null,
+    activeSpell: 'basic'
   };
   applySpellToWizard(wizard, spellById(normalizeSpellId(typeId, spellId)));
+  wizard.basicSpellId = wizard.spellId;
+  // Only the player fields a paid special for now; enemies cast their one spell freely.
+  if ((team || 'player') === 'player' && specialId) {
+    wizard.specialSpellId = normalizeSpecialSpellId(typeId, specialId);
+    wizard.specialCost = specialCostOf(wizard.specialSpellId);
+  } else {
+    wizard.specialSpellId = null;
+    wizard.specialCost = 0;
+  }
   match.wizards[id] = wizard;
   return id;
 }
@@ -30,7 +40,7 @@ function createWizard(match, typeId, team, spellId) {
 function seedRosters(match, playerLoadout, enemyLoadout) {
   const player = normalizeLoadout(playerLoadout);
   let i;
-  for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell);
+  for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
   if (match.gameMode === 'defense') return;
   const enemy = normalizeLoadout(enemyLoadout);
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);

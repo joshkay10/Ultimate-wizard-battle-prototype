@@ -98,6 +98,7 @@ function describeEvent(ev) {
   if (ev.type === 'jump') return actorName(ev.attackerId) + "'s bolt jumps the water";
   if (ev.type === 'void') return 'a nexus becomes a void';
   if (ev.type === 'death') {
+    if (ev.cause === 'merge') return 'mites double up';
     if (ev.cause === 'water') return actorName(ev.wizardId) + ' falls in the water';
     if (ev.cause === 'void') return actorName(ev.wizardId) + ' falls into a void';
     return actorName(ev.wizardId) + ' dies';

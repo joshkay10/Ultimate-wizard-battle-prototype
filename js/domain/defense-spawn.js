@@ -31,9 +31,11 @@ function pickDefenseSpawnTile(match, kind) {
 
 function pickDefenseKind(match) {
   const roll = match.rng ? match.rng.next() : 0.2;
-  if (roll < 0.46) return 'melee';
-  if (roll < 0.76) return 'charge';
-  return 'fireball';
+  if (roll < 0.40) return 'mite';
+  if (roll < 0.58) return 'melee';
+  if (roll < 0.73) return 'charge';
+  if (roll < 0.88) return 'fireball';
+  return 'golem';
 }
 
 function markDefenseSpawns(match, count) {
