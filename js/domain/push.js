@@ -35,38 +35,20 @@ function crashObstacle(match, row, col) {
 function applyCrashDamage(match, pushed, crash, amount) {
   const events = [];
   if (!pushed || pushed.state !== 'onboard') return events;
-  pushed.hp -= amount;
-  events.push({
-    type: 'damage',
-    targetKind: 'wizard',
-    targetId: pushed.id,
-    amount: amount,
-    row: pushed.row,
-    col: pushed.col,
-    cause: 'crash'
-  });
+  events.push(stampWizardDamage(pushed, amount, 'crash', pushed.row, pushed.col));
   const death = simKill(match, pushed);
   if (death) events.push(death);
   if (crash.kind === 'wizard') {
     const other = match.wizards[crash.wizardId];
     if (other && other.state === 'onboard') {
-      other.hp -= amount;
-      events.push({
-        type: 'damage',
-        targetKind: 'wizard',
-        targetId: other.id,
-        amount: amount,
-        row: other.row,
-        col: other.col,
-        cause: 'crash'
-      });
+      events.push(stampWizardDamage(other, amount, 'crash', other.row, other.col));
       const otherDeath = simKill(match, other);
       if (otherDeath) events.push(otherDeath);
     }
   }
   if (crash.kind === 'nexus') {
     const nexus = nexusById(match, crash.nexusId) || nexusAt(match, crash.row, crash.col);
-    events.push.apply(events, hurtNexus(match, nexus, amount, 'crash'));
+    events.push.apply(events, hurtNexus(match, nexus, CRASH_DAMAGE, 'crash'));
   }
   return events;
 }
@@ -103,7 +85,7 @@ function simPush(match, target, dr, dc, amount, depth) {
   events.push.apply(events, extra);
   if (target.state !== 'onboard') return events;
   if (planned.crash) {
-    events.push.apply(events, applyCrashDamage(match, target, planned.crash, CRASH_DAMAGE));
+    events.push.apply(events, applyCrashDamage(match, target, planned.crash, crashSmash(planned.tilesShort)));
     if (planned.crash.kind === 'wizard' && planned.tilesShort > 0) {
       const other = match.wizards[planned.crash.wizardId];
       if (other && other.state === 'onboard') {

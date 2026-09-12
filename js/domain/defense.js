@@ -471,16 +471,7 @@ function assignDefenseIntent(match, pawn) {
 function hurtWizardAmount(match, wizard, amount, cause, row, col) {
   const events = [];
   if (!wizard || wizard.state !== 'onboard') return events;
-  wizard.hp -= amount;
-  events.push({
-    type: 'damage',
-    targetKind: 'wizard',
-    targetId: wizard.id,
-    amount: amount,
-    row: row != null ? row : wizard.row,
-    col: col != null ? col : wizard.col,
-    cause: cause
-  });
+  events.push(stampWizardDamage(wizard, amount, cause, row, col));
   const death = simKill(match, wizard);
   if (death) events.push(death);
   return events;

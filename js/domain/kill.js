@@ -17,6 +17,25 @@ function simKill(match, wizard) {
   return ev;
 }
 
+function stampWizardDamage(wizard, amount, cause, row, col) {
+  const hpBefore = Math.max(0, wizard.hp);
+  wizard.hp -= amount;
+  return {
+    type: 'damage',
+    targetKind: 'wizard',
+    targetId: wizard.id,
+    amount: amount,
+    overkill: Math.max(0, amount - hpBefore),
+    row: row != null ? row : wizard.row,
+    col: col != null ? col : wizard.col,
+    cause: cause
+  };
+}
+
+function crashSmash(tilesShort) {
+  return Math.max(CRASH_DAMAGE, tilesShort || 0);
+}
+
 function applyHazardEnter(match, wizard) {
   const events = [];
   if (!wizard || wizard.state !== 'onboard') return events;
@@ -48,16 +67,7 @@ function applyFireEnter(match, wizard) {
   if (!wizard || wizard.state !== 'onboard') return events;
   const trail = trailAt(match, wizard.row, wizard.col);
   if (!trail || trail.element !== 'fire') return events;
-  wizard.hp -= FIRE_TRAIL_DAMAGE;
-  events.push({
-    type: 'damage',
-    targetKind: 'wizard',
-    targetId: wizard.id,
-    amount: FIRE_TRAIL_DAMAGE,
-    row: wizard.row,
-    col: wizard.col,
-    cause: 'fire'
-  });
+  events.push(stampWizardDamage(wizard, FIRE_TRAIL_DAMAGE, 'fire', wizard.row, wizard.col));
   const death = simKill(match, wizard);
   if (death) events.push(death);
   return events;
