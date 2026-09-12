@@ -34,5 +34,8 @@ const state = {
   aiBrain: 'hunter',
   gameMode: 'defense',
   mapId: '',
-  mapName: ''
+  mapName: '',
+  matchBestCombo: 0,
+  resultRecorded: false,
+  matchSummary: null
 };

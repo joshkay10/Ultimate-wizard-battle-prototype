@@ -105,6 +105,73 @@ html, body {
 .rematch-btn {
   margin-top: 16px;
 }
+.game-over-card.is-win .game-over-heading {
+  color: var(--fire);
+}
+.game-over-flawless {
+  margin-top: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--lightning-bg), var(--fire-bg));
+  border: 1px solid var(--lightning);
+  color: var(--fire);
+  font: 800 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.game-over-streak-break {
+  margin-top: 10px;
+  font: 700 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text-dim);
+}
+.game-over-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.stat-chip-value {
+  font: 800 17px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+.stat-chip-label {
+  font: 600 9px/1.1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+.stat-chip.good {
+  border-color: var(--wind);
+  background: var(--wind-bg);
+}
+.stat-chip.good .stat-chip-value {
+  color: var(--wind);
+}
+.stat-chip.hot {
+  border-color: var(--fire);
+  background: var(--fire-bg);
+}
+.stat-chip.hot .stat-chip-value {
+  color: var(--fire);
+}
+.topbar-streak {
+  margin-left: 8px;
+  font-weight: 700;
+  color: var(--fire);
+}
 
 /* ---------- Top bar ---------- */
 .topbar {
