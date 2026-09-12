@@ -588,7 +588,8 @@ async function runSimSelfTests() {
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
   assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,fire', 'old three-kit arrays pad to four');
-  assert(fromIds.map(s => s.spell).join(',') === 'stream,pulse,gust,inferno', 'old team arrays keep default spells');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,sheet,gust,cinder', 'old team arrays fill free basics');
+  assert(fromIds.map(s => s.special).join(',') === 'inferno,pulse,gale,inferno', 'padding also fills the special slot');
   const rolledPlayable = pickEnemyTeam(createRng(3), DEFAULT_TEAM);
   assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
   const mixed = randomPlayableLoadout(createRng(9));
@@ -601,18 +602,78 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const defaultIce = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  assert(defaultIce.spellId === 'pulse' && defaultIce.castKind === 'pulse', 'default Rime still pulses');
+  assert(defaultIce.spellId === 'sheet' && defaultIce.castKind === 'stream', 'default Rime free cast is Sheet');
+  assert(defaultIce.specialSpellId === 'pulse' && defaultIce.specialCost === 2, 'default Rime special is Pulse (2 mana)');
+  assert(defaultIce.activeSpell === 'basic', 'wizards start on their free basic cast');
   const defaultFires = Object.values(state.wizards).filter(x => x.team === 'player' && x.element === 'fire');
-  assert(defaultFires.map(w => w.spellId).sort().join(',') === 'inferno,lance', 'default Pyres bring Lance and Inferno');
-  const defaultLancer = defaultFires.find(w => w.spellId === 'lance');
-  assert(defaultLancer && defaultLancer.castKind === 'pierce', 'default Lance is a piercing cast');
+  assert(defaultFires.map(w => w.spellId).sort().join(',') === 'cinder,stream', 'default Pyres free casts are Stream and Cinder');
+  assert(defaultFires.map(w => w.specialSpellId).sort().join(',') === 'inferno,lance', 'default Pyres pack Lance and Inferno as specials');
+  const defaultLancer = defaultFires.find(w => w.specialSpellId === 'lance');
+  setActiveSpell(defaultLancer, 'special');
+  assert(defaultLancer.castKind === 'pierce', 'switching to the special arms the piercing Lance');
+  setActiveSpell(defaultLancer, 'basic');
+  assert(defaultLancer.castKind !== 'pierce', 'switching back restores the free basic');
+
+  // The special is a mana-gated third option; the free basic never costs mana.
+  resetMatch(state, 1, {
+    gameMode: 'defense',
+    playerLoadout: [
+      { kit: 'ice', spell: 'sheet', special: 'pulse' },
+      { kit: 'fire', spell: 'stream', special: 'inferno' },
+      { kit: 'wind', spell: 'gust', special: 'draft' },
+      { kit: 'fire', spell: 'cinder', special: 'lance' }
+    ]
+  });
+  state.fxEnabled = false;
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; w.intent = null; }
+  });
+  const caster = Object.values(state.wizards).find(x => x.team === 'player' && x.specialSpellId === 'pulse');
+  caster.state = 'onboard';
+  caster.row = 4;
+  caster.col = 4;
+  caster.summoningSickness = false;
+  caster.hasMoved = true;
+  caster.hasAttacked = false;
+  const specialFoe = createDefensePawn(state, 'mite', { state: 'onboard', row: 3, col: 4, hp: 1, maxHp: 1 });
+  state.mana = 2;
+  state.maxMana = 2;
+  setActiveSpell(caster, 'basic');
+  assert(caster.castKind !== 'pulse', 'the free slot holds the basic spell, not Pulse');
+  const freeCast = simAttack(state, caster, 4, 5, 'cast');
+  assert(freeCast.length > 0, 'the free basic cast resolves');
+  assert(state.mana === 2, 'the free basic cast never spends mana');
+  caster.hasAttacked = false;
+  setActiveSpell(caster, 'special');
+  assert(caster.castKind === 'pulse' && caster.activeSpell === 'special', 'the special arms Pulse');
+  assert(canCastSpecial(state, caster, 'player'), '2 mana covers a 2-cost special');
+  const paidCast = simAttack(state, caster, 3, 4, 'cast');
+  assert(paidCast.length > 0, 'the special resolves when affordable');
+  assert(specialFoe.state === 'dead', 'the special still does its job');
+  assert(state.mana === 0, 'casting the special spends its mana cost (2)');
+  caster.hasAttacked = false;
+  assert(!canCastSpecial(state, caster, 'player'), 'no mana means no special');
+  const brokeCast = simAttack(state, caster, 3, 4, 'cast');
+  assert(brokeCast.length === 0, 'simAttack refuses a special you cannot pay for');
+  assert(caster.hasAttacked === false, 'a refused special does not spend the turn');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  assert(state.mana === STARTING_MANA, 'defense opens at the starting mana');
+  let capGuard;
+  for (capGuard = 0; capGuard < 12; capGuard++) refillManaPools(state);
+  assert(state.maxMana === DEFENSE_MANA_CAP, 'defense mana grows and caps at DEFENSE_MANA_CAP');
+  assert(state.mana === state.maxMana, 'defense mana refills to full each turn');
 
   resetMatch(state, 1, {
     playerLoadout: [
-      { kit: 'fire', spell: 'stream' },
-      { kit: 'ice', spell: 'blizzard' },
-      { kit: 'wind', spell: 'gust' },
-      { kit: 'earth', spell: 'raise' }
+      { kit: 'fire', spell: 'stream', special: 'lance' },
+      { kit: 'ice', spell: 'sheet', special: 'blizzard' },
+      { kit: 'wind', spell: 'gust', special: 'draft' },
+      { kit: 'earth', spell: 'raise', special: 'quake' }
     ],
     enemyTeam: ['earth', 'lightning', 'temporal', 'fire']
   });
@@ -621,7 +682,9 @@ async function runSimSelfTests() {
   state.water = {};
   state.trails = {};
   const blizzardMage = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  assert(blizzardMage.spellId === 'blizzard' && blizzardMage.castKind === 'burst', 'loadout can give Rime blizzard');
+  assert(blizzardMage.specialSpellId === 'blizzard', 'loadout can give Rime blizzard as its special');
+  applySpellToWizard(blizzardMage, spellById('blizzard'));
+  assert(blizzardMage.castKind === 'burst', 'blizzard is a burst');
   blizzardMage.state = 'onboard';
   blizzardMage.row = 4;
   blizzardMage.col = 4;
@@ -654,10 +717,10 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1, {
     playerLoadout: [
-      { kit: 'fire', spell: 'lance' },
-      { kit: 'ice', spell: 'pulse' },
-      { kit: 'wind', spell: 'gust' },
-      { kit: 'fire', spell: 'inferno' }
+      { kit: 'fire', spell: 'stream', special: 'lance' },
+      { kit: 'ice', spell: 'sheet', special: 'pulse' },
+      { kit: 'wind', spell: 'gust', special: 'draft' },
+      { kit: 'fire', spell: 'cinder', special: 'inferno' }
     ],
     gameMode: 'defense'
   });
@@ -668,8 +731,10 @@ async function runSimSelfTests() {
   Object.values(state.wizards).forEach(function (w) {
     if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; w.intent = null; }
   });
-  const lanceMage = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'lance');
-  assert(lanceMage && lanceMage.castKind === 'pierce', 'lance loadout gives Pyre a piercing beam');
+  const lanceMage = Object.values(state.wizards).find(x => x.team === 'player' && x.specialSpellId === 'lance');
+  assert(lanceMage && specialCostOf('lance') === 3, 'lance equips as a special (cost 3)');
+  applySpellToWizard(lanceMage, spellById('lance'));
+  assert(lanceMage.castKind === 'pierce', 'lance is a piercing cast');
   lanceMage.state = 'onboard';
   lanceMage.row = 4;
   lanceMage.col = 1;
@@ -761,17 +826,18 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1, {
     playerLoadout: [
-      { kit: 'ice', spell: 'pulse' },
-      { kit: 'ice', spell: 'blizzard' },
-      { kit: 'ice', spell: 'sheet' },
-      { kit: 'ice', spell: 'pulse' }
+      { kit: 'ice', spell: 'sheet', special: 'pulse' },
+      { kit: 'ice', spell: 'lock', special: 'blizzard' },
+      { kit: 'ice', spell: 'sheet', special: 'blizzard' },
+      { kit: 'ice', spell: 'lock', special: 'pulse' }
     ],
     enemyTeam: ['fire', 'fire', 'wind', 'earth']
   });
   state.fxEnabled = false;
   const rimes = Object.values(state.wizards).filter(w => w.team === 'player' && w.element === 'ice');
   assert(rimes.length === 4, 'four Rimes is a legal team');
-  assert(rimes.map(w => w.spellId).sort().join(',') === 'blizzard,pulse,pulse,sheet', 'duplicate kits keep their own spells');
+  assert(rimes.map(w => w.spellId).sort().join(',') === 'lock,lock,sheet,sheet', 'duplicate kits keep their own free casts');
+  assert(rimes.map(w => w.specialSpellId).sort().join(',') === 'blizzard,blizzard,pulse,pulse', 'duplicate kits keep their own specials');
   const enemyFires = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.element === 'fire');
   assert(enemyFires.length === 2, 'enemy can roll duplicate kits');
 
@@ -780,7 +846,7 @@ async function runSimSelfTests() {
       { kit: 'wind', spell: 'tug' },
       { kit: 'ice', spell: 'lock' },
       { kit: 'fire', spell: 'brand' },
-      { kit: 'ice', spell: 'pulse' }
+      { kit: 'ice', spell: 'sheet', special: 'pulse' }
     ],
     gameMode: 'defense'
   });
@@ -852,7 +918,7 @@ async function runSimSelfTests() {
   const brandHit = simAttack(state, brander, 6, 4, 'cast');
   assert(brandPawn.hp === 1, 'brand chips 1 now');
   assert(brandPawn.burn === 2, 'brand leaves 2 burn');
-  const pulsePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'pulse');
+  const pulsePrey = Object.values(state.wizards).find(x => x.team === 'player' && x.spellId === 'sheet');
   pulsePrey.state = 'onboard';
   pulsePrey.row = 8;
   pulsePrey.col = 4;
@@ -872,6 +938,7 @@ async function runSimSelfTests() {
   state.water = {};
   state.tempMountains = {};
   const pulseMage = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  applySpellToWizard(pulseMage, spellById('pulse'));
   const n1 = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
   const n2 = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   pulseMage.state = 'onboard';
@@ -1431,7 +1498,7 @@ async function runSimSelfTests() {
   simEndPlayerTurn(state);
   simEndEnemyTurn(state);
   assert(!state.playerSummonedThisTurn, 'a new player turn restores the drop');
-  assert(state.mana === 2, 'defense does not grow a mana pool');
+  assert(state.mana === 3 && state.maxMana === 3, 'defense mana grows each round to fuel specials');
   assert(canPaySummon(state, pyres[1], 'player'), 'next round can drop the next body');
 
   resetMatch(state, 1);

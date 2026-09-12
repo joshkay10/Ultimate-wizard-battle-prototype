@@ -1,17 +1,22 @@
 function simAttack(match, attacker, row, col, kind) {
   if (!canAttack(attacker) || attacker.row === null) return [];
+  const usingSpecial = kind === 'cast' && attacker.activeSpell === 'special' && attacker.specialSpellId;
+  const specialCost = usingSpecial ? (attacker.specialCost || 0) : 0;
+  if (usingSpecial && teamMana(match, attacker.team) < specialCost) return [];
   const legal = kind === 'cast' ? getCastTiles(match, attacker) : getMeleeTiles(match, attacker);
   if (!legal.some(function (tile) { return tile.row === row && tile.col === col; })) return [];
   clearMoveUndo(attacker);
 
-  if (kind === 'cast' && attacker.castKind === 'pulse') return simPulse(match, attacker, row, col);
-  if (kind === 'cast' && attacker.castKind === 'raise') return simRaise(match, attacker, row, col);
-  if (kind === 'cast' && (attacker.castKind === 'swap' || attacker.castKind === 'blink')) {
-    return simSwap(match, attacker, row, col);
-  }
-  if (kind === 'cast' && attacker.castKind === 'burst') return simBurst(match, attacker, row, col);
-  if (kind === 'cast' && attacker.castKind === 'pierce') return simPierce(match, attacker, row, col);
-  return simStrike(match, attacker, row, col, kind);
+  let result;
+  if (kind === 'cast' && attacker.castKind === 'pulse') result = simPulse(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'raise') result = simRaise(match, attacker, row, col);
+  else if (kind === 'cast' && (attacker.castKind === 'swap' || attacker.castKind === 'blink')) result = simSwap(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'burst') result = simBurst(match, attacker, row, col);
+  else if (kind === 'cast' && attacker.castKind === 'pierce') result = simPierce(match, attacker, row, col);
+  else result = simStrike(match, attacker, row, col, kind);
+
+  if (usingSpecial && result && result.length) spendMana(match, attacker.team, specialCost);
+  return result;
 }
 
 function attackSpellFields(attacker, kind) {

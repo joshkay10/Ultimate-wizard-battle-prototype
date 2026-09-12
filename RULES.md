@@ -41,20 +41,24 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - **Vs** terrain in the top 3 rows is always a vertical mirror of the bottom 3 (same columns) so both camps get an equal layout. Some Vs maps open a mountain **gate** in the mid file. **Defense** maps are named islands and are not mirrored.
-- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. **Defense has no mana** — one drop per round instead.
+- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. Mana pays for summoning **and** for specials. **Defense** keeps its free one drop per round, and also has its own small mana pool (start 2, +1/round, cap 6) spent only on specials.
 
 ## Wizards
 
-Melee is a simple adjacent punch for everyone. The spell is what you configured on Team. You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores it. On the board, your wizards are **hex gems**. Defense vek are **dark chevrons** that point at the strike when they have one, otherwise toward the city.
+Melee is a simple adjacent punch for everyone. Each wizard also carries **two spells**: a free **basic cast** and a mana-cost **special** (see below). You only have the four bodies you brought. **Cost is Vs mana.** Defense ignores summon cost. On the board, your wizards are **hex gems**. Defense vek are **dark chevrons** that point at the strike when they have one, otherwise toward the city.
 
-| Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
+| Wizard | Cost | Move | HP | Melee (dmg / push) | Free cast |
 | --- | --- | --- | --- | --- | --- |
-| Pyre (fire) | 2 | 3 | 10 | 5 / 2 | **Lance** — piercing beam of 4, 2 dmg to everything, paints fire |
-| Rime (ice) | 1 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
+| Pyre (fire) | 2 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
+| Rime (ice) | 1 | 3 | 12 | 4 / 2 | **Sheet** — line 4, 1 dmg, paints ice |
 | Squall (wind) | 2 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
 | Cairn (earth) | 3 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
-| Volt (lightning) | 2 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
+| Volt (lightning) | 2 | 3 | 9 | 3 / 1 | **Jolt** — neighbors, 1 dmg, silence |
 | Chrono (temporal) | 3 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+
+### Specials — the third action
+
+Melee and the free basic cast cost nothing, so you always have a play. The **special** is a third action: the multi-hit / high-impact spells (**Lance, Inferno, Pulse, Blizzard, Draft, Gale, Quake, Spike, Bolt, Arc, Loop**) live here, and casting one **costs mana** — a tactical payoff you can't spam. You equip one basic and one special per wizard on the Team page. Both modes now have a mana pool for specials: **Defense** grows a small pool each round (start 2, +1/round, cap 6) on top of its free one-drop-per-round; **Vs** specials draw from the same pool that pays for summoning, so nuking now competes with reinforcing.
 
 ## Spells
 

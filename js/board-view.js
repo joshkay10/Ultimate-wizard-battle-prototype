@@ -151,7 +151,7 @@ function highlightSet() {
     if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
       return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
     }
-    if (state.selectedAction === 'cast' && canAttack(selectedWizard)) {
+    if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
       return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }
@@ -970,8 +970,8 @@ function tokenShapePts(wizard, cx, cy, r) {
 }
 
 function pawnSizeFactor(wizard) {
-  if (wizard && wizard.pawnKind === 'golem') return 0.47;
-  if (wizard && wizard.pawnKind === 'mite') return (wizard.stack || 1) >= 2 ? 0.3 : 0.26;
+  if (wizard && wizard.pawnKind === 'golem') return 0.52;
+  if (wizard && wizard.pawnKind === 'mite') return (wizard.stack || 1) >= 2 ? 0.23 : 0.2;
   return 0.36;
 }
 
@@ -1007,7 +1007,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.translate(-cx, -cy);
   if (spentTurn && !flash) ctx.globalAlpha = 0.55;
   if (!flash && wizard.pawnKind === 'mite' && (wizard.stack || 1) >= 2) {
-    const backPts = tokenShapePts(wizard, cx - r * 0.5, cy - r * 0.42, r * 0.92);
+    const backPts = tokenShapePts(wizard, cx - r * 1.0, cy - r * 0.75, r * 0.95);
     drawShapedBody(ctx, backPts, Math.max(3, r * 0.28), false, colors);
   }
   const pts = tokenShapePts(wizard, cx, cy, r);
