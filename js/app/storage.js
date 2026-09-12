@@ -60,3 +60,57 @@ function saveGameMode(mode) {
   }
   return mode;
 }
+
+const STATS_STORAGE_KEY = 'wizard-battle-stats';
+
+function emptyModeStats() {
+  return { streak: 0, best: 0, flawless: 0, wins: 0 };
+}
+
+function readAllStats() {
+  const base = { defense: emptyModeStats(), vs: emptyModeStats() };
+  if (typeof localStorage === 'undefined') return base;
+  try {
+    const raw = localStorage.getItem(STATS_STORAGE_KEY);
+    if (!raw) return base;
+    const parsed = JSON.parse(raw);
+    ['defense', 'vs'].forEach(function (mode) {
+      if (parsed && parsed[mode]) {
+        base[mode] = Object.assign(emptyModeStats(), parsed[mode]);
+      }
+    });
+  } catch (err) {}
+  return base;
+}
+
+function loadModeStats(mode) {
+  mode = mode === 'vs' ? 'vs' : 'defense';
+  return readAllStats()[mode];
+}
+
+function writeAllStats(all) {
+  if (typeof localStorage === 'undefined') return all;
+  try {
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(all));
+  } catch (err) {}
+  return all;
+}
+
+// Records a finished match and returns the updated stats for that mode,
+// including the streak value *before* this match (handy for "streak broken" copy).
+function recordMatchStats(mode, outcome, flawless) {
+  mode = mode === 'vs' ? 'vs' : 'defense';
+  const all = readAllStats();
+  const stats = all[mode];
+  const prevStreak = stats.streak;
+  if (outcome === 'player') {
+    stats.wins += 1;
+    stats.streak += 1;
+    if (stats.streak > stats.best) stats.best = stats.streak;
+    if (flawless) stats.flawless += 1;
+  } else if (outcome === 'enemy') {
+    stats.streak = 0;
+  }
+  writeAllStats(all);
+  return { stats: stats, prevStreak: prevStreak };
+}

@@ -113,6 +113,36 @@ function rewindForFx(events) {
   }
 }
 
+function countEnemyDeaths(events) {
+  let n = 0;
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    if (ev.type !== 'death') continue;
+    const team = ev.team || (state.wizards[ev.wizardId] && state.wizards[ev.wizardId].team);
+    if (team === 'enemy') n += 1;
+  }
+  return n;
+}
+
+function triggerCombo(count) {
+  if (count < 2) return;
+  const sub = count >= 4 ? 'devastating!' : (count === 3 ? 'unstoppable!' : 'nice chain!');
+  boardFx.combo = { text: comboLabel(count), sub: sub, count: count, t: 0 };
+  boardFx.shake = Math.max(boardFx.shake, 9 + count * 2.5);
+  boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.32 + Math.min(0.35, count * 0.08));
+  if (typeof boardLayout === 'function') {
+    const layout = boardLayout();
+    if (layout) {
+      const cx = layout.css / 2;
+      const cy = layout.css * 0.4;
+      spawnBurst(cx, cy, BOARD_COLORS.magmaHot, 18 + count * 4, 5.4);
+      spawnBurst(cx, cy, '#ffffff', 10, 3.4);
+    }
+  }
+  if (count > (state.matchBestCombo || 0)) state.matchBestCombo = count;
+  ensureFxLoop();
+}
+
 async function playEvents(events) {
   if (!events || !events.length) {
     if (typeof render === 'function') render();
@@ -120,6 +150,7 @@ async function playEvents(events) {
   }
   state.animating = true;
   const matchId = state.matchId;
+  const comboKills = state.currentTurn === 'player' ? countEnemyDeaths(events) : 0;
   try {
     rewindForFx(events);
     pinRewindHolds(events);
@@ -142,6 +173,7 @@ async function playEvents(events) {
         i++;
       }
     }
+    if (comboKills >= 2 && state.matchId === matchId) triggerCombo(comboKills);
   } finally {
     boardFx.flash = null;
     boardFx.projectile = null;

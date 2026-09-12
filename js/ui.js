@@ -53,6 +53,35 @@ function ensureMatch() {
   if (!state.rng) startBattle();
 }
 
+function defenseCityFlawless() {
+  const list = state.nexuses && state.nexuses.player ? state.nexuses.player : [];
+  if (!list.length) return false;
+  return list.every(function (n) { return n.hp >= n.maxHp; });
+}
+
+function maybeRecordResult() {
+  if (!state.gameOverResult || state.resultRecorded) return;
+  state.resultRecorded = true;
+  const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
+  const flawless = mode === 'defense' && state.gameOverResult === 'player' && defenseCityFlawless();
+  const rec = typeof recordMatchStats === 'function'
+    ? recordMatchStats(mode, state.gameOverResult, flawless)
+    : { stats: { streak: 0, best: 0, flawless: 0, wins: 0 }, prevStreak: 0 };
+  const playerNex = state.nexuses && state.nexuses.player ? state.nexuses.player : [];
+  state.matchSummary = {
+    result: state.gameOverResult,
+    mode: mode,
+    rounds: state.turnCount,
+    invaders: typeof defenseEverSpawned === 'function' ? defenseEverSpawned(state) : 0,
+    crystals: playerNex.filter(function (n) { return n.hp > 0; }).length,
+    crystalsTotal: playerNex.length,
+    flawless: flawless,
+    bestCombo: state.matchBestCombo || 0,
+    stats: rec.stats,
+    prevStreak: rec.prevStreak
+  };
+}
+
 function renderPanel() {
   const wizardCards = Object.values(state.wizards)
     .filter(w => w.team === 'player' && (w.state === 'summoned' || w.state === 'portaling'))
@@ -212,6 +241,39 @@ function renderActionRow(selected) {
   );
 }
 
+function statChip(label, value, cls) {
+  return '<div class="stat-chip' + (cls ? ' ' + cls : '') + '">' +
+    '<span class="stat-chip-value">' + value + '</span>' +
+    '<span class="stat-chip-label">' + label + '</span>' +
+  '</div>';
+}
+
+function renderGameOverStats() {
+  const s = state.matchSummary;
+  if (!s) return '';
+  const chips = [];
+  const isDefense = s.mode === 'defense';
+  const win = s.result === 'player';
+
+  if (win && isDefense) {
+    chips.push(statChip('invaders wiped', s.invaders + '/' + DEFENSE_SPAWN_BUDGET));
+  }
+  chips.push(statChip('rounds', s.rounds));
+  if (isDefense && win) {
+    chips.push(statChip('crystals held', s.crystals + '/' + s.crystalsTotal, s.flawless ? 'good' : ''));
+  }
+  if (s.bestCombo >= 2) {
+    chips.push(statChip('best combo', '\u00d7' + s.bestCombo, 'hot'));
+  }
+  chips.push(statChip(win ? 'win streak' : 'best streak', win ? s.stats.streak : s.stats.best, win && s.stats.streak >= 2 ? 'good' : ''));
+
+  const banner = s.flawless
+    ? '<div class="game-over-flawless">FLAWLESS DEFENSE</div>'
+    : (!win && s.prevStreak >= 2 ? '<div class="game-over-streak-break">streak of ' + s.prevStreak + ' broken</div>' : '');
+
+  return banner + '<div class="game-over-stats">' + chips.join('') + '</div>';
+}
+
 function renderGameOverOverlay() {
   if (!state.gameOverResult) return '';
   let heading, sub;
@@ -231,9 +293,10 @@ function renderGameOverOverlay() {
   }
   return (
     '<div class="game-over-overlay">' +
-      '<div class="game-over-card">' +
+      '<div class="game-over-card' + (state.gameOverResult === 'player' ? ' is-win' : '') + '">' +
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
+        renderGameOverStats() +
         '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
         '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>' +
       '</div>' +
@@ -314,6 +377,7 @@ function render() {
 
   app.classList.remove('is-doc');
   ensureMatch();
+  maybeRecordResult();
   ensurePlayShell();
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
@@ -328,12 +392,16 @@ function render() {
   const invaders = state.gameMode === 'defense'
     ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + DEFENSE_SPAWN_BUDGET + ' invaders</span>'
     : '';
+  const streakStats = typeof loadModeStats === 'function' ? loadModeStats(mode) : null;
+  const streakHud = streakStats && (streakStats.streak > 0 || streakStats.best > 0)
+    ? '<span class="topbar-streak" title="win streak · best">streak ' + streakStats.streak + (streakStats.best > streakStats.streak ? ' · best ' + streakStats.best : '') + '</span>'
+    : '';
   const leftHud = state.gameMode === 'defense'
     ? defenseDropHud()
     : '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
   document.getElementById('topbar').innerHTML =
     leftHud +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (streakHud ? ' &middot; ' + streakHud : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
     '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
       '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
       '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +

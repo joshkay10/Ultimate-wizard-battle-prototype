@@ -19,7 +19,8 @@ const boardFx = {
   pulseWave: null,
   raiseSpike: null,
   charge: null,
-  strikeTiles: null
+  strikeTiles: null,
+  combo: null
 };
 
 const BOARD_COLORS = {
@@ -1424,6 +1425,10 @@ function tickFx(dt) {
   boardFx.rings = boardFx.rings.filter(r => r.t < 1);
   boardFx.popups.forEach(p => { p.t += 0.045 * k; });
   boardFx.popups = boardFx.popups.filter(p => p.t < 1);
+  if (boardFx.combo) {
+    boardFx.combo.t += 0.011 * k;
+    if (boardFx.combo.t >= 1) boardFx.combo = null;
+  }
 }
 
 let fxLooping = false;
@@ -1451,6 +1456,7 @@ function resetBoardFx() {
   boardFx.raiseSpike = null;
   boardFx.charge = null;
   boardFx.strikeTiles = null;
+  boardFx.combo = null;
 }
 
 function ensureFxLoop() {
@@ -1462,7 +1468,7 @@ function ensureFxLoop() {
     fxLast = now;
     tickFx(dt);
     try { drawBoard(); } catch (err) { console.error(err); }
-    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || boardFx.dashRibbon || !!(state.portals && Object.keys(state.portals).length);
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.combo || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || boardFx.dashRibbon || !!(state.portals && Object.keys(state.portals).length);
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
   }
@@ -1684,6 +1690,50 @@ function drawBoard() {
     ctx.fillRect(0, 0, css, css);
   }
 
+  if (boardFx.combo) drawCombo(ctx, css);
+
+  ctx.restore();
+}
+
+function comboLabel(count) {
+  if (count === 2) return 'DOUBLE KILL';
+  if (count === 3) return 'TRIPLE KILL';
+  if (count === 4) return 'QUAD KILL';
+  return 'MULTI KILL \u00d7' + count;
+}
+
+function drawCombo(ctx, css) {
+  const c = boardFx.combo;
+  const t = c.t;
+  const cx = css / 2;
+  const cy = css * 0.4;
+  const popIn = t < 0.16 ? easeOut(t / 0.16) : 1;
+  const alpha = t > 0.7 ? Math.max(0, 1 - (t - 0.7) / 0.3) : 1;
+  const wobble = Math.sin(t * 26) * (1 - t) * 0.05;
+  const scale = (0.55 + popIn * 0.55) * (1 + wobble);
+  const size = Math.max(20, css * 0.088);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 ' + size + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+  const text = c.text || comboLabel(c.count || 2);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = size * 0.28;
+  ctx.strokeStyle = 'rgba(28,30,27,0.9)';
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = BOARD_COLORS.magmaHot;
+  ctx.fillText(text, 0, 0);
+  if (c.sub) {
+    ctx.font = '800 ' + (size * 0.4) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.lineWidth = size * 0.14;
+    ctx.strokeStyle = 'rgba(28,30,27,0.85)';
+    ctx.strokeText(c.sub, 0, size * 0.7);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(c.sub, 0, size * 0.7);
+  }
   ctx.restore();
 }
 
