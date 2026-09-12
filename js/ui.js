@@ -73,6 +73,8 @@ function maybeRecordResult() {
     mode: mode,
     rounds: state.turnCount,
     invaders: typeof defenseEverSpawned === 'function' ? defenseEverSpawned(state) : 0,
+    invadersTotal: typeof defenseSpawnBudget === 'function' ? defenseSpawnBudget(state) : DEFENSE_SPAWN_BUDGET,
+    missionTitle: state.missionTitle || '',
     crystals: playerNex.filter(function (n) { return n.hp > 0; }).length,
     crystalsTotal: playerNex.length,
     flawless: flawless,
@@ -270,7 +272,7 @@ function renderGameOverStats() {
   const win = s.result === 'player';
 
   if (win && isDefense) {
-    chips.push(statChip('invaders wiped', s.invaders + '/' + DEFENSE_SPAWN_BUDGET));
+    chips.push(statChip('invaders wiped', s.invaders + '/' + (s.invadersTotal || DEFENSE_SPAWN_BUDGET)));
   }
   chips.push(statChip('rounds', s.rounds));
   if (isDefense && win) {
@@ -297,7 +299,7 @@ function renderGameOverOverlay() {
   } else if (state.gameOverResult === 'player') {
     heading = 'you win';
     sub = state.gameMode === 'defense'
-      ? 'the field is clear'
+      ? ((state.missionTitle || 'the island') + ' is clear')
       : 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
     heading = 'you lose';
@@ -312,7 +314,9 @@ function renderGameOverOverlay() {
         '<div class="game-over-sub">' + sub + '</div>' +
         renderGameOverStats() +
         '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
-        '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>' +
+        (state.missionId
+          ? '<a class="game-over-team" href="' + routeHref('team') + '">mission team</a>'
+          : '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>') +
       '</div>' +
     '</div>'
   );
@@ -375,6 +379,24 @@ function defenseDropHud() {
   return '<div class="topbar-mana topbar-drop">1 drop</div>';
 }
 
+function playlistSelectValue() {
+  if (state.gameMode === 'vs') return 'vs';
+  if (state.missionId) return state.missionId;
+  return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'mission-1';
+}
+
+function renderPlaylistSelect() {
+  const selected = playlistSelectValue();
+  const missions = typeof MISSIONS !== 'undefined' ? MISSIONS : [];
+  let html = '<label class="mode-select"><select id="game-mode" aria-label="mission">';
+  missions.forEach(function (m) {
+    html += '<option value="' + m.id + '"' + (selected === m.id ? ' selected' : '') + '>' + m.title + '</option>';
+  });
+  html += '<option value="vs"' + (selected === 'vs' ? ' selected' : '') + '>Vs</option>';
+  html += '</select></label>';
+  return html;
+}
+
 function render() {
   ensureShell();
   const route = currentRoute();
@@ -403,11 +425,11 @@ function render() {
     ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
     : '';
   const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
-  const island = state.gameMode === 'defense' && state.mapName
-    ? '<span class="topbar-map">' + state.mapName + '</span>'
+  const island = state.gameMode === 'defense' && (state.missionTitle || state.mapName)
+    ? '<span class="topbar-map">' + (state.missionTitle || state.mapName) + '</span>'
     : '';
   const invaders = state.gameMode === 'defense'
-    ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + DEFENSE_SPAWN_BUDGET + ' invaders</span>'
+    ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + defenseSpawnBudget(state) + ' invaders</span>'
     : '';
   const streakStats = typeof loadModeStats === 'function' ? loadModeStats(mode) : null;
   const streakHud = streakStats && (streakStats.streak > 0 || streakStats.best > 0)
@@ -420,10 +442,7 @@ function render() {
   document.getElementById('topbar').innerHTML =
     leftHud +
     '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (streakHud ? ' &middot; ' + streakHud : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
-    '<label class="mode-select"><select id="game-mode" aria-label="game mode">' +
-      '<option value="defense"' + (mode === 'defense' ? ' selected' : '') + '>Defense</option>' +
-      '<option value="vs"' + (mode === 'vs' ? ' selected' : '') + '>Vs</option>' +
-    '</select></label>' +
+    renderPlaylistSelect() +
     '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();

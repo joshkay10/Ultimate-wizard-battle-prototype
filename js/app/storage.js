@@ -43,22 +43,42 @@ function savePlayerTeam(ids) {
 }
 
 const MODE_STORAGE_KEY = 'wizard-battle-mode';
+const PLAYLIST_STORAGE_KEY = 'wizard-battle-playlist';
+
+function loadPlaylistId() {
+  if (typeof localStorage === 'undefined') return playlistIdDefault();
+  try {
+    const raw = localStorage.getItem(PLAYLIST_STORAGE_KEY) || localStorage.getItem(MODE_STORAGE_KEY);
+    if (raw === 'vs') return 'vs';
+    if (raw === 'defense') return playlistIdDefault();
+    if (typeof missionById === 'function' && missionById(raw)) return raw;
+  } catch (err) {}
+  return playlistIdDefault();
+}
+
+function savePlaylistId(id) {
+  if (id === 'vs') {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(PLAYLIST_STORAGE_KEY, 'vs');
+      localStorage.setItem(MODE_STORAGE_KEY, 'vs');
+    }
+    return 'vs';
+  }
+  const mission = typeof missionById === 'function' ? missionById(id) : null;
+  const saved = mission ? mission.id : playlistIdDefault();
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(PLAYLIST_STORAGE_KEY, saved);
+    localStorage.setItem(MODE_STORAGE_KEY, 'defense');
+  }
+  return saved;
+}
 
 function loadGameMode() {
-  if (typeof localStorage === 'undefined') return 'defense';
-  try {
-    const raw = localStorage.getItem(MODE_STORAGE_KEY);
-    if (raw === 'vs' || raw === 'defense') return raw;
-  } catch (err) {}
-  return 'defense';
+  return loadPlaylistId() === 'vs' ? 'vs' : 'defense';
 }
 
 function saveGameMode(mode) {
-  mode = mode === 'vs' ? 'vs' : 'defense';
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(MODE_STORAGE_KEY, mode);
-  }
-  return mode;
+  return savePlaylistId(mode === 'vs' ? 'vs' : (mode || playlistIdDefault()));
 }
 
 const STATS_STORAGE_KEY = 'wizard-battle-stats';

@@ -30,6 +30,8 @@ function pickDefenseSpawnTile(match, kind) {
 }
 
 function pickDefenseKind(match) {
+  const pool = match && match.spawnKinds && match.spawnKinds.length ? match.spawnKinds : null;
+  if (pool) return pool[match.rng ? match.rng.int(pool.length) : 0];
   const roll = match.rng ? match.rng.next() : 0.2;
   if (roll < 0.40) return 'mite';
   if (roll < 0.58) return 'melee';
@@ -42,7 +44,7 @@ function markDefenseSpawns(match, count) {
   const events = [];
   let n;
   for (n = 0; n < count; n++) {
-    if (defensePawns(match, ['onboard', 'emerging']).length >= defenseLivingCap()) break;
+    if (defensePawns(match, ['onboard', 'emerging']).length >= defenseLivingCap(match)) break;
     const kind = pickDefenseKind(match);
     const tile = pickDefenseSpawnTile(match, kind);
     if (!tile) break;
@@ -64,8 +66,14 @@ function markDefenseSpawns(match, count) {
 }
 
 function seedDefenseOpening(match) {
-  const kind = pickDefenseKind(match);
-  const tile = pickDefenseSpawnTile(match, kind);
+  const pinned = match.missionOpening || null;
+  const kind = (pinned && pinned.kind) || pickDefenseKind(match);
+  let tile = null;
+  if (pinned && pinned.row != null && pinned.col != null && canOpenPortalAt(match, pinned.row, pinned.col)) {
+    tile = { row: pinned.row, col: pinned.col };
+  } else {
+    tile = pickDefenseSpawnTile(match, kind);
+  }
   if (!tile) return;
   createDefensePawn(match, kind, {
     state: 'onboard',

@@ -92,9 +92,13 @@ function defenseEverSpawned(match) {
   return n;
 }
 
+function defenseSpawnBudget(match) {
+  if (match && typeof match.spawnBudget === 'number') return match.spawnBudget;
+  return typeof DEFENSE_SPAWN_BUDGET === 'number' ? DEFENSE_SPAWN_BUDGET : 10;
+}
+
 function defenseBudgetLeft(match) {
-  const budget = typeof DEFENSE_SPAWN_BUDGET === 'number' ? DEFENSE_SPAWN_BUDGET : 10;
-  return Math.max(0, budget - defenseEverSpawned(match));
+  return Math.max(0, defenseSpawnBudget(match) - defenseEverSpawned(match));
 }
 
 function compareDefenseActOrder(a, b) {
@@ -139,7 +143,8 @@ function defenseOrdinal(n) {
   return n + 'th';
 }
 
-function defenseLivingCap() {
+function defenseLivingCap(match) {
+  if (match && typeof match.pawnCap === 'number') return match.pawnCap;
   return typeof DEFENSE_PAWN_CAP === 'number' ? DEFENSE_PAWN_CAP : 3;
 }
 
@@ -148,7 +153,7 @@ function defenseSpawnCount(match) {
   if (living === 0) return 0;
   const budget = defenseBudgetLeft(match);
   if (budget <= 0) return 0;
-  const room = defenseLivingCap() - living;
+  const room = defenseLivingCap(match) - living;
   if (room <= 0) return 0;
   const t = match.turnCount || 1;
   if (t <= 1) return living < 2 ? 1 : 0;

@@ -35,6 +35,8 @@ const state = {
   gameMode: 'defense',
   mapId: '',
   mapName: '',
+  missionId: '',
+  missionTitle: '',
   matchBestCombo: 0,
   resultRecorded: false,
   matchSummary: null

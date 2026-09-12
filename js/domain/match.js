@@ -1,5 +1,5 @@
 function resetMatch(match, seed, opts) {
-  opts = opts || {};
+  opts = Object.assign({}, opts || {});
   seed = (seed >>> 0) || 1;
   match.seed = seed;
   match.rng = createRng(seed);
@@ -27,9 +27,36 @@ function resetMatch(match, seed, opts) {
   match.playerSummonedThisTurn = false;
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
+  match.missionId = '';
+  match.missionTitle = '';
+  match.islandId = '';
+  match.islandFlip = null;
+  match.spawnBudget = null;
+  match.pawnCap = null;
+  match.spawnKinds = null;
+  match.missionOpening = null;
+
+  if (opts.missionId && typeof missionById === 'function') {
+    const mission = missionById(opts.missionId);
+    if (mission) {
+      const baked = missionResetOpts(mission);
+      Object.keys(baked).forEach(function (key) {
+        if (opts[key] == null) opts[key] = baked[key];
+      });
+    }
+  }
+
   match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
   match.mapId = '';
   match.mapName = '';
+  match.missionId = opts.missionId || '';
+  match.missionTitle = opts.missionTitle || '';
+  match.islandId = opts.islandId || '';
+  match.islandFlip = opts.islandFlip != null ? !!opts.islandFlip : null;
+  match.spawnBudget = typeof opts.spawnBudget === 'number' ? opts.spawnBudget : null;
+  match.pawnCap = typeof opts.pawnCap === 'number' ? opts.pawnCap : null;
+  match.spawnKinds = opts.spawnKinds ? opts.spawnKinds.slice() : null;
+  match.missionOpening = opts.opening || null;
   if (match.gameMode === 'defense') {
     match.nexuses = { player: [], enemy: [] };
   } else {

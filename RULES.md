@@ -1,10 +1,23 @@
 # Wizard Battle — Rules
 
-A two-player turn game on a 9×9 grid. The toolbar picks **Defense** (default) or **Vs**.
+A two-player turn game on a 9×9 grid. The toolbar picks a **named mission** (1–4) or **Vs**.
+
+## Missions
+
+The Defense dropdown is four scripted islands. Each one locks the map, the four wizards, and the enemy mix. **New match** on a mission restarts that same puzzle.
+
+| # | Island | Four | Wave |
+| --- | --- | --- | --- |
+| 1 | The Pass | Rime / Rime / Squall / Pyre | 4 mites, cap 2 |
+| 2 | The Canal | Squall Tug / Squall Gust / Rime / Pyre | 6 brutes and chargers |
+| 3 | The Alley | Pyre Lance / Pyre / Rime / Squall | 8 mites, brutes, bombers |
+| 4 | The Moat | Tug / Lock / Brand / Rime | 10 of everything, opens with a Golem |
+
+Switch to **Vs** to play the mirrored match with the team you edit on the Team page. Mission fours are locked.
 
 ## Modes
 
-- **Defense** — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has **10 invaders** total (opening counts). At most **3** on the board at once (Into the Breach’s usual island). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the 10 are not all out. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. You still bring four wizards from Pyre, Rime, and Squall. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
+- **Defense** (missions 1–4, or a random island in tests) — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)**, packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark chevrons) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has a **spawn budget** of invaders (opening counts) — **4 / 6 / 8 / 10** on missions 1–4, **10** on a free island. At most **3** on the board at once (Into the Breach’s usual island; mission 1 caps at 2). New bodies stream in **one hole per enemy phase**, only if someone is still standing and the budget is not spent. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. Missions lock your four. **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming). You lose if the cluster falls or your wizards are wiped.
 - **Vs** — the mirrored four-wizard match. The enemy rolls four kits and plays a full turn (summon, move, attack) with no telegraph. Destroy all enemy nexuses, or wipe their wizards.
 
 ## Defense enemies
@@ -26,8 +39,8 @@ If you push them, they still fire in the **same direction** from the new tile. S
 ## Team
 
 - Six kits in the pool. **Pyre, Rime, and Squall are live.** Cairn, Volt, and Chrono are on the bench. You bring **exactly four** from the live three (copies allowed). Team has a **randomize** button that rolls four bodies from those three.
-- Pick kits and spells on the Team page. That loadout is saved on this device and used for every battle until you change it.
-- The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
+- Pick kits and spells on the Team page. That loadout is saved on this device and used for **Vs**. Named missions lock their own four.
+- The enemy rolls **four kits from the same pool** each **Vs** match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
 - **Defense:** one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.
 - **Vs:** pay mana. Rime is the cheapest at **1**, and Pyre, Squall, and Volt each cost **2**, so with 2 starting mana you can open with any of the live kits — cheaper costs mean you get bodies out earlier.

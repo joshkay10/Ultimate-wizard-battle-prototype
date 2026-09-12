@@ -2045,6 +2045,33 @@ async function runSimSelfTests() {
   assert(checkWinLoss(state) === null, 'one living pawn keeps the fight going');
   assert(defenseSpawnCount(state) > 0, 'a living pawn still draws reinforcements');
 
+  assert(MISSIONS.length === 4, 'four named missions');
+  MISSIONS.forEach(function (mission) {
+    resetMatch(state, mission.seed, { missionId: mission.id });
+    state.fxEnabled = false;
+    assert(state.gameMode === 'defense', mission.id + ' is Defense');
+    assert(state.missionId === mission.id, mission.id + ' stamps missionId');
+    assert(state.mapId === mission.islandId, mission.id + ' pins ' + mission.islandId + ' (got ' + state.mapId + ')');
+    assert(state.playerLoadout.length === 4, mission.id + ' brings four');
+    assert(state.playerLoadout[0].kit === mission.loadout[0].kit, mission.id + ' uses the scripted first kit');
+    assert(defenseSpawnBudget(state) === mission.spawnBudget, mission.id + ' uses its spawn budget');
+    assert(defenseLivingCap(state) === mission.pawnCap, mission.id + ' uses its living cap');
+    const openers = defensePawns(state, ['onboard']);
+    assert(openers.length === 1, mission.id + ' opens with one vek');
+    assert(openers[0].pawnKind === mission.opening.kind, mission.id + ' opens with a ' + mission.opening.kind);
+    const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
+    resetMatch(state, mission.seed, { missionId: mission.id });
+    const opener2 = defensePawns(state, ['onboard'])[0];
+    assert(opener2 && opener2.row === again.row && opener2.col === again.col, mission.id + ' rematch is the same puzzle');
+    if (mission.spawnKinds) {
+      let k;
+      for (k = 0; k < 12; k++) {
+        const kind = pickDefenseKind(state);
+        assert(mission.spawnKinds.indexOf(kind) >= 0, mission.id + ' only rolls its spawn mix');
+      }
+    }
+  });
+
   const m1 = await runHeadlessMatch(99, 25);
   const m2 = await runHeadlessMatch(99, 25);
   assert(m1.result === m2.result, 'same seed should same winner (' + m1.result + ' vs ' + m2.result + ')');
