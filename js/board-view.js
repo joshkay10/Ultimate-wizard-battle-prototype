@@ -640,8 +640,7 @@ function drawEmerging(ctx, box, pawn) {
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
   ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
-  ctx.beginPath();
-  canvasArc(ctx, cx, cy, box.s * 0.28);
+  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32, 1, 0));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -842,45 +841,106 @@ function puckStyle(wizard, flash) {
   return { face: BOARD_COLORS.puckEnemy, side: BOARD_COLORS.puckEnemySide, icon: elColor, hp: BOARD_COLORS.text, dark: false };
 }
 
-function drawPuckBody(ctx, cx, cy, r, flash, colors) {
-  const depth = Math.max(3.2, r * 0.3);
+function pathPoly(ctx, pts) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  let i;
+  for (i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath();
+}
+
+function hexVerts(cx, cy, r) {
+  const pts = [];
+  let i;
+  for (i = 0; i < 6; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 3;
+    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+  return pts;
+}
+
+function vekVerts(cx, cy, r, dr, dc) {
+  const ang = Math.atan2(dr == null ? 1 : dr, dc || 0);
+  const tipR = r * 1.12;
+  const backR = r * 0.78;
+  const spread = 2.35;
+  return [
+    { x: cx + Math.cos(ang) * tipR, y: cy + Math.sin(ang) * tipR },
+    { x: cx + Math.cos(ang + spread) * backR, y: cy + Math.sin(ang + spread) * backR },
+    { x: cx + Math.cos(ang) * -r * 0.28, y: cy + Math.sin(ang) * -r * 0.28 },
+    { x: cx + Math.cos(ang - spread) * backR, y: cy + Math.sin(ang - spread) * backR }
+  ];
+}
+
+function offsetPoly(pts, dx, dy) {
+  return pts.map(function (p) { return { x: p.x + dx, y: p.y + dy }; });
+}
+
+function drawShapedBody(ctx, pts, depth, flash, colors) {
   const face = colors.face;
   const side = colors.side;
   const dark = colors.dark;
+  const dropped = offsetPoly(pts, 0, depth);
 
   if (!flash) {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    pts.forEach(function (p) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    });
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath();
-    ctx.ellipse(cx, cy + depth + r * 0.1, r * 0.9, r * 0.2, 0, 0, Math.PI * 2);
+    ctx.ellipse((minX + maxX) / 2, maxY + depth + 2, (maxX - minX) * 0.42, 4.2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 
   ctx.fillStyle = side;
-  ctx.beginPath();
-  canvasArc(ctx, cx, cy + depth, r);
+  pathPoly(ctx, dropped);
   ctx.fill();
-  ctx.fillRect(cx - r, cy, r * 2, depth);
+  let i;
+  for (i = 0; i < pts.length; i++) {
+    const n = (i + 1) % pts.length;
+    ctx.beginPath();
+    ctx.moveTo(pts[i].x, pts[i].y);
+    ctx.lineTo(pts[n].x, pts[n].y);
+    ctx.lineTo(dropped[n].x, dropped[n].y);
+    ctx.lineTo(dropped[i].x, dropped[i].y);
+    ctx.closePath();
+    ctx.fill();
+  }
 
-  ctx.beginPath();
-  canvasArc(ctx, cx, cy, r);
   ctx.fillStyle = face;
+  pathPoly(ctx, pts);
   ctx.fill();
 
   if (!flash) {
     ctx.save();
-    ctx.beginPath();
-    canvasArc(ctx, cx, cy, r);
+    pathPoly(ctx, pts);
     ctx.clip();
+    const cx = pts.reduce(function (s, p) { return s + p.x; }, 0) / pts.length;
+    const cy = pts.reduce(function (s, p) { return s + p.y; }, 0) / pts.length;
     ctx.fillStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.62)';
     ctx.beginPath();
-    ctx.ellipse(cx - r * 0.2, cy - r * 0.32, r * 0.7, r * 0.4, -0.45, 0, Math.PI * 2);
+    ctx.ellipse(cx - 6, cy - 7, 14, 8, -0.45, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = dark ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.1)';
     ctx.beginPath();
-    ctx.ellipse(cx + r * 0.08, cy + r * 0.46, r * 0.78, r * 0.3, 0.15, 0, Math.PI * 2);
+    ctx.ellipse(cx + 2, cy + 10, 16, 7, 0.15, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
+}
+
+function tokenShapePts(wizard, cx, cy, r) {
+  if (wizard.pawnKind) {
+    const dr = wizard.intent ? wizard.intent.dr : 1;
+    const dc = wizard.intent ? wizard.intent.dc : 0;
+    return vekVerts(cx, cy, r, dr, dc);
+  }
+  return hexVerts(cx, cy, r);
 }
 
 function drawActionPip(ctx, x, y, r, spent, yours) {
@@ -914,19 +974,18 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.scale(scale, scale);
   ctx.translate(-cx, -cy);
   if (spentTurn && !flash) ctx.globalAlpha = 0.55;
-  drawPuckBody(ctx, cx, cy, r, flash, colors);
+  const pts = tokenShapePts(wizard, cx, cy, r);
+  drawShapedBody(ctx, pts, Math.max(3.2, r * 0.3), flash, colors);
   if (!flash && !yours && !wizard.pawnKind) {
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = BOARD_COLORS[wizard.element] || BOARD_COLORS.text;
-    ctx.beginPath();
-    canvasArc(ctx, cx, cy, r * 0.86);
+    pathPoly(ctx, hexVerts(cx, cy, r * 0.86));
     ctx.stroke();
   }
   if (selected && !flash) {
     ctx.lineWidth = Math.max(2, box.s * 0.045);
     ctx.strokeStyle = BOARD_COLORS.selectedBorder;
-    ctx.beginPath();
-    canvasArc(ctx, cx, cy, r + box.s * 0.08);
+    pathPoly(ctx, tokenShapePts(wizard, cx, cy, r + box.s * 0.08));
     ctx.stroke();
   }
   if (!flash && wizard.pawnKind) {
@@ -935,8 +994,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = ring.edge;
     ctx.setLineDash(ring.dash);
-    ctx.beginPath();
-    canvasArc(ctx, cx, cy, r * 0.92);
+    pathPoly(ctx, vekVerts(cx, cy, r * 0.92, wizard.intent ? wizard.intent.dr : 1, wizard.intent ? wizard.intent.dc : 0));
     ctx.stroke();
     ctx.restore();
   }
