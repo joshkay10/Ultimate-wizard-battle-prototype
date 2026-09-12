@@ -437,7 +437,7 @@ function render() {
     : '';
   const manaHud = '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
   const leftHud = state.gameMode === 'defense'
-    ? (defenseDropHud() + manaHud)
+    ? '<div class="topbar-left">' + defenseDropHud() + manaHud + '</div>'
     : manaHud;
   document.getElementById('topbar').innerHTML =
     leftHud +
