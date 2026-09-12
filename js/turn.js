@@ -34,7 +34,8 @@ function rematch() {
 }
 
 function setGameMode(mode) {
-  saveGameMode(mode);
+  if (typeof savePlaylistId === 'function') savePlaylistId(mode);
+  else saveGameMode(mode);
   rematch();
 }
 

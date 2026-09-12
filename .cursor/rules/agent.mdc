@@ -11,6 +11,6 @@ Rules / To-do text lives only in `RULES.md` / `TODO.md`.
 
 Do not delete `afterPlayerAction` in `js/turn.js`. No sounds.
 
-Defense: 1 opening vek, city beeline, never empty-air intent, cap 3, one hole per enemy phase, one drop/round, mana for specials only.
+Defense: 1 opening vek, city beeline, never empty-air intent, cap 3, one hole per enemy phase, one drop/round, mana for specials only. Named missions live in `js/domain/missions.js`.
 
 Read `AGENTS.md` before changing load order, docs, or Defense AI.

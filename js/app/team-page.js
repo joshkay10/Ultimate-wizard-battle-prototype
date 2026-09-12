@@ -34,7 +34,48 @@ function teamSpellButtons(slot, index, pool, slotKind) {
   }).join('');
 }
 
+function renderLockedMissionTeam(mission) {
+  const slots = cloneLoadout(mission.loadout);
+  const roster = slots.map(function (slot) {
+    const kit = kitById(slot.kit);
+    const basic = spellById(slot.spell);
+    const special = spellById(slot.special);
+    return (
+      '<div class="team-slot ' + kit.element + ' selected is-locked">' +
+        '<div class="team-kit ' + kit.element + ' selected">' +
+          '<div class="wizard-card-icon ' + kit.element + '">' + iconSpan(kit.element, '#ffffff') + '</div>' +
+          '<div class="team-kit-copy">' +
+            '<div class="kit-name">' + kit.name + '</div>' +
+            '<div class="kit-cast">' + (basic ? basic.name : slot.spell) + ' + ' + (special ? special.name : slot.special) + '</div>' +
+            '<div class="kit-detail">' + (basic ? basic.hint : '') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+  const names = slots.map(function (slot) {
+    const kit = kitById(slot.kit);
+    const spell = spellById(slot.spell);
+    return (kit ? kit.name : slot.kit) + ' (' + (spell ? spell.name : slot.spell) + ')';
+  }).join(' · ');
+  return (
+    '<article class="page team-page is-locked">' +
+      '<h1>' + mission.title + '</h1>' +
+      '<p class="lede">' + mission.blurb + ' This four is locked for the mission. Switch the battle dropdown to <strong>Vs</strong> to edit your own team.</p>' +
+      '<p class="team-count ready">' + names + '</p>' +
+      '<h2 class="team-sub">Mission four</h2>' +
+      '<div class="team-grid team-roster">' + roster + '</div>' +
+      '<div class="team-actions">' +
+        '<a class="end-turn-btn" id="team-fight-btn" href="' + routeHref('play') + '">fight</a>' +
+      '</div>' +
+    '</article>'
+  );
+}
+
 function renderTeamPage() {
+  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : '';
+  const mission = typeof missionById === 'function' ? missionById(playlist) : null;
+  if (mission) return renderLockedMissionTeam(mission);
   const selected = teamDraftList();
   const roster = selected.map(function (slot, index) {
     const kit = kitById(slot.kit);
@@ -138,6 +179,10 @@ function pickTeamSpell(index, spellId, slotKind) {
 }
 
 function bindTeamPage() {
+  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : '';
+  if (typeof missionById === 'function' && missionById(playlist)) {
+    return;
+  }
   document.querySelectorAll('[data-kit-add]').forEach(function (el) {
     el.addEventListener('click', function () {
       addTeamKit(el.getAttribute('data-kit-add'));

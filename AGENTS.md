@@ -18,6 +18,12 @@ New domain file: add it to `GAME_SCRIPTS.domain` in load order. Do not copy the 
 
 Team and Elements stay hand-built in `js/pages.js` / `js/app/team-page.js`.
 
+## Missions
+
+`js/domain/missions.js` is the four named Defense fights. Each pins `islandId`, `loadout`, `spawnBudget`, `pawnCap`, `spawnKinds`, and opening kind. Add a mission there. The battle dropdown reads `MISSIONS`. Do not copy the list into `js/ui.js`.
+
+Vs is still free-play with the Team-page loadout. Mission fours are locked.
+
 ## Tests
 
 ```

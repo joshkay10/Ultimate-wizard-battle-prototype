@@ -213,6 +213,19 @@ function buildKeep(rng) {
   return { id: 'keep', name: 'corner keep', city: city, mountains: mountains, water: water };
 }
 
+const DEFENSE_ISLAND_BY_ID = {
+  pass: buildPass,
+  canal: buildCanal,
+  twins: buildTwins,
+  shelf: buildShelf,
+  moat: buildMoat,
+  funnel: buildFunnel,
+  lake: buildLake,
+  alley: buildAlley,
+  dam: buildDam,
+  keep: buildKeep
+};
+
 const DEFENSE_ISLANDS = [
   buildPass,
   buildCanal,
@@ -225,6 +238,10 @@ const DEFENSE_ISLANDS = [
   buildDam,
   buildKeep
 ];
+
+function defenseIslandBuilder(id) {
+  return (id && DEFENSE_ISLAND_BY_ID[id]) || null;
+}
 
 function fallbackDefenseIsland() {
   const city = fallbackDefenseNexusTiles();
@@ -260,29 +277,41 @@ function applyBakedIsland(match, baked) {
   match.water = baked.water;
 }
 
-function generateDefenseIsland(match) {
-  if (!match.rng) {
-    const fallback = fallbackDefenseIsland();
-    match.mapId = fallback.id;
-    match.mapName = fallback.name;
-    match.nexuses = { player: fallback.nexuses, enemy: [] };
-    match.mountains = fallback.mountains;
-    match.water = fallback.water;
-    return;
-  }
-  let attempt;
-  for (attempt = 0; attempt < 16; attempt++) {
-    const build = DEFENSE_ISLANDS[match.rng.int(DEFENSE_ISLANDS.length)];
-    const flip = match.rng.next() < 0.5;
-    const baked = bakeDefenseIsland(build(match.rng), flip);
-    if (!islandOk(match, baked)) continue;
-    applyBakedIsland(match, baked);
-    return;
-  }
+function applyFallbackIsland(match) {
   const fallback = fallbackDefenseIsland();
   match.mapId = fallback.id;
   match.mapName = fallback.name;
   match.nexuses = { player: fallback.nexuses, enemy: [] };
   match.mountains = fallback.mountains;
   match.water = fallback.water;
+}
+
+function tryBakeIsland(match, build, flip) {
+  if (!build || !match.rng) return false;
+  const baked = bakeDefenseIsland(build(match.rng), flip);
+  if (!islandOk(match, baked)) return false;
+  applyBakedIsland(match, baked);
+  return true;
+}
+
+function generateDefenseIsland(match) {
+  if (!match.rng) {
+    applyFallbackIsland(match);
+    return;
+  }
+  if (match.islandId) {
+    const build = defenseIslandBuilder(match.islandId);
+    if (build) {
+      const flip = match.islandFlip != null ? !!match.islandFlip : match.rng.next() < 0.5;
+      if (tryBakeIsland(match, build, flip)) return;
+      if (match.islandFlip != null && tryBakeIsland(match, build, !flip)) return;
+    }
+  }
+  let attempt;
+  for (attempt = 0; attempt < 16; attempt++) {
+    const build = DEFENSE_ISLANDS[match.rng.int(DEFENSE_ISLANDS.length)];
+    const flip = match.rng.next() < 0.5;
+    if (tryBakeIsland(match, build, flip)) return;
+  }
+  applyFallbackIsland(match);
 }
