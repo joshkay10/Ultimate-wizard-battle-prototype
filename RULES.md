@@ -13,9 +13,13 @@ Black chevrons, white icons. Each body is one Into the Breach archetype, 1 damag
 
 | Body | HP | Move | Trick |
 | --- | --- | --- | --- |
+| Mite | 1 | 4 | Melee the adjacent tile. **One hit and it pops** — line up an area spell and wipe the swarm |
 | Brute | 3 | 3 | Melee the adjacent tile (Scorpion) |
 | Charger | 4 | 3 | Charge up to 3 tiles. 1 dmg, then **push 1** if they live. Dies in water (Beetle) |
 | Bomber | 3 | 2 | Line 4, 1 dmg, first wizard or nexus (Firefly) |
+| Golem | 7–8 | 2 | Melee the adjacent tile, **push 1**. Too tough to trade blows with — **shove it into water or a void** instead |
+
+The field mixes fodder and heavies on purpose: little ones (Mites) die to a single hit, so area spells lay waste to a whole cluster, while Golems shrug off damage and are meant to be pushed into hazards rather than killed outright.
 
 If you push them, they still fire in the **same direction** from the new tile. Strikes resolve one body at a time, **north to south, then west to east** (the telegraph shows 1, 2, 3). Pushing someone south can make them strike later. The hit, any death, and any void it opens are on the board before the next pawn acts. Then each body walks in that same order and **declares its next strike** before the next body moves — or walks without a telegraph if nothing is in range. Later walkers treat tiles already aimed by an earlier pawn as bad ground to stand on. They will not aim a charge into water or a void. A match is **10 invaders** including the opening bodies. At most **3** on the board at once. Incoming is **one hole per enemy phase**. Holes open on open field ground, not the last two rows, and not on city, water, or mountains. They can start far from the city. Standing on a hole blocks it. There are **no incoming marks on round 1** — they show up after the first enemy phase. They **beeline the city**. If they cannot hit a nexus this turn they punch a wizard in range, otherwise they walk toward the city. They never telegraph empty air. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **one** of them is already on the board with **no telegraph yet** — they aim after the first enemy phase if a target is in range.
 
@@ -26,7 +30,7 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - The enemy rolls **four kits from the same pool** each match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - The battle top bar names the enemy four and their spells so you can read the matchup before you summon (Vs only).
 - **Defense:** one wizard per round, any kit. Cost does not matter. You can drop Pyre on round 1.
-- **Vs:** pay mana. Rime is the only **2-cost** kit. If she is not on your team, you cannot summon on round 1 — the turn ends on its own, then you get 3 mana.
+- **Vs:** pay mana. Rime is the cheapest at **1**, and Pyre, Squall, and Volt each cost **2**, so with 2 starting mana you can open with any of the live kits — cheaper costs mean you get bodies out earlier.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
@@ -45,12 +49,12 @@ Melee is a simple adjacent punch for everyone. The spell is what you configured 
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Default spell |
 | --- | --- | --- | --- | --- | --- |
-| Pyre (fire) | 3 | 3 | 10 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
-| Rime (ice) | 2 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
-| Squall (wind) | 3 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
-| Cairn (earth) | 4 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
-| Volt (lightning) | 3 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
-| Chrono (temporal) | 4 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+| Pyre (fire) | 2 | 3 | 10 | 5 / 2 | **Lance** — piercing beam of 4, 2 dmg to everything, paints fire |
+| Rime (ice) | 1 | 3 | 12 | 4 / 2 | **Pulse** — 8 neighbors, 2 dmg / 1 push outward |
+| Squall (wind) | 2 | 4 | 8 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
+| Cairn (earth) | 3 | 2 | 14 | 4 / 1 | **Raise** — empty tile becomes a mountain |
+| Volt (lightning) | 2 | 3 | 9 | 3 / 1 | **Bolt** — line 4, silence, jumps water, fizzles on raise |
+| Chrono (temporal) | 3 | 3 | 9 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
 ## Spells
 
@@ -59,6 +63,7 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 | Spell | Kit | Shape | What it does |
 | --- | --- | --- | --- |
 | Stream | Pyre | line 4 | 3 dmg / 1 push, paints fire |
+| Lance | Pyre | pierce 4 | 2 dmg to **everything** in the line, paints fire, flies over crystals |
 | Inferno | Pyre | 3×3 | 2 dmg, paints fire, skips nexuses |
 | Cinder | Pyre | one tile | 2 dmg, paints fire |
 | Pulse | Rime | neighbors | 2 dmg / 1 out, paints ice |
@@ -80,6 +85,7 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 ## Unique casts
 
 - **Stream / gust / sheet / draft** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.
+- **Lance** — a piercing beam. Unlike stream it does **not** stop on the first body: it hits **every** wizard along the line of 4 and paints fire the whole way, so one cast can wipe a row of fodder. Mountains block it; it flies over crystals without chipping the city.
 - **Pulse / jolt** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Pulse survivors are pushed away from the caster.
 - **Burst (inferno, blizzard, gale, quake, arc, cinder, spike)** — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.
 - **Raise** — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.

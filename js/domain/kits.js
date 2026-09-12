@@ -2,15 +2,15 @@ const TEAM_SIZE = 4;
 const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];
 
 const WIZARD_TYPES = [
-  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 3, hp: 10, cost: 3, meleeAttack: 5, meleeDisplacement: 2 },
-  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 3, hp: 12, cost: 2, meleeAttack: 4, meleeDisplacement: 2 },
-  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 4, hp: 8, cost: 3, meleeAttack: 3, meleeDisplacement: 2 },
-  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 14, cost: 4, meleeAttack: 4, meleeDisplacement: 1 },
-  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 3, hp: 9, cost: 3, meleeAttack: 3, meleeDisplacement: 1 },
-  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 9, cost: 4, meleeAttack: 3, meleeDisplacement: 1 }
+  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 3, hp: 10, cost: 2, meleeAttack: 5, meleeDisplacement: 2 },
+  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 3, hp: 12, cost: 1, meleeAttack: 4, meleeDisplacement: 2 },
+  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 4, hp: 8, cost: 2, meleeAttack: 3, meleeDisplacement: 2 },
+  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 14, cost: 3, meleeAttack: 4, meleeDisplacement: 1 },
+  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 3, hp: 9, cost: 2, meleeAttack: 3, meleeDisplacement: 1 },
+  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 9, cost: 3, meleeAttack: 3, meleeDisplacement: 1 }
 ];
 
-const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'ice'];
+const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'fire'];
 
 function kitPlayable(id) {
   return PLAYABLE_KIT_IDS.indexOf(id) !== -1;

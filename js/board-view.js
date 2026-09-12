@@ -193,7 +193,7 @@ function tileFill(row, col, highlight, kind, castKind) {
       if (castKind === 'raise') return '#e8ddc8';
       if (castKind === 'bolt') return '#f3e9c4';
       if (castKind === 'swap' || castKind === 'blink') return '#eadff3';
-      if (castKind === 'stream') return '#f4ddd6';
+      if (castKind === 'stream' || castKind === 'pierce') return '#f4ddd6';
       return BOARD_COLORS.cast;
     }
     return BOARD_COLORS.move;
@@ -1545,7 +1545,7 @@ function drawBoard() {
           : marks.kind === 'cast' && marks.castKind === 'burst' ? BOARD_COLORS[(state.selectedWizardId && state.wizards[state.selectedWizardId] && state.wizards[state.selectedWizardId].element) || 'cast']
           : marks.kind === 'cast' && marks.castKind === 'gust' ? BOARD_COLORS.wind
           : marks.kind === 'cast' && marks.castKind === 'pull' ? BOARD_COLORS.wind
-          : marks.kind === 'cast' && marks.castKind === 'stream' ? BOARD_COLORS.fire
+          : marks.kind === 'cast' && (marks.castKind === 'stream' || marks.castKind === 'pierce') ? BOARD_COLORS.fire
           : marks.kind === 'cast' ? BOARD_COLORS.castBorder
           : BOARD_COLORS.moveBorder;
         ctx.setLineDash([4, 3]);

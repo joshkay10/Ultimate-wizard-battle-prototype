@@ -1,8 +1,8 @@
 const DEFAULT_LOADOUT = [
-  { kit: 'fire', spell: 'stream' },
+  { kit: 'fire', spell: 'lance' },
   { kit: 'ice', spell: 'pulse' },
   { kit: 'wind', spell: 'gust' },
-  { kit: 'ice', spell: 'pulse' }
+  { kit: 'fire', spell: 'inferno' }
 ];
 
 function emptyLoadoutSlot(kitId) {

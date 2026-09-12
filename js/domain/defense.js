@@ -15,12 +15,14 @@ function defenseTelegraphStyle(kind) {
 }
 
 const DEFENSE_PAWN_KINDS = {
+  mite: { id: 'mite', name: 'Mite', element: 'wind', moveRange: 4, attack: 1, range: 1, hpMin: 1, hpMax: 1, displacement: 0 },
   melee: { id: 'melee', name: 'Brute', element: 'earth', moveRange: 3, attack: 1, range: 1, hpMin: 3, hpMax: 3, displacement: 0 },
   charge: { id: 'charge', name: 'Charger', element: 'wind', moveRange: 3, attack: 1, range: 3, hpMin: 4, hpMax: 4, displacement: 1 },
-  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 1, range: 4, hpMin: 3, hpMax: 3, displacement: 0 }
+  fireball: { id: 'fireball', name: 'Bomber', element: 'fire', moveRange: 2, attack: 1, range: 4, hpMin: 3, hpMax: 3, displacement: 0 },
+  golem: { id: 'golem', name: 'Golem', element: 'earth', moveRange: 2, attack: 1, range: 1, hpMin: 7, hpMax: 8, displacement: 1 }
 };
 
-const DEFENSE_PAWN_ORDER = ['melee', 'charge', 'fireball'];
+const DEFENSE_PAWN_ORDER = ['mite', 'melee', 'charge', 'fireball', 'golem'];
 
 function isDefenseMode(match) {
   return !!(match && match.gameMode === 'defense');
@@ -226,9 +228,11 @@ function pickDefenseSpawnTile(match, kind) {
 
 function pickDefenseKind(match) {
   const roll = match.rng ? match.rng.next() : 0.2;
-  if (roll < 0.46) return 'melee';
-  if (roll < 0.76) return 'charge';
-  return 'fireball';
+  if (roll < 0.40) return 'mite';
+  if (roll < 0.58) return 'melee';
+  if (roll < 0.73) return 'charge';
+  if (roll < 0.88) return 'fireball';
+  return 'golem';
 }
 
 function markDefenseSpawns(match, count) {

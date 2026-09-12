@@ -3,6 +3,7 @@ const SPELLS = [
   { id: 'inferno', name: 'Inferno', element: 'fire', kind: 'burst', hint: '3×3 fire — burns, paints magma', castRange: 3, castAttack: 2, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 1 },
   { id: 'cinder', name: 'Cinder', element: 'fire', kind: 'burst', hint: 'one tile — paints fire', castRange: 4, castAttack: 2, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 0 },
   { id: 'brand', name: 'Brand', element: 'fire', kind: 'stream', hint: 'line of 3 — 1 now, 2 burn when they next act', castRange: 3, castAttack: 1, castDisplacement: 0, paint: true, burn: 2 },
+  { id: 'lance', name: 'Lance', element: 'fire', kind: 'pierce', hint: 'piercing beam — hits everything in a line of 4, paints fire', castRange: 4, castAttack: 2, castDisplacement: 0, paint: true, hitNexus: false },
   { id: 'pulse', name: 'Pulse', element: 'ice', kind: 'pulse', hint: 'hits every neighbor', castRange: 1, castAttack: 2, castDisplacement: 1, paint: true },
   { id: 'blizzard', name: 'Blizzard', element: 'ice', kind: 'burst', hint: '3×3 ice — freezes the ground', castRange: 3, castAttack: 1, castDisplacement: 0, paint: true, hitNexus: false, burstRadius: 1 },
   { id: 'sheet', name: 'Sheet', element: 'ice', kind: 'stream', hint: 'line of 4 — paints ice, no push', castRange: 4, castAttack: 1, castDisplacement: 0, paint: true },
