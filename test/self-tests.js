@@ -1,3 +1,4 @@
+// Headless asserts. Loaded by test/sim-node.js only — never the live page.
 function classifyMatchResult(match) {
   if (!match || match.result === 'draw' || !match.result) return 'draw';
   const loser = match.result === 'player' ? 'enemy' : 'player';

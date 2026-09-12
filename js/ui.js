@@ -386,6 +386,9 @@ function render() {
     app.classList.remove('is-animating', 'is-enemy-turn');
     document.getElementById('view-root').innerHTML = renderDocPage(route);
     if (route === 'team') bindTeamPage();
+    if ((route === 'rules' || route === 'todo') && typeof fillMarkdownPage === 'function') {
+      fillMarkdownPage(route);
+    }
     return;
   }
 

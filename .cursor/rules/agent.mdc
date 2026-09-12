@@ -1,0 +1,16 @@
+---
+description: Agent contract for this repo
+alwaysApply: true
+---
+
+Single script list: `js/scripts.js`. New domain files go there, in load order.
+
+Tests live in `test/` and must not ship in `GAME_SCRIPTS.browser`. Run `npm test`.
+
+Rules / To-do text lives only in `RULES.md` / `TODO.md`.
+
+Do not delete `afterPlayerAction` in `js/turn.js`. No sounds.
+
+Defense: 1 opening vek, city beeline, never empty-air intent, cap 3, one hole per enemy phase, one drop/round, mana for specials only.
+
+Read `AGENTS.md` before changing load order, docs, or Defense AI.
