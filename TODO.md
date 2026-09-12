@@ -1,6 +1,6 @@
 # To-do
 
-Shipped: Defense holdout (2 HP nexus city, instant drop anywhere, unmirrored map), Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts.
+Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round), Brand / Lock / Tug, smash leftover knockback, hex wizards and chevron vek, Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts.
 
 ## Need from you
 
@@ -18,8 +18,7 @@ Element icons are in (`img/elements.png`, 6×256 white-on-transparent). Wizard p
 
 ## Combat
 
-- [ ] **Pull / grab spells** — wind already shoves; ice or temporal should yank so chains go both ways.
-- [ ] **Unit statuses** — burn on the body, wet (bolt jump from the wizard), rooted. Tile trails stay; this is extra.
+- [ ] **Wet** — bolt can jump from a soaked wizard, not only water tiles.
 - [ ] **Overwatch** — a spell that fires when someone steps a painted line.
 - [ ] **More bodies in the pool** — new kits, not just more spells on the six.
 - [ ] **Hazard paint** — a spell that drops a one-tile water or pit, not only ice/fire/wind.
