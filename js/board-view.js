@@ -635,12 +635,13 @@ function drawEmerging(ctx, box, pawn) {
   const cy = box.y + box.s / 2;
   const t = performance.now() / 380;
   const style = defenseTelegraphStyle(pawn.pawnKind);
+  const face = vekFacing(pawn);
   ctx.save();
   ctx.strokeStyle = style.edge;
   ctx.lineWidth = Math.max(2, box.s * 0.05);
   ctx.globalAlpha = 0.55 + Math.sin(t) * 0.2;
   ctx.setLineDash(style.dash.length ? style.dash : [5, 4]);
-  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32, 1, 0));
+  pathPoly(ctx, vekVerts(cx, cy, box.s * 0.32, face.dr, face.dc));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -934,11 +935,19 @@ function drawShapedBody(ctx, pts, depth, flash, colors) {
   }
 }
 
+function vekFacing(wizard) {
+  if (wizard.intent) return { dr: wizard.intent.dr, dc: wizard.intent.dc };
+  if (wizard.row != null && wizard.col != null && typeof nearestDefenseNexus === 'function') {
+    const city = nearestDefenseNexus(state, wizard.row, wizard.col);
+    if (city) return cardinalToward(wizard.row, wizard.col, city.row, city.col);
+  }
+  return { dr: 1, dc: 0 };
+}
+
 function tokenShapePts(wizard, cx, cy, r) {
   if (wizard.pawnKind) {
-    const dr = wizard.intent ? wizard.intent.dr : 1;
-    const dc = wizard.intent ? wizard.intent.dc : 0;
-    return vekVerts(cx, cy, r, dr, dc);
+    const face = vekFacing(wizard);
+    return vekVerts(cx, cy, r, face.dr, face.dc);
   }
   return hexVerts(cx, cy, r);
 }
@@ -988,13 +997,14 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     pathPoly(ctx, tokenShapePts(wizard, cx, cy, r + box.s * 0.08));
     ctx.stroke();
   }
-  if (!flash && wizard.pawnKind) {
+  if (!flash && wizard.pawnKind && wizard.intent) {
     const ring = defenseTelegraphStyle(wizard.pawnKind);
+    const face = vekFacing(wizard);
     ctx.save();
     ctx.lineWidth = Math.max(2.4, box.s * 0.055);
     ctx.strokeStyle = ring.edge;
     ctx.setLineDash(ring.dash);
-    pathPoly(ctx, vekVerts(cx, cy, r * 0.92, wizard.intent ? wizard.intent.dr : 1, wizard.intent ? wizard.intent.dc : 0));
+    pathPoly(ctx, vekVerts(cx, cy, r * 0.92, face.dr, face.dc));
     ctx.stroke();
     ctx.restore();
   }
@@ -1020,7 +1030,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
-  if (!flash && wizard.pawnKind) {
+  if (!flash && wizard.pawnKind && wizard.intent) {
     const ring = defenseTelegraphStyle(wizard.pawnKind);
     ctx.save();
     ctx.font = '800 ' + Math.max(6, box.s * 0.11) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
@@ -1029,7 +1039,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.lineWidth = Math.max(2.2, box.s * 0.04);
     ctx.strokeStyle = 'rgba(244,245,242,0.95)';
     ctx.fillStyle = ring.edge;
-    const strikeAt = wizard.intent ? defenseStrikeIndex(state, wizard) : -1;
+    const strikeAt = defenseStrikeIndex(state, wizard);
     const tokenLabel = (strikeAt >= 0 ? (strikeAt + 1) + ' ' : '') + ring.label;
     ctx.strokeText(tokenLabel, cx, cy - r * 0.98);
     ctx.fillText(tokenLabel, cx, cy - r * 0.98);

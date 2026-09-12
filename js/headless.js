@@ -1051,7 +1051,7 @@ async function runSimSelfTests() {
   assert(state.gameMode === 'defense', 'defense mode is explicit');
   assert(Object.values(state.wizards).filter(w => w.team === 'player').length === 4, 'defense still fields four player wizards');
   assert(Object.values(state.wizards).every(w => w.team !== 'enemy' || w.pawnKind), 'defense enemies are pawns');
-  assert(defensePawns(state, ['onboard']).length >= 1 && defensePawns(state, ['onboard']).length <= 2, 'defense opens with 1-2 pawns on the board');
+  assert(defensePawns(state, ['onboard']).length === 1, 'defense opens with one pawn on the board');
   assert(defensePawns(state, ['emerging']).length === 0, 'turn 1 has no incoming spawn marks');
   assert(defensePawns(state, ['onboard']).every(w => !w.intent), 'opening pawns have no telegraph yet');
   simDefenseEnemyPhase(state);
@@ -1120,8 +1120,7 @@ async function runSimSelfTests() {
     })) flankIncoming = true;
   }
   assert(Object.keys(citySizes).length >= 2, 'nexus count varies across maps');
-  assert(Object.keys(openOnboard).length >= 2, 'opening onboard count varies');
-  assert(Object.keys(openOnboard).every(function (n) { return n === '1' || n === '2'; }), 'opening onboard is only 1 or 2');
+  assert(Object.keys(openOnboard).length === 1 && openOnboard[1], 'every seed opens with exactly one pawn');
   assert(flankIncoming, 'incoming after the first enemy loop can use edges');
 
   let asym = false;
@@ -1422,7 +1421,6 @@ async function runSimSelfTests() {
   assert(executed.filter(function (e) { return e.type === 'attack'; }).map(function (e) { return e.attackerId; }).join(',') ===
     [northStriker.id, eastStriker.id, southStriker.id].join(','), 'execute uses the numbered order');
 
-  let splitOpen = 0;
   let multiSector = 0;
   let midFieldSpawn = 0;
   let campSpawn = 0;
@@ -1431,13 +1429,10 @@ async function runSimSelfTests() {
   for (spreadSeed = 1; spreadSeed <= 36; spreadSeed++) {
     resetMatch(state, spreadSeed, { gameMode: 'defense' });
     const openPawns = defensePawns(state, ['onboard']);
-    const openSectors = {};
     openPawns.forEach(function (p) {
-      openSectors[defenseSpawnSector(p.row, p.col)] = true;
       if (p.row >= BOARD_SIZE - 2) campSpawn += 1;
       if (p.row >= 3 && p.row <= 6) midFieldSpawn += 1;
     });
-    if (openPawns.length >= 2 && Object.keys(openSectors).length >= 2) splitOpen += 1;
     simDefenseEnemyPhase(state);
     const after = {};
     defensePawns(state, ['onboard', 'emerging']).forEach(function (p) {
@@ -1452,8 +1447,7 @@ async function runSimSelfTests() {
     if (Object.keys(after).length >= 2) multiSector += 1;
     if (defensePawns(state, ['onboard', 'emerging']).length > DEFENSE_PAWN_CAP) overCap += 1;
   }
-  assert(splitOpen >= 6, 'two-pawn openings often land in different sectors (' + splitOpen + ')');
-  assert(multiSector >= 24, 'the first wave is not all piled on one edge (' + multiSector + ')');
+  assert(multiSector >= 18, 'the first wave is not all piled on one edge (' + multiSector + ')');
   assert(campSpawn === 0, 'holes never open on the last two rows');
   assert(midFieldSpawn >= 8, 'holes can sit on open mid-field ground (' + midFieldSpawn + ')');
   assert(overCap === 0, 'living plus incoming never exceed 3');
@@ -1485,17 +1479,13 @@ async function runSimSelfTests() {
   const cityBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBrute.intent = pickDefenseIntent(state, cityBrute);
   assert(
-    defenseShotScore(state, cityBrute, 4, 4, 1, 0) === defenseShotScore(state, cityBrute, 4, 4, 0, -1),
-    'a wizard and a nexus are worth the same strike'
+    defenseShotScore(state, cityBrute, 4, 4, 1, 0) > defenseShotScore(state, cityBrute, 4, 4, 0, -1),
+    'a nexus strike outranks punching a wizard'
   );
-  assert(
-    (cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0) ||
-    (cityBrute.intent.dr === 0 && cityBrute.intent.dc === -1),
-    'adjacent brute aims at the city or the wizard, not empty air'
-  );
+  assert(cityBrute.intent && cityBrute.intent.dr === 1 && cityBrute.intent.dc === 0, 'adjacent brute beelines the city, not the wizard');
   const cityWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
   simDefenseMove(state);
-  assert(cityWalker.row > 1, 'brute marches toward the nearest prey instead of sitting on the spawn line');
+  assert(cityWalker.row > 1, 'brute marches toward the city instead of sitting on the spawn line');
   cityBrute.state = 'dead';
   cityBrute.row = null;
   cityBrute.col = null;
@@ -1508,6 +1498,61 @@ async function runSimSelfTests() {
   const cityBomber = createDefensePawn(state, 'fireball', { state: 'onboard', row: 1, col: 4, hp: 3, maxHp: 3, hasMoved: true });
   cityBomber.intent = pickDefenseIntent(state, cityBomber);
   assert(cityBomber.intent && cityBomber.intent.dr === 1 && cityBomber.intent.dc === 0, 'bomber lines up the city when that is the only shot');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    w.state = 'dead';
+    w.row = null;
+    w.col = null;
+    w.intent = null;
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [
+    makeNexus({ id: 'player-cluster-0', row: 7, col: 4 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-1', row: 7, col: 5 }, 'player', DEFENSE_NEXUS_HP),
+    makeNexus({ id: 'player-cluster-2', row: 8, col: 4 }, 'player', DEFENSE_NEXUS_HP)
+  ];
+  state.nexuses.enemy = [];
+  const westBait = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
+  westBait.state = 'onboard';
+  westBait.row = 2;
+  westBait.col = 0;
+  westBait.hp = 8;
+  const farBrute = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  const cityBefore = nearestDefenseNexus(state, farBrute.row, farBrute.col);
+  const distCityBefore = manhattan(farBrute.row, farBrute.col, cityBefore.row, cityBefore.col);
+  const distWizBefore = manhattan(farBrute.row, farBrute.col, westBait.row, westBait.col);
+  assert(distWizBefore < distCityBefore, 'the closer body is a wizard, not the city');
+  assert(distWizBefore > farBrute.moveRange + 1, 'that wizard is still out of melee this turn');
+  assignDefenseIntent(state, farBrute);
+  assert(!farBrute.intent, 'far brute does not telegraph empty air');
+  simDefenseMovePawn(state, farBrute);
+  assignDefenseIntent(state, farBrute);
+  const cityAfter = nearestDefenseNexus(state, farBrute.row, farBrute.col);
+  const distCityAfter = manhattan(farBrute.row, farBrute.col, cityAfter.row, cityAfter.col);
+  assert(distCityAfter < distCityBefore, 'far brute closes on the city');
+  assert(farBrute.col >= 3, 'far brute does not peel west toward the out-of-range wizard (' + farBrute.row + ',' + farBrute.col + ')');
+  assert(!farBrute.intent, 'still no telegraph until a body is in range');
+  farBrute.state = 'dead';
+  farBrute.row = null;
+  farBrute.col = null;
+  westBait.row = 2;
+  westBait.col = 4;
+  const punchWalker = createDefensePawn(state, 'melee', { state: 'onboard', row: 0, col: 4, hp: 3, maxHp: 3, hasMoved: false, intent: null });
+  simDefenseMovePawn(state, punchWalker);
+  assignDefenseIntent(state, punchWalker);
+  assert(punchWalker.intent, 'brute punches the wizard when the city is out of reach this turn');
+  assert(defenseShotScore(state, punchWalker, punchWalker.row, punchWalker.col, punchWalker.intent.dr, punchWalker.intent.dc) > 0, 'that punch is a real wizard, not empty air');
+  assert(defenseShotScore(state, punchWalker, punchWalker.row, punchWalker.col, punchWalker.intent.dr, punchWalker.intent.dc) < 100, 'the in-range shot is the wizard, not a nexus');
+  punchWalker.state = 'dead';
+  punchWalker.row = null;
+  punchWalker.col = null;
+  westBait.state = 'dead';
+  westBait.row = null;
+  westBait.col = null;
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
