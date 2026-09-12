@@ -156,6 +156,10 @@ function renderPanel() {
 function wizardStatusBits(wiz) {
   const bits = [];
   if (wiz.pawnKind) {
+    if ((wiz.stack || 1) >= 2) {
+      bits.push('stacked \u00d7' + wiz.stack);
+      bits.push('hits for ' + (wiz.meleeAttack * wiz.stack));
+    }
     if (wiz.rooted) bits.push('locked');
     if (wiz.burn) bits.push('burn ' + wiz.burn);
     if (wiz.intent) {

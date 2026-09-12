@@ -707,6 +707,54 @@ async function runSimSelfTests() {
   }
   assert(sawMite && sawGolem, 'the spawn table rolls both fodder and heavies');
 
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; w.intent = null; }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [];
+  const leadMite = createDefensePawn(state, 'mite', { state: 'onboard', row: 5, col: 4, hasMoved: false, intent: null });
+  const backMite = createDefensePawn(state, 'mite', { state: 'onboard', row: 4, col: 4, hasMoved: false, intent: null });
+  assert(leadMite.stack === 1 && backMite.stack === 1, 'fresh mites start unstacked');
+  simDefenseMovePawn(state, backMite);
+  assert(backMite.state === 'dead', 'the back mite merges into the one ahead (toward the city)');
+  assert(leadMite.stack === 2, 'the survivor becomes a stack of two');
+  assert(leadMite.hp === 1 && leadMite.maxHp === 1, 'a stacked mite is still only 1 HP');
+  const stackPrey = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  stackPrey.state = 'onboard';
+  stackPrey.row = 5;
+  stackPrey.col = 5;
+  stackPrey.hp = 12;
+  leadMite.intent = { kind: 'melee', dr: 0, dc: 1 };
+  const stackHit = simDefenseExecutePawn(state, leadMite);
+  const stackDmg = stackHit.find(e => e.type === 'damage' && e.targetId === stackPrey.id);
+  assert(stackDmg && stackDmg.amount === 2, 'a stacked pair hits for 2, not 1 (' + (stackDmg && stackDmg.amount) + ')');
+  leadMite.state = 'onboard';
+  leadMite.row = 5;
+  leadMite.col = 4;
+  leadMite.hp = 1;
+  leadMite.stack = 2;
+  leadMite.intent = null;
+  const cleared = hurtWizardAmount(state, leadMite, 1, 'test', 5, 4);
+  assert(leadMite.state === 'dead', 'a single point of damage clears the whole doubled tile');
+  assert(cleared.some(e => e.type === 'death' && e.wizardId === leadMite.id), 'clearing the stack logs one death');
+
+  resetMatch(state, 1, { gameMode: 'defense' });
+  state.fxEnabled = false;
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; w.intent = null; }
+  });
+  state.mountains = {};
+  state.water = {};
+  state.voids = {};
+  state.nexuses.player = [makeNexus({ id: 'p-stack-crystal', row: 4, col: 6 }, 'player', DEFENSE_NEXUS_HP)];
+  const cityCracker = createDefensePawn(state, 'mite', { state: 'onboard', row: 4, col: 5, stack: 2, intent: { kind: 'melee', dr: 0, dc: 1 } });
+  simDefenseExecutePawn(state, cityCracker);
+  assert(state.nexuses.player[0].hp === 0, 'a doubled mite cracks a 2 HP crystal in one strike');
+
   resetMatch(state, 7, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
   assert(state.enemyLoadout.length === 4, 'rolled enemies also have spells');
   assert(state.enemyLoadout.every(s => spellById(s.spell) && spellById(s.spell).element === kitById(s.kit).element), 'enemy spells match their element');

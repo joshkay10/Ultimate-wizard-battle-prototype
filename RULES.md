@@ -13,13 +13,13 @@ Black chevrons, white icons. Each body is one Into the Breach archetype, 1 damag
 
 | Body | HP | Move | Trick |
 | --- | --- | --- | --- |
-| Mite | 1 | 4 | Melee the adjacent tile. **One hit and it pops** — line up an area spell and wipe the swarm |
+| Mite | 1 | 4 | Small, fast melee fodder. **One hit and it pops.** Two can **stack on one tile** to hit for **2** — but the doubled tile is still 1 HP, so a single hit clears both |
 | Brute | 3 | 3 | Melee the adjacent tile (Scorpion) |
 | Charger | 4 | 3 | Charge up to 3 tiles. 1 dmg, then **push 1** if they live. Dies in water (Beetle) |
 | Bomber | 3 | 2 | Line 4, 1 dmg, first wizard or nexus (Firefly) |
 | Golem | 7–8 | 2 | Melee the adjacent tile, **push 1**. Too tough to trade blows with — **shove it into water or a void** instead |
 
-The field mixes fodder and heavies on purpose: little ones (Mites) die to a single hit, so area spells lay waste to a whole cluster, while Golems shrug off damage and are meant to be pushed into hazards rather than killed outright.
+The field mixes fodder and heavies on purpose: little ones (Mites) are drawn small and die to a single hit, so area spells lay waste to a whole cluster, while Golems loom large on their tile, shrug off damage, and are meant to be pushed into hazards rather than killed outright. Mites can also **double up on a single tile**: a stacked pair deals **two** damage (enough for a doubled Mite to crack a 2-HP crystal in one strike), but because the tile is still only 1 HP, one hit from you clears the whole stack — stacking is a risk they take to hit harder.
 
 If you push them, they still fire in the **same direction** from the new tile. Strikes resolve one body at a time, **north to south, then west to east** (the telegraph shows 1, 2, 3). Pushing someone south can make them strike later. The hit, any death, and any void it opens are on the board before the next pawn acts. Then each body walks in that same order and **declares its next strike** before the next body moves — or walks without a telegraph if nothing is in range. Later walkers treat tiles already aimed by an earlier pawn as bad ground to stand on. They will not aim a charge into water or a void. A match is **10 invaders** including the opening bodies. At most **3** on the board at once. Incoming is **one hole per enemy phase**. Holes open on open field ground, not the last two rows, and not on city, water, or mountains. They can start far from the city. Standing on a hole blocks it. There are **no incoming marks on round 1** — they show up after the first enemy phase. They **beeline the city**. If they cannot hit a nexus this turn they punch a wizard in range, otherwise they walk toward the city. They never telegraph empty air. Telegraphs are labeled **MELEE**, **CHARGE**, or **SHOT**. At the start of a match, **one** of them is already on the board with **no telegraph yet** — they aim after the first enemy phase if a target is in range.
 
