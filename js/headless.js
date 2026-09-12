@@ -1023,6 +1023,28 @@ async function runSimSelfTests() {
     });
   }
   assert(packedBlobs(state.nexuses.player), 'defense nexuses sit in packed city blobs');
+  assert(state.mapId && state.mapName, 'defense names the island');
+
+  const islandIds = {};
+  let waterTouchesCity = 0;
+  let islandSeed;
+  for (islandSeed = 1; islandSeed <= 48; islandSeed++) {
+    resetMatch(state, islandSeed, { gameMode: 'defense' });
+    assert(state.mapId && state.mapName, 'every seed names the island');
+    islandIds[state.mapId] = true;
+    assert(packedBlobs(state.nexuses.player), 'island city stays packed on seed ' + islandSeed);
+    assert(campsConnected(state, state.mountains, state.water), 'island stays walkable on seed ' + islandSeed);
+    assert(state.nexuses.player.every(function (n) {
+      return n.row >= 3 && n.row <= 7;
+    }), 'island city stays off the far spawn edge');
+    state.nexuses.player.forEach(function (n) {
+      CARDINALS.forEach(function (d) {
+        if (waterAt(state, n.row + d[0], n.col + d[1])) waterTouchesCity += 1;
+      });
+    });
+  }
+  assert(Object.keys(islandIds).length >= 4, 'islands vary across seeds (' + Object.keys(islandIds).join(',') + ')');
+  assert(waterTouchesCity >= 1, 'some islands put water against the city');
   assert(!teamNexusesFallen(state, 'enemy'), 'an empty enemy camp is not a fallen camp');
   assert(checkWinLoss(state) === null, 'defense does not win just because there are no enemy crystals');
   assert(defensePawns(state, ['onboard']).length > 0, 'opening pawns still keep the fight going');
