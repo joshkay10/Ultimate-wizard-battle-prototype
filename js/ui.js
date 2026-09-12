@@ -75,6 +75,9 @@ function maybeRecordResult() {
     invaders: typeof defenseEverSpawned === 'function' ? defenseEverSpawned(state) : 0,
     invadersTotal: typeof defenseSpawnBudget === 'function' ? defenseSpawnBudget(state) : DEFENSE_SPAWN_BUDGET,
     missionTitle: state.missionTitle || '',
+    missionName: (typeof missionById === 'function' && state.missionId && missionById(state.missionId))
+      ? (missionById(state.missionId).name || state.missionTitle)
+      : (state.missionTitle || ''),
     crystals: playerNex.filter(function (n) { return n.hp > 0; }).length,
     crystalsTotal: playerNex.length,
     flawless: flawless,
@@ -82,6 +85,9 @@ function maybeRecordResult() {
     stats: rec.stats,
     prevStreak: rec.prevStreak
   };
+  if (state.gameOverResult === 'player' && state.missionId && typeof recordCampaignClear === 'function') {
+    recordCampaignClear(state.missionId, flawless);
+  }
 }
 
 function renderPanel() {
@@ -135,6 +141,7 @@ function renderPanel() {
     }).join('') + '</ul>'
     : '';
 
+  const brief = renderMissionBrief();
   const handNote = state.gameMode === 'defense'
     ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
     : '';
@@ -144,6 +151,7 @@ function renderPanel() {
 
   return (
     '<div class="panel">' +
+      brief +
       placingHint +
       '<div>' +
         renderInspect(selected) +
@@ -292,31 +300,56 @@ function renderGameOverStats() {
 
 function renderGameOverOverlay() {
   if (!state.gameOverResult) return '';
-  let heading, sub;
+  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
+  const next = mission && typeof nextMission === 'function' ? nextMission(mission) : null;
+  const win = state.gameOverResult === 'player';
+  let heading;
+  let sub;
   if (state.gameOverResult === 'draw') {
     heading = 'draw';
     sub = 'all nexuses on both sides fell at the same time';
-  } else if (state.gameOverResult === 'player') {
-    heading = 'you win';
-    sub = state.gameMode === 'defense'
-      ? ((state.missionTitle || 'the island') + ' is clear')
-      : 'all enemy nexuses fell, or their wizards were wiped out';
+  } else if (win) {
+    heading = mission ? (mission.name || mission.title) : 'you win';
+    if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
+    else if (mission) sub = 'The four islands are yours.';
+    else sub = 'all enemy nexuses fell, or their wizards were wiped out';
   } else {
-    heading = 'you lose';
-    sub = state.gameMode === 'defense'
-      ? 'your nexuses fell, or your wizards were wiped out'
-      : 'all of your nexuses fell, or your wizards were wiped out';
+    heading = mission ? 'the city fell' : 'you lose';
+    sub = mission
+      ? (mission.fail || 'the cluster is gone')
+      : (state.gameMode === 'defense'
+        ? 'your nexuses fell, or your wizards were wiped out'
+        : 'all of your nexuses fell, or your wizards were wiped out');
   }
+
+  let actions = '';
+  if (mission && win && next) {
+    actions =
+      '<button class="end-turn-btn rematch-btn" id="next-island-btn" type="button" data-playlist="' + next.id + '">Next: ' + next.name + '</button>' +
+      '<button class="game-over-ghost" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
+  } else if (mission && win) {
+    actions =
+      '<button class="end-turn-btn rematch-btn" id="next-island-btn" type="button" data-playlist="vs">Play Vs</button>' +
+      '<button class="game-over-ghost" id="rematch-btn" type="button">Replay ' + mission.name + '</button>';
+  } else if (mission) {
+    actions =
+      '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
+  } else {
+    actions = '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>';
+  }
+
+  const teamLink = state.missionId
+    ? '<a class="game-over-team" href="' + routeHref('team') + '">mission team</a>'
+    : '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>';
+
   return (
     '<div class="game-over-overlay">' +
-      '<div class="game-over-card' + (state.gameOverResult === 'player' ? ' is-win' : '') + '">' +
+      '<div class="game-over-card' + (win ? ' is-win' : '') + '">' +
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
         renderGameOverStats() +
-        '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
-        (state.missionId
-          ? '<a class="game-over-team" href="' + routeHref('team') + '">mission team</a>'
-          : '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>') +
+        '<div class="game-over-actions">' + actions + '</div>' +
+        teamLink +
       '</div>' +
     '</div>'
   );
@@ -353,6 +386,13 @@ function attachHandlers() {
       rematch();
     });
   }
+  const nextIslandBtn = document.getElementById('next-island-btn');
+  if (nextIslandBtn) {
+    nextIslandBtn.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      setGameMode(nextIslandBtn.getAttribute('data-playlist'));
+    });
+  }
   const newMatchBtn = document.getElementById('new-match-btn');
   if (newMatchBtn) {
     newMatchBtn.addEventListener('click', function (ev) {
@@ -360,12 +400,14 @@ function attachHandlers() {
       rematch();
     });
   }
-  const modeSelect = document.getElementById('game-mode');
-  if (modeSelect) {
-    modeSelect.addEventListener('change', function () {
-      setGameMode(modeSelect.value);
+  document.querySelectorAll('.campaign-track [data-playlist]').forEach(function (el) {
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      if (el.disabled) return;
+      const id = el.getAttribute('data-playlist');
+      if (id && id !== playlistSelectValue()) setGameMode(id);
     });
-  }
+  });
 }
 
 function defenseDropHud() {
@@ -379,21 +421,37 @@ function defenseDropHud() {
   return '<div class="topbar-mana topbar-drop">1 drop</div>';
 }
 
+function renderMissionBrief() {
+  if (state.gameMode !== 'defense' || !state.missionId || typeof missionById !== 'function') return '';
+  const mission = missionById(state.missionId);
+  if (!mission || !mission.goal) return '';
+  return (
+    '<div class="mission-brief">' +
+      '<div class="mission-goal">' + mission.goal + '</div>' +
+      (mission.hint ? '<div class="mission-hint">' + mission.hint + '</div>' : '') +
+    '</div>'
+  );
+}
+
 function playlistSelectValue() {
   if (state.gameMode === 'vs') return 'vs';
   if (state.missionId) return state.missionId;
   return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'mission-1';
 }
 
-function renderPlaylistSelect() {
+function renderCampaignTrack() {
   const selected = playlistSelectValue();
   const missions = typeof MISSIONS !== 'undefined' ? MISSIONS : [];
-  let html = '<label class="mode-select"><select id="game-mode" aria-label="mission">';
+  const campaign = typeof loadCampaign === 'function' ? loadCampaign() : (typeof emptyCampaign === 'function' ? emptyCampaign() : { unlocked: 99, cleared: {} });
+  let html = '<div class="campaign-track" role="tablist" aria-label="islands">';
   missions.forEach(function (m) {
-    html += '<option value="' + m.id + '"' + (selected === m.id ? ' selected' : '') + '>' + m.title + '</option>';
+    const open = typeof missionIsUnlocked === 'function' ? missionIsUnlocked(m, campaign) : true;
+    const on = selected === m.id;
+    const cleared = !!(campaign.cleared && campaign.cleared[m.id]);
+    html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
   });
-  html += '<option value="vs"' + (selected === 'vs' ? ' selected' : '') + '>Vs</option>';
-  html += '</select></label>';
+  html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
+  html += '</div>';
   return html;
 }
 
@@ -425,8 +483,10 @@ function render() {
     ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
     : '';
   const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
-  const island = state.gameMode === 'defense' && (state.missionTitle || state.mapName)
-    ? '<span class="topbar-map">' + (state.missionTitle || state.mapName) + '</span>'
+  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
+  const islandName = mission ? (mission.name || mission.title) : (state.mapName || '');
+  const island = state.gameMode === 'defense' && islandName
+    ? '<span class="topbar-map">' + islandName + '</span>'
     : '';
   const invaders = state.gameMode === 'defense'
     ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + defenseSpawnBudget(state) + ' invaders</span>'
@@ -439,11 +499,13 @@ function render() {
   const leftHud = state.gameMode === 'defense'
     ? '<div class="topbar-left">' + defenseDropHud() + manaHud + '</div>'
     : manaHud;
+  const retryLabel = mission ? 'retry' : 'new match';
+  if (mission) document.title = mission.name + ' — Wizard Battle';
   document.getElementById('topbar').innerHTML =
     leftHud +
     '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (streakHud ? ' &middot; ' + streakHud : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
-    renderPlaylistSelect() +
-    '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
+    renderCampaignTrack() +
+    '<button class="new-match-btn" id="new-match-btn" type="button">' + retryLabel + '</button>';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();
   drawBoard();

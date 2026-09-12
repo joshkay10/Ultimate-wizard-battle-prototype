@@ -1,6 +1,6 @@
 function renderSiteNav(route) {
   const links = [
-    { id: 'play', label: 'Battle' },
+    { id: 'play', label: 'Play' },
     { id: 'team', label: 'Team' },
     { id: 'rules', label: 'Rules' },
     { id: 'elements', label: 'Elements' },

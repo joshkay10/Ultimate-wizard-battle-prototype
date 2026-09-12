@@ -2077,6 +2077,22 @@ async function runSimSelfTests() {
     }
   });
 
+  assert(nextMission(missionById('mission-1')) === missionById('mission-2'), 'the canal follows the pass');
+  assert(nextMission(missionById('mission-4')) === null, 'the moat is the last island');
+  const fresh = emptyCampaign();
+  assert(missionIsUnlocked(missionById('mission-1'), fresh), 'the pass is open');
+  assert(!missionIsUnlocked(missionById('mission-2'), fresh), 'the canal starts locked');
+  const clearedPass = applyMissionClear(fresh, 'mission-1', true);
+  assert(clearedPass.unlocked === 2, 'clearing the pass unlocks the canal');
+  assert(clearedPass.cleared['mission-1'].flawless, 'a clean city stamps flawless');
+  assert(missionIsUnlocked(missionById('mission-2'), clearedPass), 'the canal opens after a clear');
+  assert(!missionIsUnlocked(missionById('mission-3'), clearedPass), 'the alley stays locked');
+  const clearedAll = applyMissionClear(applyMissionClear(applyMissionClear(clearedPass, 'mission-2', false), 'mission-3', false), 'mission-4', false);
+  assert(clearedAll.complete && clearedAll.unlocked === 4, 'the moat completes the campaign');
+  MISSIONS.forEach(function (mission) {
+    assert(mission.goal && mission.hint && mission.name, mission.id + ' has player-facing copy');
+  });
+
   resetMatch(state, 7, { missionId: 'mission-1' });
   state.fxEnabled = false;
   const passOpener = defensePawns(state, ['onboard'])[0];

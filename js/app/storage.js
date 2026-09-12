@@ -51,7 +51,14 @@ function loadPlaylistId() {
     const raw = localStorage.getItem(PLAYLIST_STORAGE_KEY) || localStorage.getItem(MODE_STORAGE_KEY);
     if (raw === 'vs') return 'vs';
     if (raw === 'defense') return playlistIdDefault();
-    if (typeof missionById === 'function' && missionById(raw)) return raw;
+    if (typeof missionById === 'function' && missionById(raw)) {
+      const mission = missionById(raw);
+      if (typeof missionIsUnlocked === 'function' && !missionIsUnlocked(mission, loadCampaign())) {
+        const open = typeof highestUnlockedMission === 'function' ? highestUnlockedMission(loadCampaign()) : null;
+        return (open && open.id) || playlistIdDefault();
+      }
+      return mission.id;
+    }
   } catch (err) {}
   return playlistIdDefault();
 }
@@ -79,6 +86,39 @@ function loadGameMode() {
 
 function saveGameMode(mode) {
   return savePlaylistId(mode === 'vs' ? 'vs' : (mode || playlistIdDefault()));
+}
+
+const CAMPAIGN_STORAGE_KEY = 'wizard-battle-campaign';
+
+function writeCampaign(campaign) {
+  const saved = typeof cloneCampaign === 'function' ? cloneCampaign(campaign) : campaign;
+  if (typeof localStorage === 'undefined') return saved;
+  try {
+    localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(saved));
+  } catch (err) {}
+  return saved;
+}
+
+function loadCampaign() {
+  const base = typeof emptyCampaign === 'function' ? emptyCampaign() : { cleared: {}, unlocked: 1, complete: false };
+  if (typeof localStorage === 'undefined') return base;
+  try {
+    const raw = localStorage.getItem(CAMPAIGN_STORAGE_KEY);
+    if (raw) {
+      return typeof cloneCampaign === 'function' ? cloneCampaign(JSON.parse(raw)) : Object.assign(base, JSON.parse(raw));
+    }
+    const playlist = localStorage.getItem(PLAYLIST_STORAGE_KEY);
+    const mission = typeof missionById === 'function' ? missionById(playlist) : null;
+    if (mission && mission.number > 1) {
+      base.unlocked = mission.number;
+    }
+  } catch (err) {}
+  return base;
+}
+
+function recordCampaignClear(missionId, flawless) {
+  if (typeof applyMissionClear !== 'function') return loadCampaign();
+  return writeCampaign(applyMissionClear(loadCampaign(), missionId, flawless));
 }
 
 const STATS_STORAGE_KEY = 'wizard-battle-stats';

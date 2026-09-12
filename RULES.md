@@ -1,17 +1,17 @@
 # Wizard Battle — Rules
 
-A two-player turn game on a 9×9 grid. The toolbar picks a **named mission** (1–4) or **Vs**.
+A two-player turn game on a 9×9 grid. Play the **four-island campaign**, or switch to **Vs**.
 
 ## Missions
 
-The Defense dropdown is four scripted islands. Each one locks the map, the four wizards, and the enemy mix. **New match** on a mission restarts that same puzzle.
+The toolbar is a four-island campaign (the pass, the canal, the alley, the moat) plus **Vs**. Clear an island to unlock the next. **Retry** restarts that same island.
 
-| # | Island | Four | Wave |
+| # | Island | Goal | Wave |
 | --- | --- | --- | --- |
-| 1 | The Pass | Rime / Rime / Squall / Pyre | 4 mites, cap 2. Opener on the city’s doorstep |
-| 2 | The Canal | Squall Tug / Squall Gust / Rime / Pyre | 6 brutes and chargers. Opener is a charger next to the river |
-| 3 | The Alley | Pyre Lance / Pyre / Rime / Squall | 8 mites, brutes, bombers. Opener is a bomber in the corridor |
-| 4 | The Moat | Gust / Lock / Brand / Rime | 10: Golem opener, then bombers, chargers, and brutes |
+| 1 | The Pass | Pop every mite | 4 mites, cap 2. Opener on the city’s doorstep |
+| 2 | The Canal | Drown them | 6 brutes and chargers. Opener is a charger next to the river |
+| 3 | The Alley | Pierce the line | 8 mites, brutes, bombers. Opener is a bomber in the corridor |
+| 4 | The Moat | Shove the Golem | 10: Golem opener, then bombers, chargers, and brutes |
 
 Switch to **Vs** to play the mirrored match with the team you edit on the Team page. Mission fours are locked.
 

@@ -8,7 +8,11 @@ const MISSIONS = [
     islandFlip: false,
     seed: 7,
     title: '1 · The Pass',
+    name: 'The Pass',
     mapLabel: 'the pass',
+    goal: 'Pop every mite.',
+    hint: 'One hit kills them. Red tiles fire after you end turn — shove or shoot first.',
+    fail: 'The mites got through.',
     blurb: 'A tight mountain gate. The mite is already on the city’s doorstep — pop it or the cluster takes the hit. Four mites, two at a time. Ignore a telegraph and you can lose the city.',
     spawnBudget: 4,
     pawnCap: 2,
@@ -29,7 +33,11 @@ const MISSIONS = [
     islandFlip: false,
     seed: 11,
     title: '2 · The Canal',
+    name: 'The Canal',
     mapLabel: 'the canal',
+    goal: 'Drown them.',
+    hint: 'Gust or Tug a body into the river. Trading blows with the city at 6 HP is how you die.',
+    fail: 'The canal wasn’t enough.',
     blurb: 'A charger sits one tile from the river. Gust or Tug it in — trading blows with 3–4 HP bodies while the city has 6 HP is how you die here.',
     spawnBudget: 6,
     pawnCap: 3,
@@ -50,7 +58,11 @@ const MISSIONS = [
     islandFlip: false,
     seed: 19,
     title: '3 · The Alley',
+    name: 'The Alley',
     mapLabel: 'the alley',
+    goal: 'Pierce the line.',
+    hint: 'Lance hits a whole row. Do not stand in a SHOT.',
+    fail: 'The alley broke.',
     blurb: 'A bomber already has the corridor. Lance pays when bodies line up. Standing in a SHOT to save a crystal costs real HP now — three chips and Squall is gone.',
     spawnBudget: 8,
     pawnCap: 3,
@@ -71,7 +83,11 @@ const MISSIONS = [
     islandFlip: false,
     seed: 23,
     title: '4 · The Moat',
+    name: 'The Moat',
     mapLabel: 'the moat',
+    goal: 'Shove the Golem.',
+    hint: 'Dunk it in the moat. Bombers still shoot — save the city too.',
+    fail: 'The Golem walked in.',
     blurb: 'The exam. A Golem is one gust from the moat — dunk it. Bombers and chargers still come; greed the dunk and the cluster falls.',
     spawnBudget: 10,
     pawnCap: 3,
@@ -120,4 +136,61 @@ function playlistIdDefault() {
 
 function isVsPlaylist(id) {
   return id === 'vs';
+}
+
+function nextMission(mission) {
+  if (!mission) return null;
+  let i;
+  for (i = 0; i < MISSIONS.length; i++) {
+    if (MISSIONS[i].id === mission.id) return MISSIONS[i + 1] || null;
+  }
+  return null;
+}
+
+function emptyCampaign() {
+  return { cleared: {}, unlocked: 1, complete: false };
+}
+
+function cloneCampaign(raw) {
+  const out = emptyCampaign();
+  if (!raw) return out;
+  if (typeof raw.unlocked === 'number' && raw.unlocked >= 1) out.unlocked = raw.unlocked;
+  out.complete = !!raw.complete;
+  if (raw.cleared && typeof raw.cleared === 'object') {
+    Object.keys(raw.cleared).forEach(function (id) {
+      const row = raw.cleared[id];
+      out.cleared[id] = { flawless: !!(row && row.flawless) };
+    });
+  }
+  if (out.unlocked > MISSIONS.length) out.unlocked = MISSIONS.length;
+  return out;
+}
+
+function missionIsUnlocked(mission, campaign) {
+  if (!mission) return false;
+  const cap = campaign && typeof campaign.unlocked === 'number' ? campaign.unlocked : 1;
+  return mission.number <= cap;
+}
+
+function highestUnlockedMission(campaign) {
+  let best = MISSIONS[0] || null;
+  let i;
+  for (i = 0; i < MISSIONS.length; i++) {
+    if (missionIsUnlocked(MISSIONS[i], campaign)) best = MISSIONS[i];
+  }
+  return best;
+}
+
+function applyMissionClear(campaign, missionId, flawless) {
+  const out = cloneCampaign(campaign);
+  const mission = missionById(missionId);
+  if (!mission) return out;
+  const prev = out.cleared[mission.id] || {};
+  out.cleared[mission.id] = { flawless: !!(prev.flawless || flawless) };
+  out.unlocked = Math.max(out.unlocked, Math.min(MISSIONS.length, mission.number + 1));
+  if (mission.number === MISSIONS.length) {
+    out.unlocked = MISSIONS.length;
+    out.complete = true;
+  }
+  return out;
 }
