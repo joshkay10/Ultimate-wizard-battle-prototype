@@ -25,6 +25,14 @@ async function hunterRunTurn(team) {
   const wizards = Object.values(state.wizards)
     .filter(w => w.team === team && w.state === 'onboard')
     .sort((a, b) => compareWizardActOrder(a, b, team));
+  if (state.gameMode === 'vs') {
+    const pick = wizards[0];
+    if (pick && pick.state === 'onboard') {
+      await present(teamWizardAct(pick, team));
+      await maybeWait(420);
+    }
+    return;
+  }
   for (const wizard of wizards) {
     if (wizard.state !== 'onboard') continue;
     await present(teamWizardAct(wizard, team));
@@ -196,7 +204,7 @@ function attackScore(wizard, tile, kind, team) {
   const n = nexusAt(state, tile.row, tile.col);
   if (n && n.team === opposingTeam(team) && n.hp > 0) {
     const lethal = dmg >= n.hp ? 400 : 0;
-    score = 220 + lethal + (n.maxHp - n.hp) * 8 + dmg + (kind === 'melee' ? 2 : 0);
+    score = 85 + lethal + (n.maxHp - n.hp) * 8 + dmg + (kind === 'melee' ? 2 : 0);
   }
   const w2 = wizardAt(state, tile.row, tile.col);
   if (w2 && w2.team === opposingTeam(team)) {
@@ -302,7 +310,7 @@ function pulseScore(wizard, team) {
     if (n && n.hp > 0) {
       if (n.team === opposingTeam(team)) {
         const lethal = dmg >= n.hp ? 400 : 0;
-        score += 220 + lethal + (n.maxHp - n.hp) * 8 + dmg;
+        score += 85 + lethal + (n.maxHp - n.hp) * 8 + dmg;
       } else {
         score -= 120;
       }
@@ -397,7 +405,7 @@ function burstScore(wizard, tile, team) {
       if (!wizard.spellHitNexus) return;
       if (n.team === opposingTeam(team)) {
         const lethal = dmg >= n.hp ? 400 : 0;
-        score += 220 + lethal + (n.maxHp - n.hp) * 8 + dmg;
+        score += 85 + lethal + (n.maxHp - n.hp) * 8 + dmg;
       } else {
         score -= 120;
       }

@@ -91,7 +91,7 @@ function renderTeamPage() {
           '<div class="team-kit-copy">' +
             '<div class="kit-name">' + kit.name + '</div>' +
             '<div class="kit-cast">' + basicName + ' + ' + specialName + '</div>' +
-            '<div class="kit-detail">melee 0 · spell 1×' + kit.cost + ' · spell 2×' + (kit.cost * 2) + ' · ' + kit.hp + ' hp</div>' +
+            '<div class="kit-detail">move ' + kit.moveRange + ' · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + ' · ' + kit.hp + ' hp</div>' +
           '</div>' +
           '<button type="button" class="team-slot-remove" data-slot-remove="' + index + '">remove</button>' +
         '</div>' +

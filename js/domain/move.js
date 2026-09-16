@@ -1,4 +1,5 @@
 function simMove(match, wizard, path) {
+  if (typeof canUseWizard === 'function' && !canUseWizard(match, wizard)) return [];
   if (!canMove(wizard)) return [];
   if (!path || !path.length) return [];
   const from = { row: wizard.row, col: wizard.col };

@@ -48,6 +48,7 @@ function setAction(action) {
   if (!state.selectedWizardId || state.animating || !canAct()) return;
   const wizard = state.wizards[state.selectedWizardId];
   if (!wizard || wizard.team !== 'player') return;
+  if (typeof canUseWizard === 'function' && !canUseWizard(state, wizard)) return;
   if (action === 'special') {
     if (!wizard.specialSpellId) return;
     if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'special');
@@ -61,9 +62,13 @@ function setAction(action) {
 
 function undoSelectedMove() {
   if (state.animating || !canAct()) return;
-  const wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  let wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  if (!canUndoMove(wizard) && typeof actingWizardOnTurn === 'function') {
+    wizard = actingWizardOnTurn(state, 'player');
+  }
   if (!canUndoMove(wizard)) return;
   present(simUndoMove(state, wizard)).then(function () {
+    state.selectedWizardId = wizard.id;
     state.selectedAction = 'move';
     afterPlayerAction();
   });
@@ -96,6 +101,10 @@ function handleTileClick(row, col) {
   }
 
   if (state.gameMode === 'vs') {
+    if (typeof canUseWizard === 'function' && !canUseWizard(state, wizard)) {
+      reselectOrBail();
+      return;
+    }
     if (state.selectedAction === 'melee' && canAttack(wizard)) {
       const meleeTiles = getMeleeTiles(state, wizard);
       if (meleeTiles.some(function (t) { return t.row === row && t.col === col; })) {
