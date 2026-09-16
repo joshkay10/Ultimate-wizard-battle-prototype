@@ -786,10 +786,6 @@ html, body {
   color: var(--text-faint);
   vertical-align: middle;
 }
-.wizard-card.arriving .wizard-card-hit {
-  opacity: 0.72;
-}
-
 .end-turn-btn {
   padding: 8px 12px;
   border: 1px solid var(--line-strong);

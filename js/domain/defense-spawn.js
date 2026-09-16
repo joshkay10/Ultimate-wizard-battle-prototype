@@ -12,7 +12,7 @@ function pickDefenseSpawnTile(match, kind) {
     for (c = 0; c < BOARD_SIZE; c++) {
       if (!isDefenseSpawnCell(r, c)) continue;
       if (used[tileKey(r, c)]) continue;
-      if (!canOpenPortalAt(match, r, c)) continue;
+      if (!isOpenTile(match, r, c)) continue;
       const dist = nearestDefensePawnDist(match, r, c);
       const city = nearestDefenseNexus(match, r, c);
       const cityDist = city ? manhattan(r, c, city.row, city.col) : 12;
@@ -69,7 +69,7 @@ function seedDefenseOpening(match) {
   const pinned = match.missionOpening || null;
   const kind = (pinned && pinned.kind) || pickDefenseKind(match);
   let tile = null;
-  if (pinned && pinned.row != null && pinned.col != null && canOpenPortalAt(match, pinned.row, pinned.col)) {
+  if (pinned && pinned.row != null && pinned.col != null && isOpenTile(match, pinned.row, pinned.col)) {
     tile = { row: pinned.row, col: pinned.col };
   } else {
     tile = pickDefenseSpawnTile(match, kind);

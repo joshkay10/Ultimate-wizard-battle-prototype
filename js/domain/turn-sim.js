@@ -21,10 +21,10 @@ function playerHasLegalAction(match) {
   if (match.gameOverResult || match.currentTurn !== 'player') return false;
   if (match.placingWizardId && getPlayerSummonTiles(match).length) return true;
 
-  const canPortal = Object.values(match.wizards).some(function (wizard) {
+  const canDrop = Object.values(match.wizards).some(function (wizard) {
     return canPaySummon(match, wizard, 'player');
   });
-  if (canPortal && getPlayerSummonTiles(match).length) return true;
+  if (canDrop && getPlayerSummonTiles(match).length) return true;
 
   const onboard = Object.values(match.wizards).filter(function (wizard) {
     return wizard.team === 'player' && wizard.state === 'onboard' && (typeof canUseWizard !== 'function' || canUseWizard(match, wizard));
@@ -57,14 +57,11 @@ function simEndPlayerTurn(match) {
     }
   }
   match.currentTurn = 'enemy';
-  const enemyDraw = typeof drawVsWizard === 'function' ? drawVsWizard(match, 'enemy') : null;
-  if (enemyDraw) events.push({ type: 'draw', team: 'enemy', wizardId: enemyDraw.id });
   events.push.apply(events, tickBurnsForTeam(match, 'enemy'));
-  events.push.apply(events, simResolvePortals(match, 'enemy'));
-  const afterPortals = checkWinLoss(match);
-  if (afterPortals) {
-    match.gameOverResult = afterPortals;
-    events.push({ type: 'gameOver', result: afterPortals });
+  const afterBurns = checkWinLoss(match);
+  if (afterBurns) {
+    match.gameOverResult = afterBurns;
+    events.push({ type: 'gameOver', result: afterBurns });
     return events;
   }
   events.push({ type: 'turnStart', team: 'enemy', round: match.turnCount });
@@ -91,15 +88,12 @@ function simEndEnemyTurn(match) {
   match.currentTurn = 'player';
   match.playerSummonedThisTurn = false;
   refillManaPools(match);
-  const playerDraw = typeof drawVsWizard === 'function' ? drawVsWizard(match, 'player') : null;
-  if (playerDraw) events.push({ type: 'draw', team: 'player', wizardId: playerDraw.id });
   resetActionFlagsFor(match, 'player');
   events.push.apply(events, tickBurnsForTeam(match, 'player'));
-  events.push.apply(events, simResolvePortals(match, 'player'));
-  const afterPortals = checkWinLoss(match);
-  if (afterPortals) {
-    match.gameOverResult = afterPortals;
-    events.push({ type: 'gameOver', result: afterPortals });
+  const afterBurns = checkWinLoss(match);
+  if (afterBurns) {
+    match.gameOverResult = afterBurns;
+    events.push({ type: 'gameOver', result: afterBurns });
     return events;
   }
   events.push({ type: 'turnStart', team: 'player', round: match.turnCount });

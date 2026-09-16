@@ -114,7 +114,7 @@ On your turn you may, in any order:
 
 1. **Summon**
    - **Defense:** **one wizard per round**. Cost is ignored. Drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
-   - **Vs:** all four start on the board. **One wizard per turn** — that body may move and strike, then the enemy acts one wizard. No portal hand. Spell 1 and spell 2 draw from this mana.
+   - **Vs:** all four start on the board. **One wizard per turn** — that body may move and strike, then the enemy acts one wizard. Spell 1 and spell 2 draw from this mana.
 2. **Move** — **Defense:** each onboard wizard that has not moved may move once. **Vs:** only the wizard you activate this turn may move. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
 3. **Attack** — **Defense:** each onboard wizard that has not attacked may attack once. **Vs:** only the activated wizard may strike, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
 4. **End turn** — the other player takes their turn. **Vs** auto-ends when that one wizard has nothing left to do. **Defense** auto-ends when every wizard is spent. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.

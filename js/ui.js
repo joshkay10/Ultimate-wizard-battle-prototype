@@ -41,11 +41,6 @@ function ensurePlayShell() {
     '<div id="panel-root"></div>' +
     '<div id="overlay-root"></div>';
   document.getElementById('board-canvas').addEventListener('pointerup', function (ev) {
-    const held = typeof boardHandFromEvent === 'function' ? boardHandFromEvent(ev) : null;
-    if (held) {
-      pickWizardToSummon(held.id);
-      return;
-    }
     const cell = boardCanvasCellFromEvent(ev);
     if (cell) handleTileClick(cell.row, cell.col);
   });
@@ -108,20 +103,12 @@ function renderPanel() {
   }
 
   const wizardCards = Object.values(state.wizards)
-    .filter(w => w.team === 'player' && (w.state === 'summoned' || w.state === 'portaling'))
+    .filter(w => w.team === 'player' && w.state === 'summoned')
     .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10))
     .map(wiz => {
-      const inHand = wiz.state === 'summoned';
-      const arriving = wiz.state === 'portaling';
       const isPicked = wiz.id === state.placingWizardId;
-      const clickable = inHand && canPaySummon(state, wiz, 'player');
-      const cardClasses = 'wizard-card ' + wiz.element
-        + (inHand ? ' in-hand' : ' summoned')
-        + (arriving ? ' arriving' : '')
-        + (isPicked ? ' placing' : '');
-      const costBadge = state.gameMode === 'defense'
-        ? ''
-        : '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>';
+      const clickable = canPaySummon(state, wiz, 'player');
+      const cardClasses = 'wizard-card ' + wiz.element + ' in-hand' + (isPicked ? ' placing' : '');
 
       return (
         '<div class="' + cardClasses + '">' +
@@ -129,10 +116,9 @@ function renderPanel() {
             '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, '#ffffff') + '</div>' +
             '<div class="wizard-card-top">' +
               '<div class="wizard-card-id">' +
-                '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
+                '<div class="wizard-card-name">' + wiz.name + '</div>' +
                 '<div class="wizard-card-element">' + (wiz.spellName || wiz.element) + '</div>' +
               '</div>' +
-              costBadge +
             '</div>' +
             '<div class="wizard-stats">' +
               '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
@@ -146,26 +132,22 @@ function renderPanel() {
     .join('');
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-  const placingHint = (state.gameMode !== 'vs' && state.placingWizardId && state.wizards[state.placingWizardId])
+  const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
     ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + ' lands with a burst, then is spent this turn.</div>'
     : '';
 
   const logLines = recentLogLines(3);
-  const logHtml = state.gameMode === 'vs' || !logLines.length
+  const logHtml = !logLines.length
     ? ''
     : '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
       return '<li>' + line + '</li>';
     }).join('') + '</ul>';
 
   const brief = renderMissionBrief();
-  const handNote = state.gameMode === 'defense'
-    ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
+  const handNote = state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn';
+  const handLabel = wizardCards
+    ? '<p class="panel-section-label">in hand · ' + handNote + '</p><div class="wizard-grid">' + wizardCards + '</div>'
     : '';
-  const handLabel = state.gameMode === 'vs'
-    ? ''
-    : (wizardCards
-      ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
-      : '');
 
   return (
     '<div class="panel">' +

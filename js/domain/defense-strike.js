@@ -210,7 +210,7 @@ function simDefenseEmerge(match) {
         death.cause = 'spawn';
         death.row = row;
         death.col = col;
-        events.push({ type: 'portalBlocked', wizardId: pawn.id, blockerId: blocker.id, row: row, col: col, element: pawn.element });
+        events.push({ type: 'spawnBlocked', wizardId: pawn.id, blockerId: blocker.id, row: row, col: col, element: pawn.element });
         events.push(death);
       }
       events.push.apply(events, hurtWizardAmount(match, blocker, 1, 'spawn', row, col));

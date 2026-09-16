@@ -19,7 +19,6 @@ function resetMatch(match, seed, opts) {
   match.tempMountains = {};
   match.water = {};
   match.voids = {};
-  match.portals = {};
   match.mana = STARTING_MANA;
   match.maxMana = STARTING_MANA;
   match.enemyMana = STARTING_MANA;

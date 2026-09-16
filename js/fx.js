@@ -31,11 +31,11 @@ function animate(duration, step) {
 }
 
 function fxGroupStart(type) {
-  return type === 'attack' || type === 'move' || type === 'summon' || type === 'portalBlocked';
+  return type === 'attack' || type === 'move' || type === 'summon' || type === 'spawnBlocked';
 }
 
 function fxGroupStop(type) {
-  return fxGroupStart(type) || type === 'portal' || type === 'emergeMark' || type === 'turnEnd' || type === 'turnStart' || type === 'gameOver';
+  return fxGroupStart(type) || type === 'emergeMark' || type === 'turnEnd' || type === 'turnStart' || type === 'gameOver';
 }
 
 function holdDiscAt(wizard, row, col) {
@@ -80,9 +80,9 @@ function rewindForFx(events) {
     if (ev.type === 'summon') {
       const w = state.wizards[ev.wizardId];
       if (w) {
-        w.state = 'emerging';
-        w.row = ev.row;
-        w.col = ev.col;
+        w.state = 'summoned';
+        w.row = null;
+        w.col = null;
       }
     }
     if (ev.type === 'emergeMark') {
@@ -292,8 +292,7 @@ async function playEvent(ev) {
   if (ev.type === 'trail') return;
   if (ev.type === 'emergeMark') return playEmergeMark(ev);
   if (ev.type === 'summon') return playSummon(ev);
-  if (ev.type === 'portal') return playPortal(ev);
-  if (ev.type === 'portalBlocked') return playPortalBlocked(ev);
+  if (ev.type === 'spawnBlocked') return playSpawnBlocked(ev);
   if (ev.type === 'move') return playMove(ev);
   if (ev.type === 'undoMove') return playUndoMove(ev);
   if (ev.type === 'intent') return playIntent(ev);
@@ -1181,23 +1180,11 @@ async function playPush(ev) {
   releaseDisc(pusher);
 }
 
-async function playPortal(ev) {
-  const layout = boardLayout();
-  if (layout) {
-    const b = cellRect(layout, ev.row, ev.col);
-    spawnBurst(b.x + b.s / 2, b.y + b.s / 2, BOARD_COLORS[ev.element] || '#fff', 14, 3.4);
-  }
-  boardFx.rings.push({ row: ev.row, col: ev.col, t: 0, element: ev.element });
-  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'next turn', t: 0, element: ev.element });
-  ensureFxLoop();
-  await animate(200, function () {});
-}
-
-async function playPortalBlocked(ev) {
+async function playSpawnBlocked(ev) {
   boardFx.flash = { row: ev.row, col: ev.col };
   boardFx.shake = Math.max(boardFx.shake, 11);
   boardFx.screenFlash = Math.max(boardFx.screenFlash, 0.42);
-  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'both die', t: 0, element: ev.element });
+  boardFx.popups.push({ row: ev.row, col: ev.col, text: 'blocked', t: 0, element: ev.element });
   ensureFxLoop();
   await sleep(120);
   boardFx.flash = null;

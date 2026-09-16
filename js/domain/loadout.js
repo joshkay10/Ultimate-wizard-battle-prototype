@@ -112,20 +112,6 @@ function loadoutKitIds(loadout) {
   return normalizeLoadout(loadout).map(function (slot) { return slot.kit; });
 }
 
-function loadoutSpellIds(loadout) {
-  return normalizeLoadout(loadout).map(function (slot) { return slot.spell; });
-}
-
-function loadoutNamed(loadout) {
-  return normalizeLoadout(loadout).map(function (slot) {
-    const kit = kitById(slot.kit);
-    const spell = spellById(slot.spell);
-    const kitName = kit ? kit.name : slot.kit;
-    const spellName = spell ? spell.name : slot.spell;
-    return kitName + ' (' + spellName + ')';
-  });
-}
-
 function pickEnemyLoadout(rng, playerLoadout) {
   const kits = pickEnemyTeam(rng, loadoutKitIds(playerLoadout));
   return kits.map(function (kitId) {

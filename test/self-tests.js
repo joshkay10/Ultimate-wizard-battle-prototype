@@ -108,16 +108,6 @@ function unlockTeam(team) {
   });
 }
 
-function toHand(wizard) {
-  if (!wizard) return;
-  wizard.state = 'summoned';
-  wizard.row = null;
-  wizard.col = null;
-  wizard.hasMoved = false;
-  wizard.hasAttacked = false;
-  wizard.summoningSickness = false;
-}
-
 function benchOtherWizards() {
   const keep = {};
   let i;
@@ -126,7 +116,7 @@ function benchOtherWizards() {
   }
   Object.values(state.wizards).forEach(function (w) {
     if (keep[w.id] || w.pawnKind) return;
-    if (w.state === 'onboard' || w.state === 'portaling') {
+    if (w.state === 'onboard') {
       w.state = 'summoned';
       w.row = null;
       w.col = null;
@@ -558,67 +548,6 @@ async function runSimSelfTests() {
   healthy.hp = 10;
   const snipe = pickAttack(hunter, 'player');
   assert(snipe && snipe.row === 2 && snipe.col === 2, 'AI should snipe the wounded wizard');
-
-  resetMatch(state, 1);
-  state.fxEnabled = false;
-  state.mana = 10;
-  state.mountains = {};
-  state.water = {};
-  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  toHand(arriving);
-  const opened = simSummon(state, arriving, 5, 2, 'player');
-  assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
-  assert(arriving.state === 'portaling', 'wizard waits in the portal');
-  assert(!!portalAt(state, 5, 2), 'portal occupies the tile');
-  assert(simMove(state, arriving, [{ row: 4, col: 2 }]).length === 0, 'portaling wizard cannot move');
-  simEndPlayerTurn(state);
-  assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
-  await runTeamAi('enemy');
-  simEndEnemyTurn(state);
-  assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
-  assert(!portalAt(state, 5, 2), 'portal closes on arrival');
-  assert(arriving.summoningSickness, 'arrived wizard has summoning sickness');
-  assert(!canMove(arriving) && !canAttack(arriving), 'sickness blocks move and attack');
-  simEndPlayerTurn(state);
-  simEndEnemyTurn(state);
-  assert(!arriving.summoningSickness, 'sickness clears on the following player turn');
-  assert(canMove(arriving) && canAttack(arriving), 'after sickness they can act');
-
-  resetMatch(state, 1);
-  state.fxEnabled = false;
-  state.mana = 10;
-  state.mountains = {};
-  state.water = {};
-  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  toHand(doomed);
-  const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
-  simSummon(state, doomed, 5, 2, 'player');
-  blocker.state = 'onboard';
-  blocker.row = 5;
-  blocker.col = 2;
-  blocker.hp = 8;
-  const blocked = simResolvePortals(state, 'player');
-  assert(doomed.state === 'dead', 'blocked summon dies');
-  assert(blocker.state === 'dead', 'enemy standing on the portal dies');
-  assert(blocked.some(e => e.type === 'portalBlocked'), 'blocked portal emits an event');
-  assert(blocked.filter(e => e.type === 'death' && e.cause === 'portal').length === 2, 'both deaths are portal kills');
-
-  resetMatch(state, 1);
-  state.fxEnabled = false;
-  state.mana = 10;
-  state.mountains = {};
-  state.water = {};
-  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  toHand(allyIn);
-  const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  simSummon(state, allyIn, 5, 2, 'player');
-  allyOn.state = 'onboard';
-  allyOn.row = 5;
-  allyOn.col = 2;
-  const allyBlock = simResolvePortals(state, 'player');
-  assert(allyIn.state === 'dead', 'incoming dies if an ally stands on the portal');
-  assert(allyOn.state === 'dead', 'ally standing on the portal dies too');
-  assert(allyBlock.some(e => e.type === 'portalBlocked'), 'ally contest still emits portalBlocked');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1200,9 +1129,8 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const iceLog = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  const portalLine = describeEvent({ type: 'portal', wizardId: iceLog.id, row: 8, col: 4 });
-  assert(portalLine.indexOf('Rime opens a portal') !== -1 && portalLine.indexOf('arrives next turn') !== -1, 'portal log names the wizard and next turn');
   assert(describeEvent({ type: 'summon', wizardId: iceLog.id, row: 8, col: 4 }) === 'Rime arrives', 'summon log says arrives');
+  assert(describeEvent({ type: 'spawnBlocked', wizardId: iceLog.id, blockerId: iceLog.id }) === 'Rime dies landing on Rime', 'blocked emerge log names both bodies');
   const streamLine = describeEvent({
     type: 'attack',
     kind: 'cast',
@@ -1351,8 +1279,8 @@ async function runSimSelfTests() {
   resetMatch(state, 3);
   state.fxEnabled = false;
   await runTeamAi('player');
-  const portaled = Object.values(state.wizards).some(w => w.team === 'player' && w.state === 'portaling');
-  assert(!portaled, 'noop brain does not summon');
+  const stillField = Object.values(state.wizards).filter(w => w.team === 'player' && w.state === 'onboard');
+  assert(stillField.length === TEAM_SIZE, 'noop brain does not move anyone');
   state.aiBrain = prevBrain;
 
   const batch = await runAiVsAiBatch({ games: 8, startSeed: 20, maxRounds: 20, brain: 'hunter' });
@@ -1612,16 +1540,19 @@ async function runSimSelfTests() {
   const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
   const drop = simSummon(state, dropper, 3, 4, 'player');
-  assert(drop.some(e => e.type === 'summon'), 'defense summon emits summon, not a portal');
-  assert(!drop.some(e => e.type === 'portal'), 'defense summon skips the portal delay');
+  assert(drop.some(e => e.type === 'summon'), 'defense drop lands immediately');
   assert(drop.some(e => e.castKind === 'summonBurst' && e.damage === 0), 'landing fires a damage-free burst');
   assert(dropper.state === 'onboard' && dropper.row === 3 && dropper.col === 4, 'wizard lands immediately');
   assert(dropper.summoningSickness, 'dropped wizard has summoning sickness');
   assert(!canMove(dropper) && !canAttack(dropper), 'sickness blocks the rest of the turn');
-  assert(!portalAt(state, 3, 4), 'no portal token on an instant drop');
   assert(burstTarget.col === 6, 'burst pushes a neighbor away with no damage (' + burstTarget.col + ')');
   assert(burstTarget.hp === 5, 'burst does not deal damage');
   assert(!canSummonAt(state, 8, 0, 'player'), 'still cannot drop on a nexus');
+  const crushPawn = createDefensePawn(state, 'melee', { state: 'emerging', row: 3, col: 4, hp: 2, maxHp: 2 });
+  const crush = simDefenseEmerge(state);
+  assert(crushPawn.state === 'dead', 'emerging pawn dies if a wizard stands on the hole');
+  assert(crush.some(e => e.type === 'spawnBlocked'), 'blocked emerge emits spawnBlocked');
+  assert(dropper.hp === dropper.maxHp - 1, 'stander takes 1 from the crush');
 
   state.nexuses.player.forEach(function (n) { n.hp = 0; });
   assert(checkWinLoss(state) === 'enemy', 'defense loses when the cluster falls');
@@ -1719,8 +1650,7 @@ async function runSimSelfTests() {
     return w.state === 'summoned' || w.state === 'bench';
   });
   assert(waitingVs.length === 0, 'Vs has no off-field wizards');
-  const vsTile = getPlayerSummonTiles(state)[0];
-  assert(vsTile, 'vs still has summon-zone tiles');
+  assert(getPlayerSummonTiles(state).length === 0, 'Vs has no drop tiles');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;

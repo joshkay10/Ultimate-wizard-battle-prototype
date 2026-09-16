@@ -93,18 +93,6 @@ function seedVsOpening(match) {
   }
 }
 
-function drawVsWizard(match, team) {
-  if (!match || match.gameMode !== 'vs') return null;
-  const next = wizardsOnTeam(match, team)
-    .filter(function (w) { return w.state === 'bench'; })
-    .sort(function (a, b) {
-      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-    })[0];
-  if (!next) return null;
-  next.state = 'summoned';
-  return next;
-}
-
 function canMove(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness && !wizard.rooted);
 }
@@ -207,9 +195,7 @@ function teamHasPresence(match, team) {
     return wizard.team === team && (
       wizard.state === 'onboard' ||
       wizard.state === 'summoned' ||
-      wizard.state === 'portaling' ||
-      wizard.state === 'emerging' ||
-      wizard.state === 'bench'
+      wizard.state === 'emerging'
     );
   });
 }

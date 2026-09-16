@@ -15,7 +15,6 @@ const state = {
   tempMountains: {},
   water: {},
   voids: {},
-  portals: {},
   nexuses: { player: [], enemy: [] },
   playerTeam: [],
   enemyTeam: [],

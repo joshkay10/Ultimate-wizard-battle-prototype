@@ -26,8 +26,6 @@ const boardFx = {
 const BOARD_COLORS = {
   tile: '#ffffff',
   tileAlt: '#edefeb',
-  summon: '#f6f4e9',
-  summonAlt: '#eeebdb',
   fireBg: '#fbe9e2',
   iceBg: '#e5f2fa',
   windBg: '#e6f5ee',
@@ -85,7 +83,6 @@ const BOARD_COLORS = {
   moveBorder: '#7fb0e8',
   meleeBorder: '#e2685f',
   castBorder: '#d99a2b',
-  portalRing: '#7a5cff',
 };
 
 function getBoardCanvas() {
@@ -99,12 +96,8 @@ function boardLayout() {
   if (!css) return null;
   const dpr = window.devicePixelRatio || 1;
   const vs = state.gameMode === 'vs';
-  let topRack = vs ? Math.max(8, css * 0.02) : Math.max(12, css * 0.04);
-  let botRack = topRack;
-  if (vs) {
-    if (handWizardsFor('enemy').length) topRack = Math.max(44, css * 0.12);
-    if (handWizardsFor('player').length) botRack = Math.max(48, css * 0.13);
-  }
+  const topRack = vs ? Math.max(8, css * 0.02) : Math.max(12, css * 0.04);
+  const botRack = topRack;
   const lift = Math.max(5, css * 0.016);
   const gap = lift + 1;
   const side = Math.max(10, css * 0.03);
@@ -129,80 +122,6 @@ function cellRect(layout, row, col) {
 
 function boxToOv(box) {
   return { x: box.x, y: box.y, s: box.s };
-}
-
-function offBoardRank(wizardState) {
-  if (wizardState === 'summoned') return 0;
-  if (wizardState === 'portaling') return 1;
-  return 2;
-}
-
-function handReady(wizard) {
-  return !!(wizard && wizard.state === 'summoned');
-}
-
-function handWizardsFor(team) {
-  return Object.values(state.wizards)
-    .filter(function (w) {
-      return w.team === team && (w.state === 'summoned' || w.state === 'bench' || w.state === 'portaling');
-    })
-    .sort(function (a, b) {
-      const rank = offBoardRank(a.state) - offBoardRank(b.state);
-      if (rank) return rank;
-      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-    });
-}
-
-function handRackBoxes(layout, team) {
-  if (!layout.vs) return [];
-  const list = handWizardsFor(team);
-  const n = list.length;
-  if (!n) return [];
-  const rack = team === 'player' ? layout.botRack : layout.topRack;
-  const readySize = Math.min(layout.cell * 0.98, rack * 0.8);
-  const benchSize = Math.min(readySize * 0.64, rack * 0.5);
-  const sizes = list.map(function (w) {
-    return w.state === 'bench' ? benchSize : readySize;
-  });
-  const gap = Math.max(5, readySize * 0.12);
-  let firstBench = -1;
-  let i;
-  for (i = 0; i < n; i++) {
-    if (list[i].state === 'bench') {
-      firstBench = i;
-      break;
-    }
-  }
-  const split = firstBench > 0 ? gap * 0.8 : 0;
-  let total = split;
-  for (i = 0; i < n; i++) total += sizes[i] + (i ? gap : 0);
-  let x = (layout.css - total) / 2;
-  return list.map(function (wizard, idx) {
-    const s = sizes[idx];
-    if (idx === firstBench && split) x += split;
-    const y = team === 'player'
-      ? layout.top + layout.boardH + layout.lift + Math.max(4, (rack - s) * 0.35)
-      : Math.max(6, (rack - s) * 0.35);
-    const box = { wizard: wizard, x: x, y: y, s: s };
-    x += s + gap;
-    return box;
-  });
-}
-
-function boardHandFromEvent(ev) {
-  const layout = boardLayout();
-  if (!layout || !layout.vs) return null;
-  const rect = layout.canvas.getBoundingClientRect();
-  const x = ev.clientX - rect.left;
-  const y = ev.clientY - rect.top;
-  const boxes = handRackBoxes(layout, 'player');
-  let i;
-  for (i = 0; i < boxes.length; i++) {
-    const b = boxes[i];
-    if (!handReady(b.wizard)) continue;
-    if (x >= b.x && x < b.x + b.s && y >= b.y && y < b.y + b.s) return b.wizard;
-  }
-  return null;
 }
 
 function boardCanvasCellFromEvent(ev) {
@@ -316,7 +235,6 @@ function tileFill(row, col, highlight, kind, castKind) {
     if (trail.element === 'temporal') return isAlt ? '#e4d8ef' : BOARD_COLORS.temporalBg;
     return isAlt ? '#d8ebe1' : BOARD_COLORS.windBg;
   }
-  if (isSummonTile(row, col) && state.gameMode !== 'defense') return isAlt ? BOARD_COLORS.summonAlt : BOARD_COLORS.summon;
   return isAlt ? BOARD_COLORS.tileAlt : BOARD_COLORS.tile;
 }
 
@@ -702,44 +620,6 @@ function drawTrail(ctx, box, row, col, element) {
   else if (element === 'wind') drawWindStreaks(ctx, box, row, col);
 }
 
-function drawPortal(ctx, box, portal) {
-  const cx = box.x + box.s / 2;
-  const cy = box.y + box.s / 2;
-  const color = BOARD_COLORS[portal.element] || BOARD_COLORS.portalRing;
-  const t = performance.now() / 420;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = Math.max(1.6, box.s * 0.055);
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, clampPositive(box.s * 0.28, 1), clampPositive(box.s * 0.18, 1), 0, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.rotate(t);
-  ctx.globalAlpha = 0.55;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, clampPositive(box.s * 0.2, 1), clampPositive(box.s * 0.12, 1), 0.6, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-  ctx.save();
-  ctx.strokeStyle = portal.team === 'enemy' ? BOARD_COLORS.enemy : color;
-  ctx.globalAlpha = 0.35;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  canvasArc(ctx, cx, cy, box.s * 0.32);
-  ctx.stroke();
-  ctx.restore();
-  drawElementIcon(ctx, portal.element, cx, cy, box.s * 0.16, color);
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.9;
-  ctx.font = '700 ' + Math.max(8, box.s * 0.16) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('next', cx, cy + box.s * 0.38);
-  ctx.restore();
-}
-
 function drawEmerging(ctx, box, pawn) {
   const cx = box.x + box.s / 2;
   const cy = box.y + box.s / 2;
@@ -984,16 +864,6 @@ function cubeVerts(cx, cy, r) {
     { x: cx + r, y: cy + r },
     { x: cx - r, y: cy + r }
   ];
-}
-
-function hexVerts(cx, cy, r) {
-  const pts = [];
-  let i;
-  for (i = 0; i < 6; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 3;
-    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
-  }
-  return pts;
 }
 
 function circleVerts(cx, cy, r, n) {
@@ -1643,7 +1513,7 @@ function ensureFxLoop() {
     fxLast = now;
     tickFx(dt);
     try { drawBoard(); } catch (err) { console.error(err); }
-    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.combo || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || boardFx.dashRibbon || !!(state.portals && Object.keys(state.portals).length);
+    const busy = boardFx.shake > 0 || boardFx.screenFlash > 0.02 || boardFx.particles.length || boardFx.rings.length || boardFx.popups.length || boardFx.combo || boardFx.stream || boardFx.gust || boardFx.bolt || boardFx.pulseWave || boardFx.raiseSpike || boardFx.dashRibbon;
     if (busy) requestAnimationFrame(loop);
     else fxLooping = false;
   }
@@ -1694,32 +1564,6 @@ function drawBoardSlab(ctx, layout) {
   ctx.restore();
 }
 
-function drawHandRacks(ctx, layout) {
-  if (!layout.vs) return;
-  const enemy = handRackBoxes(layout, 'enemy');
-  enemy.forEach(function (b) {
-    const waiting = b.wizard.state === 'bench';
-    const ghost = { hidden: true, team: 'enemy', hp: '', element: null, offBoard: true };
-    ctx.save();
-    if (waiting) ctx.globalAlpha = 0.48;
-    drawTokenAt(ctx, b, ghost, false, false, waiting ? 1.15 : 1.35);
-    ctx.restore();
-  });
-  const mine = handRackBoxes(layout, 'player');
-  mine.forEach(function (b) {
-    const wiz = b.wizard;
-    const waiting = wiz.state === 'bench';
-    const can = !waiting && canPaySummon(state, wiz, 'player');
-    const token = Object.assign({}, wiz, { offBoard: true });
-    ctx.save();
-    if (waiting) ctx.globalAlpha = 0.42;
-    else if (!can) ctx.globalAlpha = 0.58;
-    const scale = waiting ? 1.15 : (wiz.id === state.placingWizardId ? 1.45 : 1.35);
-    drawTokenAt(ctx, b, token, wiz.id === state.placingWizardId, false, scale);
-    ctx.restore();
-  });
-}
-
 function drawBoard() {
   ensureElementIconSheet();
   const layout = boardLayout();
@@ -1751,7 +1595,6 @@ function drawBoard() {
 
   drawBoardSlab(ctx, layout);
 
-  if (state.portals && Object.keys(state.portals).length) ensureFxLoop();
   if (state.gameMode === 'defense' && Object.values(state.wizards).some(function (w) { return w.state === 'emerging'; })) ensureFxLoop();
   const marks = highlightSet();
   const highlightKey = {};
@@ -1777,8 +1620,6 @@ function drawBoard() {
         const trail = trailAt(state, r, c);
         if (trail) drawTrail(ctx, box, r, c, trail.element);
       }
-      const portal = portalAt(state, r, c);
-      if (portal && !flashHere) drawPortal(ctx, box, portal);
 
       if (highlighted) {
         ctx.save();
@@ -1936,8 +1777,6 @@ function drawBoard() {
   }
 
   if (boardFx.combo) drawCombo(ctx, css);
-
-  drawHandRacks(ctx, layout);
 
   ctx.restore();
 }

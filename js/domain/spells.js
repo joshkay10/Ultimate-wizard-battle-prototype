@@ -41,11 +41,6 @@ function isSpecialSpell(spell) {
   return !!(spell && spell.special);
 }
 
-function specialCostOf(spellId) {
-  const spell = spellById(spellId);
-  return spell && spell.special ? spell.special : 0;
-}
-
 function basicsForElement(element) {
   return spellsForElement(element).filter(function (spell) { return !isSpecialSpell(spell); });
 }

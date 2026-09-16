@@ -30,28 +30,11 @@ function kitById(id) {
   return null;
 }
 
-function kitIds() {
-  return WIZARD_TYPES.map(function (kit) { return kit.id; });
-}
-
 function validKitIds(ids) {
   const out = [];
   let i;
   for (i = 0; i < (ids || []).length; i++) {
     if (kitById(ids[i])) out.push(ids[i]);
-  }
-  return out;
-}
-
-function uniqueKitIds(ids) {
-  const seen = {};
-  const out = [];
-  let i;
-  for (i = 0; i < (ids || []).length; i++) {
-    const id = ids[i];
-    if (!kitById(id) || seen[id]) continue;
-    seen[id] = true;
-    out.push(id);
   }
   return out;
 }
@@ -82,10 +65,6 @@ function normalizeTeam(ids) {
   return padKitIds(ids);
 }
 
-function teamHasKit(ids, id) {
-  return normalizeTeam(ids).indexOf(id) !== -1;
-}
-
 function pickEnemyTeam(rng, playerTeam) {
   const pool = PLAYABLE_KIT_IDS.slice();
   const enemy = [];
@@ -95,11 +74,4 @@ function pickEnemyTeam(rng, playerTeam) {
     enemy.push(pool[rng.int(pool.length)]);
   }
   return enemy;
-}
-
-function kitsNamed(ids) {
-  return normalizeTeam(ids).map(function (id) {
-    const kit = kitById(id);
-    return kit ? kit.name : id;
-  });
 }
