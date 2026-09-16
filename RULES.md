@@ -1,6 +1,6 @@
 # Wizard Battle — Rules
 
-A two-player turn game. **Defense** is a 9×9 holdout. **Vs** is a 7×7 deathmatch. Play the **four-island campaign**, or switch to **Vs**.
+A two-player turn game. **Defense** is a 9×9 holdout. **Vs** is a 7×7 deathmatch. Play opens on **Vs**; switch to the **four-island campaign** from the footer.
 
 ## Missions
 
@@ -13,7 +13,7 @@ The footer is a four-island campaign (the pass, the canal, the alley, the moat) 
 | 3 | The Alley | Pierce the line | Three wizards. 8 mites, brutes, bombers. Opener is a bomber |
 | 4 | The Moat | Shove the Golem | Full four. 10: Golem opener, then bombers, chargers, and brutes |
 
-Switch to **Vs** for a 7×7 deathmatch with the seven-wizard team from the Team page. Three start in hand; pick up one more each turn. Three crystals a side. Mission rosters are locked.
+Play opens on **Vs**: a 7×7 deathmatch with the seven-wizard team from the Team page. Three start in hand; pick up one more each turn. The rest stay visible off-board. Three crystals a side. Mission rosters are locked.
 
 ## Modes
 
@@ -42,17 +42,17 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for **Vs**. Named missions lock their own roster.
 - The enemy rolls **seven kits from the same pool** each **Vs** match (copies allowed), each with a random spell of their element. New match and rematch both roll a new enemy.
 - **Defense:** one drop per round from the island roster. Cost does not matter.
-- **Vs:** pay mana to portal more in, and pay mana to fire specials. Same pool. Rime is **1**, Pyre and Squall are **2**. Round 1 has 2 mana. Each later round you gain 1 mana and pick up a wizard. Enemy hand shows as gray cubes — count only, not type.
+- **Vs:** pay mana to portal more in, and pay mana to fire specials. Same pool. Rime is **1**, Pyre and Squall are **2**. Round 1 has 2 mana. Each later round you gain 1 mana and pick up a wizard. Off-board pieces stay on the canvas: your colored cubes (ready ones are bigger; the bench is smaller), gray cubes on the enemy side for remaining count — not type.
 - Your turn also ends on its own when you have nothing left to summon, move, or attack. End turn is still there if you want to pass with actions leftover.
 
 ## Setup
 
 - **Defense** — only your camp. **3–6 nexuses** at **2 HP**, packed in one or two connected city blobs on a **named island** (the pass, the canal, the moat, twin towns, the alley, and more) in the lower-middle of the board. Terrain can sit against the city. No enemy crystals. Opening: **one** pawn on the board with no telegraph and **no incoming marks**. Incoming is one hole per enemy phase, after the first enemy phase. A match is **10 invaders** including the opening. At most **3** on the board at once. Incoming holes open on open field ground, not the last two rows. They can start far from the city.
-- **Vs** — **three nexuses** a camp. **7×7**. Three wizards in each hand; pick up one per turn. Light mirrored terrain — a ridge or two, not a wall of mountains. Break the other camp, or wipe their wizards.
+- **Vs** — **three nexuses** a camp. **7×7**. Three wizards in each hand; pick up one per turn. The rest sit off-board on the bench and stay visible. Light mirrored terrain — **one small ridge**, not a corridor of walls. Break the other camp, or wipe their wizards.
 - **Mountains** sit in ridges, walls, and gates. They are impassable: you cannot walk onto them, summon onto them, melee them, or cast through them. A push into a mountain is blocked.
 - **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
-- **Vs** terrain in the top 3 rows is a vertical mirror of the bottom 3. Ridges stay small. **Defense** maps are named islands and are not mirrored.
+- **Vs** terrain in the top 3 rows is a vertical mirror of the bottom 3. One small ridge, never parallel alley walls. **Defense** maps are named islands and are not mirrored.
 - **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. That pool pays for **summoning and specials**. **Defense** keeps its free one drop per round, and also has its own small mana pool (start 2, +1/round, cap 6) spent only on specials.
 
 ## Wizards

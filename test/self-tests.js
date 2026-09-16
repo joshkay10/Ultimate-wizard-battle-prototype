@@ -638,6 +638,22 @@ async function runSimSelfTests() {
   assert(waterMaps > 0, 'some maps should have water');
   assert(dryMaps > 0, 'some maps should be dry');
 
+  function rimWalls(map) {
+    const last = BOARD_SIZE - 1;
+    let west = 0;
+    let east = 0;
+    Object.keys(map).forEach(function (k) {
+      const c = parseInt(k.split(',')[1], 10);
+      if (c === 0) west += 1;
+      if (c === last) east += 1;
+    });
+    return west >= 2 && east >= 2;
+  }
+  for (let alleySeed = 1; alleySeed <= 40; alleySeed++) {
+    resetMatch(state, alleySeed);
+    assert(!rimWalls(state.mountains), 'Vs stays a generic arena, not alley walls on seed ' + alleySeed);
+  }
+
   resetMatch(state, 1);
   const mtnA = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
   resetMatch(state, 1);
@@ -2142,6 +2158,8 @@ async function runSimSelfTests() {
   assert(defenseSpawnCount(state) > 0, 'a living pawn still draws reinforcements');
 
   assert(MISSIONS.length === 4, 'four named missions');
+  assert(playlistIdDefault() === 'vs', 'Play defaults to Vs, not a named island');
+  assert(isVsPlaylist(playlistIdDefault()), 'the default playlist is the generic Vs fight');
   MISSIONS.forEach(function (mission) {
     resetMatch(state, mission.seed, { missionId: mission.id });
     state.fxEnabled = false;

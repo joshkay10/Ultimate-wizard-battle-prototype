@@ -115,12 +115,9 @@ function countOpenSummonTiles(match, mountains, water, team) {
 function fallbackMountains(match) {
   const map = {};
   const empty = {};
-  const last = BOARD_SIZE - 1;
-  const seeds = [[1, 0], [2, 0], [1, last], [2, last]];
-  let i;
-  for (i = 0; i < seeds.length; i++) {
-    stampVerticalPair(match, map, map, empty, seeds[i][0], seeds[i][1]);
-  }
+  // One mirrored ridge, not parallel alley walls.
+  stampVerticalPair(match, map, map, empty, 1, 0);
+  stampVerticalPair(match, map, map, empty, 2, 0);
   return map;
 }
 
@@ -169,25 +166,20 @@ function pickTerrainSeed(match, mountains, water, cols, maxRow, colWeight) {
 function generateMountainsInto(match, mountains, water) {
   const last = BOARD_SIZE - 1;
   const maxRow = Math.min(2, CENTER);
-  function edgeWeight(c, r) {
-    const edge = (c === 0 || c === last) ? 5 : (c === 1 || c === last - 1) ? 3 : 1;
+  const west = match.rng.next() < 0.5;
+  const cols = west ? [0, 1, 2] : [last, last - 1, last - 2];
+  function ridgeWeight(c, r) {
+    const lr = Math.min(c, last - c);
+    const colW = lr === 0 ? 2 : lr === 1 ? 4 : 3;
     const rowW = r === 0 ? 2 : 3;
-    return edge * rowW;
+    return colW * rowW;
   }
   growTerrainCluster(
     match, mountains, mountains, water,
-    pickTerrainSeed(match, mountains, water, [0, 1], maxRow, edgeWeight),
+    pickTerrainSeed(match, mountains, water, cols, maxRow, ridgeWeight),
     2,
-    true
+    false
   );
-  if (match.rng.next() < 0.3) {
-    growTerrainCluster(
-      match, mountains, mountains, water,
-      pickTerrainSeed(match, mountains, water, [last, last - 1], maxRow, edgeWeight),
-      2,
-      true
-    );
-  }
   pruneTerrainSingletons(mountains);
 }
 
@@ -214,14 +206,6 @@ function generateWaterInto(match, mountains, water) {
   pruneTerrainSingletons(water);
 }
 
-function generateVsGate(match, mountains, water) {
-  const mid = CENTER;
-  stampVerticalPair(match, mountains, mountains, water, 2, mid - 2);
-  stampVerticalPair(match, mountains, mountains, water, 2, mid - 1);
-  stampVerticalPair(match, mountains, mountains, water, 2, mid + 1);
-  stampVerticalPair(match, mountains, mountains, water, 2, mid + 2);
-}
-
 function generateTerrain(match) {
   if (match.gameMode === 'defense') {
     generateDefenseIsland(match);
@@ -236,7 +220,6 @@ function generateTerrain(match) {
   const mountains = {};
   const water = {};
   generateMountainsInto(match, mountains, water);
-  if (BOARD_SIZE >= DEFENSE_BOARD_SIZE && match.rng.next() < 0.28) generateVsGate(match, mountains, water);
   pruneTerrainSingletons(mountains);
   if (Object.keys(mountains).length < 2 || !campsConnected(match, mountains, water)) {
     match.mountains = fallbackMountains(match);

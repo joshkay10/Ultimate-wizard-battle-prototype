@@ -136,9 +136,9 @@ function renderPanel() {
     .join('');
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-  const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' arrives next turn with a burst, then is spent.') + '</div>'
-    : (state.gameMode === 'vs' ? '<div class="no-selection-hint">tap a cube under the board to portal in</div>' : '');
+  const placingHint = (state.gameMode !== 'vs' && state.placingWizardId && state.wizards[state.placingWizardId])
+    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + ' lands with a burst, then is spent this turn.</div>'
+    : '';
 
   const logLines = recentLogLines(3);
   const logHtml = state.gameMode === 'vs' || !logLines.length
@@ -260,6 +260,14 @@ function renderActionRow(selected) {
   const specialBtn = specialSpell
     ? '<button class="action-btn special' + (usable && !atkDisabled && state.selectedAction === 'special' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' + ICONS.cast + ' ' + specialSpent + '<span class="special-cost">' + ICONS.mana + specialCost + '</span></button>'
     : '';
+
+  if (state.gameMode === 'vs' && !usable) {
+    return (
+      '<div class="action-row is-pass">' +
+        '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
+      '</div>'
+    );
+  }
 
   return (
     '<div class="action-row">' +
