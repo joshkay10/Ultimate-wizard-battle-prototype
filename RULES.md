@@ -4,7 +4,7 @@ A two-player turn game. **Defense** is a 9×9 holdout. **Vs** is a 7×7 deathmat
 
 ## Missions
 
-The toolbar is a four-island campaign (the pass, the canal, the alley, the moat) plus **Vs**. Clear an island to unlock the next. **Retry** restarts that same island.
+The footer is a four-island campaign (the pass, the canal, the alley, the moat) plus **Vs**. Clear an island to unlock the next. **Retry** restarts that same island.
 
 | # | Island | Goal | Wave |
 | --- | --- | --- | --- |

@@ -23,15 +23,12 @@ function ensureShell() {
   const app = document.getElementById('app');
   const route = currentRoute();
   const nav = renderSiteNav(route);
-  if (!document.getElementById('site-nav')) {
-    app.innerHTML = nav + '<div id="view-root"></div>';
-  } else {
+  if (!document.getElementById('view-root')) {
+    app.innerHTML = '<div id="view-root"></div>' + nav;
+  } else if (document.getElementById('site-nav')) {
     document.getElementById('site-nav').outerHTML = nav;
-    if (!document.getElementById('view-root')) {
-      const view = document.createElement('div');
-      view.id = 'view-root';
-      app.appendChild(view);
-    }
+  } else {
+    app.insertAdjacentHTML('beforeend', nav);
   }
 }
 
@@ -138,7 +135,7 @@ function renderPanel() {
     ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' arrives next turn with a burst, then is spent.') + '</div>'
     : '';
 
-  const logLines = recentLogLines(5);
+  const logLines = recentLogLines(3);
   const logHtml = logLines.length
     ? '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
       return '<li>' + line + '</li>';
@@ -470,9 +467,12 @@ function render() {
   document.title = routeTitle(route);
   const app = document.getElementById('app');
 
+  const extra = document.getElementById('site-nav-extra');
+
   if (route !== 'play') {
     app.classList.add('is-doc');
-    app.classList.remove('is-animating', 'is-enemy-turn');
+    app.classList.remove('is-play', 'is-animating', 'is-enemy-turn');
+    if (extra) extra.innerHTML = '';
     document.getElementById('view-root').innerHTML = renderDocPage(route);
     if (route === 'team') bindTeamPage();
     if ((route === 'rules' || route === 'todo') && typeof fillMarkdownPage === 'function') {
@@ -482,27 +482,17 @@ function render() {
   }
 
   app.classList.remove('is-doc');
+  app.classList.add('is-play');
   ensureMatch();
   maybeRecordResult();
   ensurePlayShell();
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
-  const vs = state.gameMode === 'vs'
-    ? loadoutNamed(state.enemyLoadout && state.enemyLoadout.length ? state.enemyLoadout : (state.enemyTeam || [])).join(' · ')
-    : '';
-  const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
   const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
   const islandName = mission ? (mission.name || mission.title) : (state.mapName || '');
   const island = state.gameMode === 'defense' && islandName
     ? '<span class="topbar-map">' + islandName + '</span>'
-    : '';
-  const invaders = state.gameMode === 'defense'
-    ? '<span class="topbar-invaders">' + defenseEverSpawned(state) + '/' + defenseSpawnBudget(state) + ' invaders</span>'
-    : '';
-  const streakStats = typeof loadModeStats === 'function' ? loadModeStats(mode) : null;
-  const streakHud = streakStats && (streakStats.streak > 0 || streakStats.best > 0)
-    ? '<span class="topbar-streak" title="win streak · best">streak ' + streakStats.streak + (streakStats.best > streakStats.streak ? ' · best ' + streakStats.best : '') + '</span>'
     : '';
   const manaHud = '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
   const leftHud = state.gameMode === 'defense'
@@ -512,9 +502,9 @@ function render() {
   if (mission) document.title = mission.name + ' — Wizard Battle';
   document.getElementById('topbar').innerHTML =
     leftHud +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + (invaders ? ' &middot; ' + invaders : '') + (streakHud ? ' &middot; ' + streakHud : '') + (vs ? '<span class="topbar-vs"> vs ' + vs + '</span>' : '') + '</div>' +
-    renderCampaignTrack() +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + '</div>' +
     '<button class="new-match-btn" id="new-match-btn" type="button">' + retryLabel + '</button>';
+  if (extra) extra.innerHTML = renderCampaignTrack();
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();
   drawBoard();

@@ -9,6 +9,7 @@ function renderSiteNav(route) {
   return (
     '<nav class="site-nav" id="site-nav">' +
       '<a class="site-brand" href="' + routeHref('play') + '">Wizard Battle</a>' +
+      '<div class="site-nav-extra" id="site-nav-extra"></div>' +
       '<div class="site-links">' +
         links.map(function (link) {
           return '<a class="site-link' + (route === link.id ? ' active' : '') + '" href="' + routeHref(link.id) + '">' + link.label + '</a>';
