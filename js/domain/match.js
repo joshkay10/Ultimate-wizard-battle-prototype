@@ -25,6 +25,7 @@ function resetMatch(match, seed, opts) {
   match.enemyMana = STARTING_MANA;
   match.enemyMaxMana = STARTING_MANA;
   match.playerSummonedThisTurn = false;
+  match.enemySummonedThisTurn = false;
   match.log = [];
   match.matchId = (match.matchId || 0) + 1;
   match.missionId = '';
@@ -63,8 +64,8 @@ function resetMatch(match, seed, opts) {
     match.nexuses = { player: [], enemy: [] };
   } else {
     match.nexuses = {
-      player: makeNexusCamp('player'),
-      enemy: makeNexusCamp('enemy')
+      player: makeNexusCamp('player', VS_NEXUS_HP),
+      enemy: makeNexusCamp('enemy', VS_NEXUS_HP)
     };
   }
 
@@ -96,4 +97,5 @@ function resetMatch(match, seed, opts) {
   generateTerrain(match);
   seedRosters(match, playerLoadout, enemyLoadout);
   if (match.gameMode === 'defense') seedDefenseOpening(match);
+  else seedVsOpening(match);
 }

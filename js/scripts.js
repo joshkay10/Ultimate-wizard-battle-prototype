@@ -19,6 +19,7 @@ var GAME_SCRIPTS = {
     'js/domain/missions.js',
     'js/domain/path.js',
     'js/domain/wizard.js',
+    'js/domain/vs.js',
     'js/domain/mana.js',
     'js/domain/kill.js',
     'js/domain/push.js',

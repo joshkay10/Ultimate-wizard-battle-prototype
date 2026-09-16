@@ -1,5 +1,5 @@
 function battleResetOpts() {
-  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'defense';
+  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'vs';
   if (playlist === 'vs') {
     return {
       playerLoadout: loadPlayerLoadout(),

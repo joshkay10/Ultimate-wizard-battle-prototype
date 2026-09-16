@@ -88,7 +88,7 @@ function renderTeamPage() {
         '<div class="team-kit ' + kit.element + ' selected">' +
           '<div class="wizard-card-icon ' + kit.element + '">' + iconSpan(kit.element, '#ffffff') + '</div>' +
           '<div class="team-kit-copy">' +
-            '<div class="kit-name">' + kit.name + '</div>' +
+            '<div class="kit-name">' + (index === 0 ? '1 · opener · ' : ((index + 1) + ' · stack · ')) + kit.name + '</div>' +
             '<div class="kit-cast">' + basicName + ' + ' + specialName + '</div>' +
             '<div class="kit-detail">cost ' + kit.cost + ' · ' + kit.hp + ' hp · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + '</div>' +
           '</div>' +
@@ -134,11 +134,11 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> — the multi-hit payoff spells that <strong>cost mana</strong>. Saved on this device. Summon cost is <strong>Vs mana</strong>; Defense drops one wizard per round, any kit, and has a small mana pool for specials.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. <strong>Slot 1 is your opener</strong> — they start in the pit. The rest is the <strong>stack</strong>: you draw one, drop one per turn, cap 2 on the board. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> that <strong>costs mana</strong>. Saved on this device. Defense islands lock their own roster.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
-      '<h2 class="team-sub">Your four</h2>' +
+      '<h2 class="team-sub">Opener + stack</h2>' +
       '<div class="team-grid team-roster">' + roster + empty + '</div>' +
       '<h2 class="team-sub">Add</h2>' +
       '<div class="team-grid">' + adders + '</div>' +

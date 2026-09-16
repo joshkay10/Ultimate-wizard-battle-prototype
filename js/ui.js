@@ -135,7 +135,7 @@ function renderPanel() {
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' arrives next turn with a burst, then is spent.') + '</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' lands now, bursts, and can act this turn.') + '</div>'
     : '';
 
   const logLines = recentLogLines(5);
@@ -146,12 +146,19 @@ function renderPanel() {
     : '';
 
   const brief = renderMissionBrief();
+  const deckCount = state.gameMode === 'vs' && typeof vsDeckCount === 'function' ? vsDeckCount(state, 'player') : 0;
+  const onboardCount = state.gameMode === 'vs' && typeof vsOnboardCount === 'function' ? vsOnboardCount(state, 'player') : 0;
   const handNote = state.gameMode === 'defense'
     ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
+    : (state.playerSummonedThisTurn
+      ? 'already dropped'
+      : (onboardCount >= VS_BOARD_CAP ? 'board full' : '1 drop this turn'));
+  const stackNote = state.gameMode === 'vs'
+    ? '<p class="panel-section-label">stack · ' + deckCount + '</p>'
     : '';
   const handLabel = wizardCards
-    ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
-    : '';
+    ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>' + stackNote
+    : (stackNote && deckCount ? stackNote : '');
 
   return (
     '<div class="panel">' +
@@ -430,6 +437,14 @@ function defenseDropHud() {
 }
 
 function renderMissionBrief() {
+  if (state.gameMode === 'vs' && state.turnCount === 1 && !state.gameOverResult) {
+    return (
+      '<div class="mission-brief">' +
+        '<div class="mission-goal">Fight now.</div>' +
+        '<div class="mission-hint">Your first kit is already in the pit. Play the next card from the stack — it lands and acts this turn. Cap 2 on the board.</div>' +
+      '</div>'
+    );
+  }
   if (state.gameMode !== 'defense' || !state.missionId || typeof missionById !== 'function') return '';
   const mission = missionById(state.missionId);
   if (!mission || !mission.goal) return '';
@@ -444,14 +459,15 @@ function renderMissionBrief() {
 function playlistSelectValue() {
   if (state.gameMode === 'vs') return 'vs';
   if (state.missionId) return state.missionId;
-  return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'mission-1';
+  return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'vs';
 }
 
 function renderCampaignTrack() {
   const selected = playlistSelectValue();
   const missions = typeof MISSIONS !== 'undefined' ? MISSIONS : [];
   const campaign = typeof loadCampaign === 'function' ? loadCampaign() : (typeof emptyCampaign === 'function' ? emptyCampaign() : { unlocked: 99, cleared: {} });
-  let html = '<div class="campaign-track" role="tablist" aria-label="islands">';
+  let html = '<div class="campaign-track" role="tablist" aria-label="modes">';
+  html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
   missions.forEach(function (m) {
     const open = typeof missionIsUnlocked === 'function' ? missionIsUnlocked(m, campaign) : true;
     const on = selected === m.id;
@@ -459,7 +475,6 @@ function renderCampaignTrack() {
     const star = !!(cleared && campaign.cleared[m.id].flawless);
     html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (star ? ' is-star' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (star ? ' · flawless' : (cleared ? ' · clear' : '')) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
   });
-  html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
   html += '</div>';
   return html;
 }

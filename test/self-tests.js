@@ -136,6 +136,12 @@ async function runSimSelfTests() {
   const prevFx = state.fxEnabled;
   state.fxEnabled = false;
 
+  function vsInHand(team, element) {
+    return Object.values(state.wizards).find(function (w) {
+      return w.team === team && (!element || w.element === element) && w.state === 'summoned' && !w.pawnKind;
+    });
+  }
+
   resetMatch(state, 1);
   state.mountains = {};
   state.water = {};
@@ -156,17 +162,17 @@ async function runSimSelfTests() {
   const gale = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   ember.state = 'onboard';
   ember.row = 0;
-  ember.col = 5;
+  ember.col = 4;
   gale.state = 'onboard';
   gale.row = 0;
-  gale.col = 6;
+  gale.col = 5;
   gale.hp = 12;
   const hp0 = gale.hp;
-  simAttack(state, ember, 0, 6, 'melee');
-  assert(gale.row === 0 && gale.col === 6, 'push into a nexus should stay put');
+  simAttack(state, ember, 0, 5, 'melee');
+  assert(gale.row === 0 && gale.col === 5, 'push into a nexus should stay put');
   assert(gale.hp === hp0 - ember.meleeAttack - 2, 'blocked 2-pip push smashes for leftover 2');
-  const slammed = nexusAt(state, 0, 7);
-  assert(slammed && slammed.hp === NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
+  const slammed = nexusAt(state, 0, 6);
+  assert(slammed && slammed.hp === VS_NEXUS_HP - CRASH_DAMAGE, 'pushing into a nexus damages the nexus');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -347,7 +353,7 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
-  assert(playerHasLegalAction(state), 'round 1 with 2 mana can open a cheap portal');
+  assert(playerHasLegalAction(state), 'round 1 with an opener and a card in hand can act');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -373,8 +379,8 @@ async function runSimSelfTests() {
   assert(moves.length > 0, 'move range should be open');
   assert(!moves.some(t => nexusAt(state, t.row, t.col)), 'move range should not include a nexus');
   assert(state.nexuses.player.length === 3 && state.nexuses.enemy.length === 3, 'each side has three nexuses');
-  assert(state.nexuses.player.every(n => n.maxHp === 5), 'nexuses have 5 HP');
-  assert(state.nexuses.enemy.some(n => n.row === 0 && n.col === 1), 'enemy back-west nexus');
+  assert(state.nexuses.player.every(n => n.maxHp === VS_NEXUS_HP), 'vs nexuses have 3 HP');
+  assert(state.nexuses.enemy.some(n => n.row === 0 && n.col === 2), 'enemy back-west nexus');
   assert(state.nexuses.enemy.some(n => n.row === 2 && n.col === 4), 'enemy front-center nexus');
 
   resetMatch(state, 1);
@@ -382,6 +388,13 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   const stepper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'player' && w.state === 'onboard' && w.id !== stepper.id) {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+    }
+  });
   stepper.state = 'onboard';
   stepper.row = 7;
   stepper.col = 3;
@@ -404,7 +417,7 @@ async function runSimSelfTests() {
   hunter.row = 3;
   hunter.col = 4;
   const wounded = state.nexuses.enemy.find(n => n.row === 2 && n.col === 4);
-  const healthy = state.nexuses.enemy.find(n => n.row === 0 && n.col === 7);
+  const healthy = state.nexuses.enemy.find(n => n.row === 0 && n.col === 6);
   wounded.hp = 1;
   healthy.hp = 5;
   const snipe = pickAttack(hunter, 'player');
@@ -415,58 +428,63 @@ async function runSimSelfTests() {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const arriving = vsInHand('player', 'ice');
   const opened = simSummon(state, arriving, 7, 3, 'player');
-  assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
-  assert(arriving.state === 'portaling', 'wizard waits in the portal');
-  assert(!!portalAt(state, 7, 3), 'portal occupies the tile');
-  assert(simMove(state, arriving, [{ row: 6, col: 3 }]).length === 0, 'portaling wizard cannot move');
-  simEndPlayerTurn(state);
-  assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
-  await runTeamAi('enemy');
-  simEndEnemyTurn(state);
-  assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
-  assert(!portalAt(state, 7, 3), 'portal closes on arrival');
-  assert(arriving.summoningSickness, 'arrived wizard has summoning sickness');
-  assert(!canMove(arriving) && !canAttack(arriving), 'sickness blocks move and attack');
-  simEndPlayerTurn(state);
-  simEndEnemyTurn(state);
-  assert(!arriving.summoningSickness, 'sickness clears on the following player turn');
-  assert(canMove(arriving) && canAttack(arriving), 'after sickness they can act');
+  assert(opened.some(e => e.type === 'summon'), 'vs summon lands immediately');
+  assert(arriving.state === 'onboard', 'wizard is on the board this turn');
+  assert(!portalAt(state, 7, 3), 'vs does not leave a portal');
+  assert(!arriving.summoningSickness, 'vs drop can act this turn');
+  assert(canMove(arriving) && canAttack(arriving), 'landed wizard can move and attack');
+  assert(state.playerSummonedThisTurn, 'vs spends the one drop');
+  const second = vsInHand('player', 'wind');
+  if (second) {
+    assert(!canPaySummon(state, second, 'player'), 'second vs drop is blocked the same turn');
+  }
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const doomed = vsInHand('player', 'ice');
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
-  simSummon(state, doomed, 7, 4, 'player');
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'player' && w.state === 'onboard') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+    }
+  });
   blocker.state = 'onboard';
   blocker.row = 7;
   blocker.col = 4;
   blocker.hp = 8;
-  const blocked = simResolvePortals(state, 'player');
-  assert(doomed.state === 'dead', 'blocked summon dies');
-  assert(blocker.state === 'dead', 'enemy standing on the portal dies');
-  assert(blocked.some(e => e.type === 'portalBlocked'), 'blocked portal emits an event');
-  assert(blocked.filter(e => e.type === 'death' && e.cause === 'portal').length === 2, 'both deaths are portal kills');
+  const blocked = simSummon(state, doomed, 7, 4, 'player');
+  assert(!blocked.length, 'cannot drop onto an occupied tile');
+  assert(doomed.state === 'summoned', 'blocked drop stays in hand');
+  assert(blocker.state === 'onboard', 'the occupant lives');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const allyIn = vsInHand('player', 'ice');
   const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  simSummon(state, allyIn, 7, 3, 'player');
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team === 'player' && w.state === 'onboard') {
+      w.state = 'dead';
+      w.row = null;
+      w.col = null;
+    }
+  });
   allyOn.state = 'onboard';
   allyOn.row = 7;
   allyOn.col = 3;
-  const allyBlock = simResolvePortals(state, 'player');
-  assert(allyIn.state === 'dead', 'incoming dies if an ally stands on the portal');
-  assert(allyOn.state === 'dead', 'ally standing on the portal dies too');
-  assert(allyBlock.some(e => e.type === 'portalBlocked'), 'ally contest still emits portalBlocked');
+  const allyBlock = simSummon(state, allyIn, 7, 3, 'player');
+  assert(!allyBlock.length, 'cannot drop onto an ally');
+  assert(allyIn.state === 'summoned', 'incoming stays in hand if the tile is taken');
+  assert(allyOn.state === 'onboard', 'ally on the tile lives');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -550,8 +568,8 @@ async function runSimSelfTests() {
     else dryMaps++;
     assert(campsConnected(state, state.mountains, state.water), 'camps should stay connected on seed ' + s);
   }
-  assert(waterMaps > 0, 'some maps should have water');
-  assert(dryMaps > 0, 'some maps should be dry');
+  assert(waterMaps === 40, 'vs arena always has dunk water');
+  assert(dryMaps === 0, 'vs arena is never dry');
 
   resetMatch(state, 1);
   const mtnA = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
@@ -931,7 +949,9 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1, { playerTeam: ['earth', 'temporal', 'earth', 'temporal'], enemyTeam: DEFAULT_TEAM });
   state.fxEnabled = false;
-  assert(!playerHasLegalAction(state), 'round 1 with only 3-cost kits has nothing legal and auto-ends');
+  assert(playerHasLegalAction(state), 'round 1 with 3-cost kits still has the opener');
+  const pricey = vsInHand('player');
+  assert(pricey && pricey.cost === 3 && !canPaySummon(state, pricey, 'player'), '3-cost follow-up is too expensive on 2 mana');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1504,11 +1524,14 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const vsCard = vsInHand('player');
   const vsTile = getPlayerSummonTiles(state)[0];
-  assert(vsTile, 'vs has a portal tile');
-  const vsOpened = simSummon(state, vsPyre, vsTile.row, vsTile.col, 'player');
-  assert(vsOpened.length && vsPyre.state === 'portaling', 'vs can now portal a 2-cost Pyre on 2 mana');
+  assert(vsCard && vsTile, 'vs has a card and a drop tile');
+  assert(canPaySummon(state, vsCard, 'player'), 'round 1 can afford the next card');
+  const vsOpened = simSummon(state, vsCard, vsTile.row, vsTile.col, 'player');
+  assert(vsOpened.some(e => e.type === 'summon') && vsCard.state === 'onboard', 'vs drop lands now');
+  assert(!vsCard.summoningSickness, 'vs drop can act this turn');
+  assert(vsOnboardCount(state, 'player') === 2, 'opener plus drop hits the cap');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -2010,6 +2033,22 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
   assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
+  assert(playlistIdDefault() === 'vs', 'fresh playlist is Vs');
+  const playerOpen = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'onboard';
+  });
+  const enemyOpen = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'onboard' && !w.pawnKind;
+  });
+  assert(playerOpen.length === 1, 'vs starts with one player wizard in the pit');
+  assert(enemyOpen.length === 1, 'vs starts with one enemy wizard in the pit');
+  assert(playerOpen[0].element === 'fire', 'slot 1 is the opener');
+  assert(!playerOpen[0].summoningSickness && canMove(playerOpen[0]) && canAttack(playerOpen[0]), 'opener can act on round 1');
+  assert(vsHandCount(state, 'player') === 1, 'vs draws one card');
+  assert(vsDeckCount(state, 'player') === 2, 'the rest of the team is the stack');
+  assert(mountainAt(state, 4, 0) && mountainAt(state, 4, 8), 'vs arena has rim walls');
+  assert(waterAt(state, 4, 2) && waterAt(state, 4, 6), 'vs arena has side dunks');
+  assert(state.nexuses.player[0].maxHp === VS_NEXUS_HP, 'vs crystals are 3 HP');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;

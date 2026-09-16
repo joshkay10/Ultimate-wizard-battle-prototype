@@ -130,6 +130,7 @@ function teamHasPresence(match, team) {
     return wizard.team === team && (
       wizard.state === 'onboard' ||
       wizard.state === 'summoned' ||
+      wizard.state === 'deck' ||
       wizard.state === 'portaling' ||
       wizard.state === 'emerging'
     );

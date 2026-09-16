@@ -213,39 +213,33 @@ function generateVsGate(match, mountains, water) {
   stampVerticalPair(match, mountains, mountains, water, 2, 6);
 }
 
+function stampVsRim(mountains) {
+  let r;
+  for (r = 0; r < BOARD_SIZE; r++) {
+    mountains[tileKey(r, 0)] = true;
+    mountains[tileKey(r, BOARD_SIZE - 1)] = true;
+  }
+}
+
+function generateVsArena(match) {
+  const mountains = {};
+  const water = {};
+  stampVsRim(mountains);
+  stampVerticalPair(match, water, mountains, water, CENTER, 1);
+  stampVerticalPair(match, water, mountains, water, CENTER, 2);
+  if (!campsConnected(match, mountains, water)) {
+    Object.keys(water).forEach(function (key) { delete water[key]; });
+  }
+  match.mountains = mountains;
+  match.water = water;
+}
+
 function generateTerrain(match) {
   if (match.gameMode === 'defense') {
     generateDefenseIsland(match);
     return;
   }
-  if (!match.rng) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-
-  const mountains = {};
-  const water = {};
-  generateMountainsInto(match, mountains, water);
-  if (match.rng.next() < 0.34) generateVsGate(match, mountains, water);
-  pruneTerrainSingletons(mountains);
-  if (!campsConnected(match, mountains, water)) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-  if (match.rng.next() < 0.48) generateWaterInto(match, mountains, water);
-  if (!campsConnected(match, mountains, water)) {
-    Object.keys(water).forEach(function (key) { delete water[key]; });
-  }
-
-  if (countOpenSummonTiles(match, mountains, water, 'player') < 6 || countOpenSummonTiles(match, mountains, water, 'enemy') < 6) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-  match.mountains = mountains;
-  match.water = water;
+  generateVsArena(match);
 }
 
 function pruneSingletons(map) {

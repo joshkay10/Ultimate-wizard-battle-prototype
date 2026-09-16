@@ -37,13 +37,13 @@ function simSummonBurst(match, wizard) {
   return events;
 }
 
-function landPlayerWizard(match, wizard, row, col, team) {
+function landPlayerWizard(match, wizard, row, col, team, sick) {
   wizard.state = 'onboard';
   wizard.row = row;
   wizard.col = col;
   wizard.hasMoved = false;
   wizard.hasAttacked = false;
-  wizard.summoningSickness = true;
+  wizard.summoningSickness = !!sick;
   const events = [{
     type: 'summon',
     wizardId: wizard.id,
@@ -59,45 +59,43 @@ function landPlayerWizard(match, wizard, row, col, team) {
   return events;
 }
 
+function dropsOnceThisTurn(match, team) {
+  if (match.gameMode === 'defense') return team === 'player';
+  return true;
+}
+
+function teamDroppedThisTurn(match, team) {
+  return team === 'player' ? !!match.playerSummonedThisTurn : !!match.enemySummonedThisTurn;
+}
+
+function markTeamDropped(match, team) {
+  if (team === 'player') match.playerSummonedThisTurn = true;
+  else match.enemySummonedThisTurn = true;
+}
+
 function defenseDropsOnce(match, team) {
   return match.gameMode === 'defense' && team === 'player';
 }
 
 function canPaySummon(match, wizard, team) {
   if (!wizard || wizard.state !== 'summoned' || wizard.team !== team) return false;
-  if (defenseDropsOnce(match, team)) return !match.playerSummonedThisTurn;
+  if (dropsOnceThisTurn(match, team) && teamDroppedThisTurn(match, team)) return false;
+  if (match.gameMode !== 'defense' && vsBoardFull(match, team)) return false;
+  if (defenseDropsOnce(match, team)) return true;
   return teamMana(match, team) >= wizard.cost;
 }
 
 function simSummon(match, wizard, row, col, team) {
   if (!canPaySummon(match, wizard, team)) return [];
   if (!canSummonAt(match, row, col, team)) return [];
-  if (defenseDropsOnce(match, team)) match.playerSummonedThisTurn = true;
-  else spendMana(match, team, wizard.cost);
+  if (dropsOnceThisTurn(match, team)) markTeamDropped(match, team);
+  if (!defenseDropsOnce(match, team)) spendMana(match, team, wizard.cost);
   wizard.row = row;
   wizard.col = col;
   wizard.hasMoved = false;
   wizard.hasAttacked = false;
-  if (match.gameMode === 'defense' && team === 'player') {
-    return landPlayerWizard(match, wizard, row, col, team);
-  }
-  wizard.summoningSickness = false;
-  wizard.state = 'portaling';
-  match.portals[tileKey(row, col)] = {
-    row: row,
-    col: col,
-    wizardId: wizard.id,
-    team: team,
-    element: wizard.element
-  };
-  return [{
-    type: 'portal',
-    wizardId: wizard.id,
-    row: row,
-    col: col,
-    team: team,
-    element: wizard.element
-  }];
+  const sick = match.gameMode === 'defense' && team === 'player';
+  return landPlayerWizard(match, wizard, row, col, team, sick);
 }
 
 function simResolvePortals(match, team) {

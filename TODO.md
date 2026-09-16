@@ -2,7 +2,7 @@
 
 What is still leftover. Shipped work is already off this list.
 
-Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round), Brand / Lock / Tug, smash leftover knockback, hex wizards and disc vek, Vs portals, ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4 (campaign track, dunk juice, flawless pips).
+Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round), Brand / Lock / Tug, smash leftover knockback, hex wizards and disc vek, Vs as the default fight (opener in the pit, stack, instant land, cap 2, rim walls), ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4 (campaign track, dunk juice, flawless pips).
 
 ## Need from you
 
