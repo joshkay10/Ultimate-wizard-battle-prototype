@@ -765,6 +765,9 @@ async function runSimSelfTests() {
   lineFoes[0].state = 'onboard'; lineFoes[0].row = 4; lineFoes[0].col = 2; lineFoes[0].hp = 1; lineFoes[0].maxHp = 1;
   lineFoes[1].state = 'onboard'; lineFoes[1].row = 4; lineFoes[1].col = 3; lineFoes[1].hp = 1; lineFoes[1].maxHp = 1;
   lineFoes[2].state = 'onboard'; lineFoes[2].row = 4; lineFoes[2].col = 4; lineFoes[2].hp = 3; lineFoes[2].maxHp = 3;
+  benchOtherWizards(lanceMage, lineFoes[0], lineFoes[1], lineFoes[2]);
+  unlockTeam('player');
+  state.mana = 10;
   const lanceTiles = getCastTiles(state, lanceMage);
   assert(lanceTiles.some(t => t.row === 4 && t.col === 4), 'lance can aim past the front bodies (it pierces)');
   const lanced = simAttack(state, lanceMage, 4, 4, 'cast');
@@ -774,6 +777,7 @@ async function runSimSelfTests() {
   assert(lanced.filter(e => e.type === 'death').length === 2, 'one lance, two kills');
   assert(trailAt(state, 4, 2) && trailAt(state, 4, 2).element === 'fire', 'lance paints fire along the beam');
   lanceMage.hasAttacked = false;
+  state.mana = 10;
   state.nexuses.player = [makeNexus({ id: 'p-flame-0', row: 4, col: 3 }, 'player', NEXUS_HP)];
   simAttack(state, lanceMage, 4, 4, 'cast');
   assert(state.nexuses.player[0].hp === NEXUS_HP, 'lance flies over crystals without chipping the city');
@@ -824,6 +828,8 @@ async function runSimSelfTests() {
   tugger.row = 4;
   tugger.col = 1;
   tugger.hasAttacked = false;
+  unlockTeam('player');
+  state.mana = 10;
   const yanked = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'earth');
   yanked.state = 'onboard';
   yanked.row = 4;
@@ -831,6 +837,7 @@ async function runSimSelfTests() {
   yanked.hp = 5;
   yanked.maxHp = 5;
   state.water = { '4,3': true };
+  benchOtherWizards(tugger, yanked);
   const tugHit = simAttack(state, tugger, 4, 4, 'cast');
   assert(tugHit.some(e => e.type === 'attack' && e.castKind === 'pull' && e.spellId === 'tug'), 'tug attack is a pull');
   assert(yanked.state === 'dead', 'tug yanks a wizard into water');
@@ -840,12 +847,15 @@ async function runSimSelfTests() {
   locker.row = 2;
   locker.col = 2;
   locker.hasAttacked = false;
+  unlockTeam('player');
+  state.mana = 10;
   const lockFoe = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   lockFoe.state = 'onboard';
   lockFoe.row = 2;
   lockFoe.col = 5;
   lockFoe.hp = 4;
   lockFoe.maxHp = 4;
+  benchOtherWizards(locker, lockFoe);
   const lockHit = simAttack(state, locker, 2, 5, 'cast');
   assert(lockHit.some(e => e.type === 'root' && e.targetId === lockFoe.id), 'lock emits a root');
   assert(lockFoe.rooted, 'lock marks the wizard rooted');
@@ -855,12 +865,15 @@ async function runSimSelfTests() {
   brander.row = 6;
   brander.col = 2;
   brander.hasAttacked = false;
+  unlockTeam('player');
+  state.mana = 10;
   const brandFoe = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
   brandFoe.state = 'onboard';
   brandFoe.row = 6;
   brandFoe.col = 4;
   brandFoe.hp = 2;
   brandFoe.maxHp = 2;
+  benchOtherWizards(brander, brandFoe);
   const brandHit = simAttack(state, brander, 6, 4, 'cast');
   assert(brandFoe.hp === 1, 'brand chips 1 now');
   assert(brandFoe.burn === 2, 'brand leaves 2 burn');
