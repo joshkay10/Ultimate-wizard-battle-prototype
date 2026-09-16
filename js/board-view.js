@@ -99,21 +99,23 @@ function boardLayout() {
   if (!css) return null;
   const dpr = window.devicePixelRatio || 1;
   const vs = state.gameMode === 'vs';
-  let topRack = vs ? Math.max(10, css * 0.03) : Math.max(12, css * 0.04);
+  let topRack = vs ? Math.max(8, css * 0.02) : Math.max(12, css * 0.04);
   let botRack = topRack;
   if (vs) {
-    if (handWizardsFor('enemy').length) topRack = Math.max(48, css * 0.15);
-    if (handWizardsFor('player').length) botRack = Math.max(52, css * 0.16);
+    if (handWizardsFor('enemy').length) topRack = Math.max(44, css * 0.12);
+    if (handWizardsFor('player').length) botRack = Math.max(48, css * 0.13);
   }
   const lift = Math.max(5, css * 0.016);
   const gap = lift + 1;
-  const side = Math.max(8, Math.min(topRack, botRack));
-  const span = css - side * 2;
-  const cell = (span - gap * (BOARD_SIZE - 1) - lift) / BOARD_SIZE;
+  const side = Math.max(10, css * 0.03);
+  const vSpan = css - topRack - botRack - lift;
+  const hSpan = css - side * 2 - lift;
+  const span = Math.min(vSpan, hSpan);
+  const cell = (span - gap * (BOARD_SIZE - 1)) / BOARD_SIZE;
   const boardW = cell * BOARD_SIZE + gap * (BOARD_SIZE - 1);
   const boardH = boardW;
   const left = (css - boardW) / 2;
-  const top = topRack;
+  const top = topRack + Math.max(0, (vSpan - boardH) / 2);
   return { canvas, css, dpr, gap, pad: left, cell, lift, rack: botRack, topRack, botRack, left, top, boardW, boardH, vs };
 }
 
@@ -179,8 +181,8 @@ function handRackBoxes(layout, team) {
     const s = sizes[idx];
     if (idx === firstBench && split) x += split;
     const y = team === 'player'
-      ? layout.css - rack + Math.max(8, (rack - s) * 0.52)
-      : Math.max(8, (rack - s) * 0.38);
+      ? layout.top + layout.boardH + layout.lift + Math.max(4, (rack - s) * 0.35)
+      : Math.max(6, (rack - s) * 0.35);
     const box = { wizard: wizard, x: x, y: y, s: s };
     x += s + gap;
     return box;
@@ -1685,7 +1687,7 @@ function drawHandRacks(ctx, layout) {
     const ghost = { hidden: true, team: 'enemy', hp: '', element: null, offBoard: true };
     ctx.save();
     if (waiting) ctx.globalAlpha = 0.48;
-    drawTokenAt(ctx, b, ghost, false, false, waiting ? 1.85 : 2.25);
+    drawTokenAt(ctx, b, ghost, false, false, waiting ? 1.15 : 1.35);
     ctx.restore();
   });
   const mine = handRackBoxes(layout, 'player');
@@ -1697,7 +1699,7 @@ function drawHandRacks(ctx, layout) {
     ctx.save();
     if (waiting) ctx.globalAlpha = 0.42;
     else if (!can) ctx.globalAlpha = 0.58;
-    const scale = waiting ? 1.85 : (wiz.id === state.placingWizardId ? 2.4 : 2.25);
+    const scale = waiting ? 1.15 : (wiz.id === state.placingWizardId ? 1.45 : 1.35);
     drawTokenAt(ctx, b, token, wiz.id === state.placingWizardId, false, scale);
     ctx.restore();
   });
