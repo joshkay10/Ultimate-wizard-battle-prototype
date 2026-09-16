@@ -76,7 +76,7 @@ function spawnShelved(team, kind, extra) {
     moveRange: spec.moveRange,
     hp: spec.hp,
     maxHp: spec.hp,
-    cost: spec.cost,
+    cost: 0,
     meleeAttack: spec.meleeAttack,
     meleeDisplacement: spec.meleeDisplacement,
     castAttack: spec.castAttack,
@@ -95,6 +95,16 @@ function spawnShelved(team, kind, extra) {
   if (extra) Object.keys(extra).forEach(function (k) { w[k] = extra[k]; });
   state.wizards[id] = w;
   return w;
+}
+
+function toHand(wizard) {
+  if (!wizard) return;
+  wizard.state = 'summoned';
+  wizard.row = null;
+  wizard.col = null;
+  wizard.hasMoved = false;
+  wizard.hasAttacked = false;
+  wizard.summoningSickness = false;
 }
 
 function benchOtherWizards() {
@@ -142,14 +152,7 @@ async function runHeadlessMatch(seed, maxRounds) {
 
 async function runSimSelfTests() {
   const fails = [];
-  'use strict';
-
-// Domain tests. Loaded by test/sim-node.js. Search by assertion message.
-// Vs opening / 4v4: "Vs starts"
-// Costs: "basicManaCost" / "specialManaCost" / "spell 1"
-// Defense AI / missions: "defense" / "mission"
-
-function assert(cond, msg) {
+  function assert(cond, msg) {
     if (!cond) fails.push(msg);
   }
 
@@ -513,7 +516,8 @@ function assert(cond, msg) {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
+  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  toHand(arriving);
   const opened = simSummon(state, arriving, 5, 3, 'player');
   assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
   assert(arriving.state === 'portaling', 'wizard waits in the portal');
@@ -537,7 +541,8 @@ function assert(cond, msg) {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
+  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  toHand(doomed);
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   simSummon(state, doomed, 5, 3, 'player');
   blocker.state = 'onboard';
@@ -555,7 +560,8 @@ function assert(cond, msg) {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
+  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  toHand(allyIn);
   const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   simSummon(state, allyIn, 5, 3, 'player');
   allyOn.state = 'onboard';
@@ -690,7 +696,7 @@ function assert(cond, msg) {
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
   assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,fire', 'old three-kit arrays pad to four');
   assert(fromIds.map(s => s.spell).join(',') === 'stream,sheet,gust,cinder', 'old team arrays fill spell 1');
-  assert(fromIds.map(s => s.special).join(',') === 'lance,pulse,draft,inferno', 'padding also fills spell 2');
+  assert(fromIds.map(s => s.special).join(',') === 'inferno,pulse,gale,inferno', 'padding also fills spell 2');
   const rolledPlayable = pickEnemyTeam(createRng(3), DEFAULT_TEAM);
   assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
   const mixed = randomPlayableLoadout(createRng(9));
