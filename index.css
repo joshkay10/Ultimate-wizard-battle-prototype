@@ -498,8 +498,10 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 100%;
+  width: min(560px, 100%);
   max-width: 560px;
+  flex: 0 0 auto;
+  align-self: flex-start;
 }
 .wizard-card-hit.is-static {
   cursor: default;
