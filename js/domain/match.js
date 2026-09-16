@@ -92,4 +92,5 @@ function resetMatch(match, seed, opts) {
   generateTerrain(match);
   seedRosters(match, playerLoadout, enemyLoadout);
   if (match.gameMode === 'defense') seedDefenseOpening(match);
+  else seedVsOpening(match);
 }

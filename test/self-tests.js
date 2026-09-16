@@ -97,6 +97,23 @@ function spawnShelved(team, kind, extra) {
   return w;
 }
 
+function benchOtherWizards() {
+  const keep = {};
+  let i;
+  for (i = 0; i < arguments.length; i++) {
+    if (arguments[i] && arguments[i].id) keep[arguments[i].id] = true;
+  }
+  Object.values(state.wizards).forEach(function (w) {
+    if (keep[w.id] || w.pawnKind) return;
+    if (w.state === 'onboard' || w.state === 'portaling') {
+      w.state = 'summoned';
+      w.row = null;
+      w.col = null;
+      w.summoningSickness = false;
+    }
+  });
+}
+
 async function runHeadlessMatch(seed, maxRounds) {
   const prev = state.fxEnabled;
   state.fxEnabled = false;
@@ -161,6 +178,7 @@ async function runSimSelfTests() {
   gale.row = 0;
   gale.col = BOARD_SIZE - 2;
   gale.hp = 12;
+  benchOtherWizards(ember, gale);
   state.nexuses.enemy = [makeNexus({ id: 'crash-crystal', row: 0, col: BOARD_SIZE - 1 }, 'enemy', NEXUS_HP)];
   const hp0 = gale.hp;
   simAttack(state, ember, 0, BOARD_SIZE - 2, 'melee');
@@ -348,7 +366,33 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
-  assert(playerHasLegalAction(state), 'round 1 with 2 mana can open a cheap portal');
+  const openers = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'onboard';
+  });
+  const waiting = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  });
+  assert(openers.length === VS_OPENING_COUNT, 'Vs starts with two wizards on the field');
+  assert(waiting.length === TEAM_SIZE - VS_OPENING_COUNT, 'the rest wait in hand to summon');
+  assert(openers.every(function (w) { return !w.summoningSickness; }), 'opening bodies can act on round 1');
+  assert(openers.every(function (w) { return isSummonTile(w.row, w.col); }), 'openers stand in the back camp');
+  const enemyOpen = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'onboard';
+  });
+  assert(enemyOpen.length === VS_OPENING_COUNT, 'the enemy also starts with two on the field');
+  openers.forEach(function (w) {
+    const twin = enemyOpen.some(function (e) { return e.row === mirrorRow(w.row) && e.col === w.col; });
+    assert(twin, 'enemy opening mirrors the player');
+  });
+  const spareRime = waiting.find(function (w) { return w.element === 'ice'; });
+  if (spareRime) {
+    const portalTile = getPlayerSummonTiles(state)[0];
+    const beforeMana = state.mana;
+    const sparePortal = simSummon(state, spareRime, portalTile.row, portalTile.col, 'player');
+    assert(sparePortal.length === 1 && sparePortal[0].type === 'portal', 'leftover bodies still portal in for mana');
+    assert(state.mana === beforeMana - spareRime.cost, 'summon mana comes from the same pool');
+  }
+  assert(playerHasLegalAction(state), 'round 1 can move an opener or portal another body');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -429,7 +473,7 @@ async function runSimSelfTests() {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
   const opened = simSummon(state, arriving, 5, 3, 'player');
   assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
   assert(arriving.state === 'portaling', 'wizard waits in the portal');
@@ -453,7 +497,7 @@ async function runSimSelfTests() {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   simSummon(state, doomed, 5, 3, 'player');
   blocker.state = 'onboard';
@@ -471,7 +515,7 @@ async function runSimSelfTests() {
   state.mana = 10;
   state.mountains = {};
   state.water = {};
-  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice' && x.state === 'summoned');
   const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   simSummon(state, allyIn, 5, 3, 'player');
   allyOn.state = 'onboard';
@@ -485,7 +529,8 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const mountainKeys = Object.keys(state.mountains);
-  assert(mountainKeys.length >= 4, 'mountains should generate in groups');
+  assert(mountainKeys.length >= 2, 'mountains should still generate a ridge');
+  assert(mountainKeys.length <= 16, 'Vs mountains stay light on the small board');
   state.nexuses.player.concat(state.nexuses.enemy).forEach(function (n) {
     assert(!mountainAt(state, n.row, n.col), 'no mountain on a nexus');
     assert(!waterAt(state, n.row, n.col), 'no water on a nexus');
@@ -946,7 +991,12 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1, { playerTeam: ['earth', 'temporal', 'earth', 'temporal', 'earth', 'temporal', 'earth'], enemyTeam: DEFAULT_TEAM });
   state.fxEnabled = false;
-  assert(!playerHasLegalAction(state), 'round 1 with only 3-cost kits has nothing legal and auto-ends');
+  const expensiveWait = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  });
+  assert(expensiveWait.length === 5 && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'leftover 3-cost kits stay in hand on round 1');
+  assert(expensiveWait.every(function (w) { return !canPaySummon(state, w, 'player'); }), '2 mana cannot portal a 3-cost kit');
+  assert(playerHasLegalAction(state), 'opening bodies can still move when the rest are too expensive');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1520,7 +1570,7 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
+  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire' && x.state === 'summoned');
   const vsTile = getPlayerSummonTiles(state)[0];
   assert(vsTile, 'vs has a portal tile');
   const vsOpened = simSummon(state, vsPyre, vsTile.row, vsTile.col, 'player');

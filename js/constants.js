@@ -54,6 +54,7 @@ const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;
 const FIRE_TRAIL_DAMAGE = 1;
 const STARTING_MANA = 2;
+const VS_OPENING_COUNT = 2;
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
 const NEXUS_LAYOUT = {
   enemy: [
