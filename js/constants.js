@@ -24,11 +24,24 @@ const ELEMENT_COLOR = {
 
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
-const BOARD_SIZE = 9;
-const CENTER = 4; // 0-indexed center of 9x9
+const DEFENSE_BOARD_SIZE = 9;
+const VS_BOARD_SIZE = 7;
+const SUMMON_ZONE_ROWS = 3;
+var BOARD_SIZE = DEFENSE_BOARD_SIZE;
+var CENTER = (DEFENSE_BOARD_SIZE - 1) >> 1;
+var SUMMON_ROW_START = DEFENSE_BOARD_SIZE - SUMMON_ZONE_ROWS;
+var ENEMY_ROW_END = SUMMON_ZONE_ROWS;
 const MANA_CAP = 10;
-const SUMMON_ROW_START = BOARD_SIZE - 3;
-const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
+
+function applyMatchLayout(match) {
+  const n = match && match.gameMode === 'vs' ? VS_BOARD_SIZE : DEFENSE_BOARD_SIZE;
+  if (match) match.boardSize = n;
+  BOARD_SIZE = n;
+  CENTER = (n - 1) >> 1;
+  SUMMON_ROW_START = n - SUMMON_ZONE_ROWS;
+  ENEMY_ROW_END = SUMMON_ZONE_ROWS;
+}
+
 const NEXUS_HP = 5;
 const DEFENSE_NEXUS_HP = 2;
 const DEFENSE_NEXUS_MIN = 3;
@@ -41,16 +54,22 @@ const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;
 const FIRE_TRAIL_DAMAGE = 1;
 const STARTING_MANA = 2;
+const VS_HAND_START = 3;
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
-const NEXUS_LAYOUT = {
-  enemy: [
-    { id: 'enemy-back-west', row: 0, col: 1 },
-    { id: 'enemy-back-east', row: 0, col: 7 },
-    { id: 'enemy-front', row: 2, col: 4 }
-  ],
-  player: [
-    { id: 'player-back-west', row: 8, col: 1 },
-    { id: 'player-back-east', row: 8, col: 7 },
-    { id: 'player-front', row: 6, col: 4 }
-  ]
-};
+function vsNexusLayout() {
+  const last = BOARD_SIZE - 1;
+  const frontEnemy = Math.min(2, ENEMY_ROW_END - 1);
+  const frontPlayer = Math.max(last - 2, SUMMON_ROW_START);
+  return {
+    enemy: [
+      { id: 'enemy-back-west', row: 0, col: 1 },
+      { id: 'enemy-back-east', row: 0, col: last - 1 },
+      { id: 'enemy-front', row: frontEnemy, col: CENTER }
+    ],
+    player: [
+      { id: 'player-back-west', row: last, col: 1 },
+      { id: 'player-back-east', row: last, col: last - 1 },
+      { id: 'player-front', row: frontPlayer, col: CENTER }
+    ]
+  };
+}

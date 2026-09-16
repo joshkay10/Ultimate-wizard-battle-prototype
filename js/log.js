@@ -33,7 +33,9 @@ function describeEvent(ev) {
   }
 
   if (ev.type === 'intent') return '';
-  if (ev.type === 'emergeMark') return actorName(ev.wizardId) + ' will arrive next';
+  if (ev.type === 'draw') {
+    return ev.team === 'player' ? 'you pick up a wizard' : 'the enemy picks up a wizard';
+  }
   if (ev.type === 'portal') return actorName(ev.wizardId) + ' opens a portal — arrives next turn';
   if (ev.type === 'summon') return actorName(ev.wizardId) + ' arrives';
   if (ev.type === 'portalBlocked') {

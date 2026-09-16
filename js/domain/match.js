@@ -48,6 +48,7 @@ function resetMatch(match, seed, opts) {
   }
 
   match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
+  applyMatchLayout(match);
   match.mapId = '';
   match.mapName = '';
   match.missionId = opts.missionId || '';
@@ -59,18 +60,19 @@ function resetMatch(match, seed, opts) {
   match.spawnKinds = opts.spawnKinds ? opts.spawnKinds.slice() : null;
   match.cityExtra = typeof opts.cityExtra === 'number' ? opts.cityExtra : null;
   match.missionOpening = opts.opening || null;
-  if (match.gameMode === 'defense') {
-    match.nexuses = { player: [], enemy: [] };
-  } else {
+  match.nexuses = { player: [], enemy: [] };
+  if (match.gameMode === 'vs') {
     match.nexuses = {
-      player: makeNexusCamp('player'),
-      enemy: makeNexusCamp('enemy')
+      player: makeNexusCamp('player', NEXUS_HP),
+      enemy: makeNexusCamp('enemy', NEXUS_HP)
     };
   }
 
-  const loadoutOpts = opts.missionId ? { pad: false } : {};
+  let loadoutOpts = {};
+  if (opts.missionId) loadoutOpts = { pad: false };
+  else if (match.gameMode === 'defense') loadoutOpts = { padTo: DEFENSE_TEAM_SIZE };
   let playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT, loadoutOpts);
-  if (!playerLoadout.length) playerLoadout = normalizeLoadout(DEFAULT_LOADOUT);
+  if (!playerLoadout.length) playerLoadout = normalizeLoadout(DEFAULT_LOADOUT, loadoutOpts);
   let enemyLoadout;
   if (match.gameMode === 'defense') {
     enemyLoadout = [];
@@ -96,4 +98,5 @@ function resetMatch(match, seed, opts) {
   generateTerrain(match);
   seedRosters(match, playerLoadout, enemyLoadout);
   if (match.gameMode === 'defense') seedDefenseOpening(match);
+  else seedVsOpening(match);
 }

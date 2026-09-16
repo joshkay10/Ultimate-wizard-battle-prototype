@@ -43,7 +43,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -51,7 +51,9 @@ html, body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
 }
 #app.is-animating .board-canvas,
 #app.is-animating .wizard-card-hit:not(:disabled) {
@@ -181,17 +183,18 @@ html, body {
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-self: start;
 }
 .topbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
+  flex-shrink: 0;
 }
 .topbar-mana {
   display: flex;
@@ -212,6 +215,9 @@ html, body {
   color: var(--text-dim);
   text-align: center;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .topbar-map {
   margin-left: 2px;
@@ -232,7 +238,7 @@ html, body {
   font: 700 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 8px 10px;
+  padding: 6px 9px;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
@@ -263,11 +269,10 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
-  justify-self: end;
 }
 .track-pip {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 8px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
@@ -307,9 +312,9 @@ html, body {
 .track-pip:not(:disabled):active { transform: scale(0.96); }
 
 .mission-brief {
-  padding: 10px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--bg);
 }
 .mission-goal {
@@ -375,14 +380,21 @@ html, body {
 /* ---------- Board ---------- */
 .board-wrap {
   width: 100%;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
+  padding: 4px 8px;
+  display: grid;
+  place-items: center;
   background: var(--bg);
+  flex: 1 1 0;
+  min-height: 0;
+  container-type: size;
 }
 .board-canvas {
-  width: 100%;
-  max-width: 640px;
+  width: auto;
+  height: 100%;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 10px;
   display: block;
@@ -392,9 +404,12 @@ html, body {
 }
 
 #panel-root {
-  flex: 1;
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  max-height: 42%;
+  overflow: auto;
 }
 
 /* ---------- Bottom half: action panel ---------- */
@@ -402,10 +417,10 @@ html, body {
   flex: 1;
   background: var(--panel);
   border-top: 1px solid var(--line);
-  padding: 14px 14px 22px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 .panel-section-label {
@@ -414,7 +429,7 @@ html, body {
   color: var(--text-faint);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 .section-header-row {
   display: flex;
@@ -429,8 +444,8 @@ html, body {
 
 .wizard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 6px;
 }
 .wizard-card {
   display: flex;
@@ -593,7 +608,7 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 0 0 12px;
+  margin: 0;
 }
 .action-btn {
   flex: 1 1 0;
@@ -602,7 +617,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 11px 6px;
+  padding: 8px 6px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: #fafaf8;
@@ -657,12 +672,12 @@ html, body {
 .inspect {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px 10px;
+  gap: 6px 10px;
   align-items: center;
-  padding: 10px 12px;
-  margin: 0 0 10px;
+  padding: 6px 10px;
+  margin: 0;
   border: 2px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   background: #fff;
 }
 .inspect.fire { border-color: var(--fire); }
@@ -699,9 +714,9 @@ html, body {
   font-size: 12px;
   color: var(--text-faint);
   text-align: center;
-  padding: 18px 10px;
+  padding: 6px 10px;
   border: 1px dashed var(--line-strong);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 .no-selection-hint strong {
   color: var(--text);
@@ -710,16 +725,16 @@ html, body {
   letter-spacing: 0.04em;
 }
 .action-log {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   padding: 0;
   list-style: none;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.3;
   font-weight: 500;
   color: var(--text-dim);
 }
 .action-log li {
-  padding: 5px 0;
+  padding: 3px 0;
   border-top: 1px solid var(--line);
 }
 .arriving-tag {
@@ -737,7 +752,7 @@ html, body {
 }
 
 .end-turn-btn {
-  padding: 11px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--text);
@@ -762,12 +777,21 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
   background: var(--panel);
   flex-shrink: 0;
+  z-index: 20;
 }
+.site-nav-extra {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.site-nav-extra:empty { display: none; }
+#app.is-play .site-brand { display: none; }
 .site-brand {
   font-size: 13px;
   font-weight: 800;
@@ -780,14 +804,15 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
+  margin-left: auto;
 }
 .site-link {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
   text-decoration: none;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: 999px;
 }
 .site-link:hover { color: var(--text); background: var(--tile-alt); }
@@ -801,21 +826,24 @@ html, body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
-#app.is-doc {
-  height: auto;
-  min-height: 100vh;
-}
 #app.is-doc #view-root {
   display: block;
   overflow: auto;
+}
+#app.is-play.is-vs #panel-root {
+  max-height: 24%;
+}
+#app.is-play.is-vs .board-wrap {
+  padding: 2px 8px 0;
 }
 
 .page {
   max-width: 860px;
   margin: 0 auto;
-  padding: 22px 18px 48px;
+  padding: 22px 18px 28px;
 }
 .page h1 {
   font-size: 26px;
@@ -971,14 +999,6 @@ html, body {
   line-height: 1.45;
 }
 
-.topbar-vs {
-  display: block;
-  font-size: 11px;
-  color: var(--text-faint);
-  font-weight: 600;
-  margin-top: 2px;
-  white-space: normal;
-}
 .game-over-team {
   margin-top: 12px;
   font-size: 13px;

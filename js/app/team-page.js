@@ -134,11 +134,11 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> — the multi-hit payoff spells that <strong>cost mana</strong>. Saved on this device. Summon cost is <strong>Vs mana</strong>; Defense drops one wizard per round, any kit, and has a small mana pool for specials.</p>' +
+      '<p class="lede">Bring seven wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> — the multi-hit payoff spells that <strong>cost mana</strong>. Saved on this device. Summon cost is <strong>Vs mana</strong>; Defense drops one wizard per round, any kit, and has a small mana pool for specials.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
-      '<h2 class="team-sub">Your four</h2>' +
+      '<h2 class="team-sub">Your seven</h2>' +
       '<div class="team-grid team-roster">' + roster + empty + '</div>' +
       '<h2 class="team-sub">Add</h2>' +
       '<div class="team-grid">' + adders + '</div>' +

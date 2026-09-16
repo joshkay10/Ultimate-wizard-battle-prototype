@@ -1,21 +1,19 @@
 function checkWinLoss(match) {
-  const mineDead = teamNexusesFallen(match, 'player');
   if (isDefenseMode(match)) {
+    const mineDead = teamNexusesFallen(match, 'player');
     if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
     if (typeof defenseWaveCleared === 'function' ? defenseWaveCleared(match) : !teamHasPresence(match, 'enemy')) {
       return 'player';
     }
     return null;
   }
-  const enemyDead = teamNexusesFallen(match, 'enemy');
-  if (mineDead && enemyDead) return 'draw';
-
-  const playerWiped = mineDead || !teamHasPresence(match, 'player');
-  const enemyWiped = enemyDead || !teamHasPresence(match, 'enemy');
-
-  if (playerWiped && enemyWiped) return 'draw';
-  if (playerWiped) return 'enemy';
-  if (enemyWiped) return 'player';
+  const playerNexusDead = teamNexusesFallen(match, 'player');
+  const enemyNexusDead = teamNexusesFallen(match, 'enemy');
+  const playerWiped = !teamHasPresence(match, 'player');
+  const enemyWiped = !teamHasPresence(match, 'enemy');
+  if ((playerNexusDead || playerWiped) && (enemyNexusDead || enemyWiped)) return 'draw';
+  if (playerNexusDead || playerWiped) return 'enemy';
+  if (enemyNexusDead || enemyWiped) return 'player';
   return null;
 }
 
@@ -58,6 +56,8 @@ function simEndPlayerTurn(match) {
     }
   }
   match.currentTurn = 'enemy';
+  const enemyDraw = typeof drawVsWizard === 'function' ? drawVsWizard(match, 'enemy') : null;
+  if (enemyDraw) events.push({ type: 'draw', team: 'enemy', wizardId: enemyDraw.id });
   events.push.apply(events, tickBurnsForTeam(match, 'enemy'));
   events.push.apply(events, simResolvePortals(match, 'enemy'));
   const afterPortals = checkWinLoss(match);
@@ -90,6 +90,8 @@ function simEndEnemyTurn(match) {
   match.currentTurn = 'player';
   match.playerSummonedThisTurn = false;
   refillManaPools(match);
+  const playerDraw = typeof drawVsWizard === 'function' ? drawVsWizard(match, 'player') : null;
+  if (playerDraw) events.push({ type: 'draw', team: 'player', wizardId: playerDraw.id });
   resetActionFlagsFor(match, 'player');
   events.push.apply(events, tickBurnsForTeam(match, 'player'));
   events.push.apply(events, simResolvePortals(match, 'player'));

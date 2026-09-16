@@ -2,7 +2,10 @@ const DEFAULT_LOADOUT = [
   { kit: 'fire', spell: 'stream', special: 'lance' },
   { kit: 'ice', spell: 'sheet', special: 'pulse' },
   { kit: 'wind', spell: 'gust', special: 'draft' },
-  { kit: 'fire', spell: 'cinder', special: 'inferno' }
+  { kit: 'fire', spell: 'cinder', special: 'inferno' },
+  { kit: 'ice', spell: 'lock', special: 'blizzard' },
+  { kit: 'wind', spell: 'tug', special: 'gale' },
+  { kit: 'fire', spell: 'brand', special: 'lance' }
 ];
 
 function emptyLoadoutSlot(kitId) {
@@ -19,7 +22,13 @@ function cloneLoadout(loadout) {
   });
 }
 
-function parseLoadoutSlots(raw) {
+function loadoutCap(opts) {
+  if (opts && typeof opts.padTo === 'number') return opts.padTo;
+  return TEAM_SIZE;
+}
+
+function parseLoadoutSlots(raw, opts) {
+  const cap = loadoutCap(opts);
   let slots = [];
   if (Array.isArray(raw) && raw.length && typeof raw[0] === 'string') {
     slots = validKitIds(raw).map(function (kitId) { return emptyLoadoutSlot(kitId); });
@@ -30,7 +39,7 @@ function parseLoadoutSlots(raw) {
   }
   const out = [];
   let i;
-  for (i = 0; i < slots.length && out.length < TEAM_SIZE; i++) {
+  for (i = 0; i < slots.length && out.length < cap; i++) {
     const row = slots[i] || {};
     const kitId = row.kit || row.kitId || row.id;
     if (!kitById(kitId)) continue;
@@ -43,13 +52,14 @@ function parseLoadoutSlots(raw) {
   return out;
 }
 
-function padLoadout(slots) {
-  const out = (slots || []).slice(0, TEAM_SIZE);
+function padLoadout(slots, size) {
+  const cap = typeof size === 'number' ? size : TEAM_SIZE;
+  const out = (slots || []).slice(0, cap);
   const used = {};
   const seen = {};
   let i;
   for (i = 0; i < out.length; i++) used[out[i].kit] = (used[out[i].kit] || 0) + 1;
-  for (i = 0; i < DEFAULT_LOADOUT.length && out.length < TEAM_SIZE; i++) {
+  for (i = 0; i < DEFAULT_LOADOUT.length && out.length < cap; i++) {
     const row = DEFAULT_LOADOUT[i];
     seen[row.kit] = (seen[row.kit] || 0) + 1;
     if ((used[row.kit] || 0) < seen[row.kit]) {
@@ -58,7 +68,7 @@ function padLoadout(slots) {
     }
   }
   i = 0;
-  while (out.length < TEAM_SIZE) {
+  while (out.length < cap) {
     const row = DEFAULT_LOADOUT[i % DEFAULT_LOADOUT.length];
     out.push({ kit: row.kit, spell: row.spell, special: row.special });
     i += 1;
@@ -89,9 +99,9 @@ function randomPlayableLoadout(rng) {
 
 function normalizeLoadout(raw, opts) {
   opts = opts || {};
-  const parsed = parseLoadoutSlots(raw);
+  const parsed = parseLoadoutSlots(raw, opts);
   if (opts.pad === false) return parsed;
-  return padLoadout(parsed);
+  return padLoadout(parsed, opts.padTo);
 }
 
 function loadoutKitIds(loadout) {

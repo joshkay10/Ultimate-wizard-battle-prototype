@@ -11,7 +11,9 @@ function makeNexus(spec, team, hp) {
 }
 
 function makeNexusCamp(team, hp) {
-  return NEXUS_LAYOUT[team].map(function (spec) {
+  const layout = typeof vsNexusLayout === 'function' ? vsNexusLayout() : {};
+  const specs = layout[team] || [];
+  return specs.map(function (spec) {
     return makeNexus(spec, team, hp);
   });
 }

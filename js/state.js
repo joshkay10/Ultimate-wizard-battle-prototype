@@ -33,6 +33,7 @@ const state = {
   matchId: 0,
   aiBrain: 'hunter',
   gameMode: 'defense',
+  boardSize: DEFENSE_BOARD_SIZE,
   mapId: '',
   mapName: '',
   missionId: '',
