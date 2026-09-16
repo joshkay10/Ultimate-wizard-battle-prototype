@@ -375,19 +375,24 @@ async function runSimSelfTests() {
   const benched = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'bench';
   });
-  assert(openers.length === 0, 'Vs starts with nobody on the field');
-  assert(waiting.length === VS_HAND_START, 'Vs starts with three wizards in hand');
-  assert(benched.length === TEAM_SIZE - VS_HAND_START, 'the rest wait on the bench to be picked up');
+  assert(openers.length === VS_FIELD_START, 'Vs starts with four wizards on the board');
+  assert(waiting.length === TEAM_SIZE - VS_FIELD_START, 'the leftover three stay in hand');
+  assert(benched.length === 0, 'nobody waits on the bench at the opening');
+  assert(openers.every(function (w) { return w.row >= SUMMON_ROW_START; }), 'your four open on your back rows');
   const enemyHand = Object.values(state.wizards).filter(function (w) {
     return w.team === 'enemy' && w.state === 'summoned';
   });
   const enemyBench = Object.values(state.wizards).filter(function (w) {
     return w.team === 'enemy' && w.state === 'bench';
   });
-  assert(enemyHand.length === VS_HAND_START, 'the enemy also starts with three in hand');
-  assert(enemyBench.length === TEAM_SIZE - VS_HAND_START, 'enemy leftovers sit on the bench');
+  const enemyField = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'onboard';
+  });
+  assert(enemyField.length === TEAM_SIZE, 'the enemy starts on the board');
+  assert(enemyField.every(function (w) { return w.row < ENEMY_ROW_END; }), 'the enemy opens on their back rows');
+  assert(enemyHand.length === 0 && enemyBench.length === 0, 'the enemy has no leftover hand');
   const spareRime = waiting.find(function (w) { return w.element === 'ice'; });
-  assert(playerHasLegalAction(state), 'round 1 can portal a body from the starting hand');
+  assert(playerHasLegalAction(state), 'round 1 can move a starting body');
   if (spareRime) {
     const portalTile = getPlayerSummonTiles(state)[0];
     const beforeMana = state.mana;
@@ -418,13 +423,13 @@ async function runSimSelfTests() {
   const enemyAfter = Object.values(state.wizards).filter(function (w) {
     return w.team === 'enemy' && w.state === 'summoned';
   }).length;
-  assert(enemyAfter === VS_HAND_START + 1, 'enemy picks up a wizard at the start of their turn');
+  assert(enemyAfter === 0, 'the enemy has no bench to pick up from');
   simEndEnemyTurn(state);
   const handAfter = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   }).length;
-  assert(handAfter === handBefore + 1, 'you pick up a wizard each round');
-  assert(state.mana === 3 && state.maxMana === 3, 'each round also grants 1 mana');
+  assert(handAfter === handBefore, 'no extra wizard is drawn when the bench is empty');
+  assert(state.mana === 3 && state.maxMana === 3, 'each round still grants 1 mana');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -555,8 +560,8 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const mountainKeys = Object.keys(state.mountains);
-  assert(mountainKeys.length >= 2, 'mountains should still generate a ridge');
-  assert(mountainKeys.length <= 16, 'Vs mountains stay light on the small board');
+  assert(mountainKeys.length === 0, 'Vs opens on an empty arena');
+  assert(Object.keys(state.water).length === 0, 'Vs opens with no water');
   state.nexuses.player.concat(state.nexuses.enemy).forEach(function (n) {
     assert(!mountainAt(state, n.row, n.col), 'no mountain on a nexus');
     assert(!waterAt(state, n.row, n.col), 'no water on a nexus');
@@ -634,25 +639,10 @@ async function runSimSelfTests() {
     if (Object.keys(state.water).length) waterMaps++;
     else dryMaps++;
     assert(campsConnected(state, state.mountains, state.water), 'camps should stay connected on seed ' + s);
+    assert(Object.keys(state.mountains).length === 0, 'Vs stays an open arena on seed ' + s);
   }
-  assert(waterMaps > 0, 'some maps should have water');
-  assert(dryMaps > 0, 'some maps should be dry');
-
-  function rimWalls(map) {
-    const last = BOARD_SIZE - 1;
-    let west = 0;
-    let east = 0;
-    Object.keys(map).forEach(function (k) {
-      const c = parseInt(k.split(',')[1], 10);
-      if (c === 0) west += 1;
-      if (c === last) east += 1;
-    });
-    return west >= 2 && east >= 2;
-  }
-  for (let alleySeed = 1; alleySeed <= 40; alleySeed++) {
-    resetMatch(state, alleySeed);
-    assert(!rimWalls(state.mountains), 'Vs stays a generic arena, not alley walls on seed ' + alleySeed);
-  }
+  assert(waterMaps === 0, 'the simplified Vs map has no water');
+  assert(dryMaps === 40, 'every Vs seed is a dry open board');
 
   resetMatch(state, 1);
   const mtnA = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
@@ -1036,13 +1026,13 @@ async function runSimSelfTests() {
   const expensiveWait = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   });
-  const expensiveBench = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'player' && w.state === 'bench';
+  const expensiveField = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'onboard';
   });
-  assert(expensiveWait.length === VS_HAND_START && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'three 3-cost kits start in hand');
-  assert(expensiveBench.length === TEAM_SIZE - VS_HAND_START, 'the rest wait on the bench');
+  assert(expensiveField.length === VS_FIELD_START, 'four 3-cost kits still start on the board');
+  assert(expensiveWait.length === TEAM_SIZE - VS_FIELD_START && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'leftover 3-cost kits stay in hand');
   assert(expensiveWait.every(function (w) { return !canPaySummon(state, w, 'player'); }), '2 mana cannot portal a 3-cost kit');
-  assert(!playerHasLegalAction(state), 'no opening bodies when the whole hand is too expensive');
+  assert(playerHasLegalAction(state), 'the four on the board can still move');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

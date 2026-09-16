@@ -211,33 +211,8 @@ function generateTerrain(match) {
     generateDefenseIsland(match);
     return;
   }
-  if (!match.rng) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-
-  const mountains = {};
-  const water = {};
-  generateMountainsInto(match, mountains, water);
-  pruneTerrainSingletons(mountains);
-  if (Object.keys(mountains).length < 2 || !campsConnected(match, mountains, water)) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-  if (match.rng.next() < 0.48) generateWaterInto(match, mountains, water);
-  if (!campsConnected(match, mountains, water)) {
-    Object.keys(water).forEach(function (key) { delete water[key]; });
-  }
-
-  if (Object.keys(mountains).length < 2 || countOpenSummonTiles(match, mountains, water, 'player') < 6 || countOpenSummonTiles(match, mountains, water, 'enemy') < 6) {
-    match.mountains = fallbackMountains(match);
-    match.water = {};
-    return;
-  }
-  match.mountains = mountains;
-  match.water = water;
+  match.mountains = {};
+  match.water = {};
 }
 
 function pruneSingletons(map) {

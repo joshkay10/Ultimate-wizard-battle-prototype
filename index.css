@@ -833,22 +833,14 @@ html, body {
   display: block;
   overflow: auto;
 }
-#app.is-play.is-vs #panel-root {
-  max-height: none;
-  flex: 0 0 auto;
-}
-#app.is-play.is-vs .panel {
-  padding: 6px 10px 8px;
-  gap: 6px;
+#app.is-play.is-vs .topbar,
+#app.is-play.is-vs #panel-root,
+#app.is-play.is-vs .site-nav {
+  display: none;
 }
 #app.is-play.is-vs .board-wrap {
-  padding: 2px 8px 0;
-}
-.action-row.is-pass {
-  justify-content: flex-end;
-}
-.action-row.is-pass .end-turn-btn {
-  min-width: 108px;
+  padding: 0;
+  flex: 1 1 auto;
 }
 
 .page {

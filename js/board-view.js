@@ -99,16 +99,22 @@ function boardLayout() {
   if (!css) return null;
   const dpr = window.devicePixelRatio || 1;
   const vs = state.gameMode === 'vs';
-  const rack = vs ? Math.max(56, css * 0.18) : Math.max(12, css * 0.04);
+  let topRack = vs ? Math.max(10, css * 0.03) : Math.max(12, css * 0.04);
+  let botRack = topRack;
+  if (vs) {
+    if (handWizardsFor('enemy').length) topRack = Math.max(48, css * 0.15);
+    if (handWizardsFor('player').length) botRack = Math.max(52, css * 0.16);
+  }
   const lift = Math.max(5, css * 0.016);
   const gap = lift + 1;
-  const span = css - rack * 2;
+  const side = Math.max(8, Math.min(topRack, botRack));
+  const span = css - side * 2;
   const cell = (span - gap * (BOARD_SIZE - 1) - lift) / BOARD_SIZE;
   const boardW = cell * BOARD_SIZE + gap * (BOARD_SIZE - 1);
   const boardH = boardW;
   const left = (css - boardW) / 2;
-  const top = rack;
-  return { canvas, css, dpr, gap, pad: left, cell, lift, rack, left, top, boardW, boardH, vs };
+  const top = topRack;
+  return { canvas, css, dpr, gap, pad: left, cell, lift, rack: botRack, topRack, botRack, left, top, boardW, boardH, vs };
 }
 
 function cellRect(layout, row, col) {
@@ -150,8 +156,9 @@ function handRackBoxes(layout, team) {
   const list = handWizardsFor(team);
   const n = list.length;
   if (!n) return [];
-  const readySize = Math.min(layout.cell * 0.98, layout.rack * 0.8);
-  const benchSize = Math.min(readySize * 0.64, layout.rack * 0.5);
+  const rack = team === 'player' ? layout.botRack : layout.topRack;
+  const readySize = Math.min(layout.cell * 0.98, rack * 0.8);
+  const benchSize = Math.min(readySize * 0.64, rack * 0.5);
   const sizes = list.map(function (w) {
     return w.state === 'bench' ? benchSize : readySize;
   });
@@ -172,8 +179,8 @@ function handRackBoxes(layout, team) {
     const s = sizes[idx];
     if (idx === firstBench && split) x += split;
     const y = team === 'player'
-      ? layout.css - layout.rack + Math.max(8, (layout.rack - s) * 0.52)
-      : Math.max(8, (layout.rack - s) * 0.38);
+      ? layout.css - rack + Math.max(8, (rack - s) * 0.52)
+      : Math.max(8, (rack - s) * 0.38);
     const box = { wizard: wizard, x: x, y: y, s: s };
     x += s + gap;
     return box;
@@ -224,13 +231,18 @@ function highlightSet() {
     const team = placing && placing.team ? placing.team : 'player';
     return { tiles: getTeamSummonTiles(state, team), kind: 'summon' };
   } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
-    if (state.selectedAction === 'move' && canMove(selectedWizard)) {
+    if (state.gameMode === 'vs') {
+      if (canMove(selectedWizard)) return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
+      if (canAttack(selectedWizard)) {
+        const cast = getCastTiles(state, selectedWizard);
+        if (cast.length) return { tiles: cast, kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+        return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
+      }
+    } else if (state.selectedAction === 'move' && canMove(selectedWizard)) {
       return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
-    }
-    if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
+    } else if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
       return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
-    }
-    if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
+    } else if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
       return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }

@@ -55,6 +55,7 @@ const TRAIL_TURNS = 2;
 const FIRE_TRAIL_DAMAGE = 1;
 const STARTING_MANA = 2;
 const VS_HAND_START = 3;
+const VS_FIELD_START = 4;
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
 function vsNexusLayout() {
   const last = BOARD_SIZE - 1;
