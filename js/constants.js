@@ -54,17 +54,22 @@ const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;
 const FIRE_TRAIL_DAMAGE = 1;
 const STARTING_MANA = 2;
-const VS_OPENING_COUNT = 2;
+const VS_HAND_START = 3;
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
-const NEXUS_LAYOUT = {
-  enemy: [
-    { id: 'enemy-back-west', row: 0, col: 1 },
-    { id: 'enemy-back-east', row: 0, col: 7 },
-    { id: 'enemy-front', row: 2, col: 4 }
-  ],
-  player: [
-    { id: 'player-back-west', row: 8, col: 1 },
-    { id: 'player-back-east', row: 8, col: 7 },
-    { id: 'player-front', row: 6, col: 4 }
-  ]
-};
+function vsNexusLayout() {
+  const last = BOARD_SIZE - 1;
+  const frontEnemy = Math.min(2, ENEMY_ROW_END - 1);
+  const frontPlayer = Math.max(last - 2, SUMMON_ROW_START);
+  return {
+    enemy: [
+      { id: 'enemy-back-west', row: 0, col: 1 },
+      { id: 'enemy-back-east', row: 0, col: last - 1 },
+      { id: 'enemy-front', row: frontEnemy, col: CENTER }
+    ],
+    player: [
+      { id: 'player-back-west', row: last, col: 1 },
+      { id: 'player-back-east', row: last, col: last - 1 },
+      { id: 'player-front', row: frontPlayer, col: CENTER }
+    ]
+  };
+}

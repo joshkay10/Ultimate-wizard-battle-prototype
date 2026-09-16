@@ -61,6 +61,12 @@ function resetMatch(match, seed, opts) {
   match.cityExtra = typeof opts.cityExtra === 'number' ? opts.cityExtra : null;
   match.missionOpening = opts.opening || null;
   match.nexuses = { player: [], enemy: [] };
+  if (match.gameMode === 'vs') {
+    match.nexuses = {
+      player: makeNexusCamp('player', NEXUS_HP),
+      enemy: makeNexusCamp('enemy', NEXUS_HP)
+    };
+  }
 
   let loadoutOpts = {};
   if (opts.missionId) loadoutOpts = { pad: false };

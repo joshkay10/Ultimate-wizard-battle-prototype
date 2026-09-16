@@ -47,51 +47,30 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
 }
 
-function vsOpeningTileFree(match, row, col) {
-  return inBounds(row, col) && !isBlocked(match, row, col) && !hazardAt(match, row, col);
-}
-
-function pickVsOpeningTiles(match, count) {
-  const tiles = [];
-  const last = BOARD_SIZE - 1;
-  const cols = [1, last - 1, CENTER, 2, last - 2, 0, last];
-  let r;
-  let i;
-  for (r = last; r >= SUMMON_ROW_START && tiles.length < count; r--) {
-    for (i = 0; i < cols.length && tiles.length < count; i++) {
-      if (vsOpeningTileFree(match, r, cols[i])) tiles.push({ row: r, col: cols[i] });
-    }
-  }
-  return tiles;
-}
-
-function placeVsOpeningWizard(wizard, tile) {
-  wizard.state = 'onboard';
-  wizard.row = tile.row;
-  wizard.col = tile.col;
-  wizard.hasMoved = false;
-  wizard.hasAttacked = false;
-  wizard.summoningSickness = false;
-}
-
 function seedVsOpening(match) {
   if (!match || match.gameMode !== 'vs') return;
-  const count = typeof VS_OPENING_COUNT === 'number' ? VS_OPENING_COUNT : 2;
-  if (count <= 0) return;
+  const keep = typeof VS_HAND_START === 'number' ? VS_HAND_START : 3;
   const byId = function (a, b) {
     return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
   };
-  const player = wizardsOnTeam(match, 'player').sort(byId);
-  const enemy = wizardsOnTeam(match, 'enemy').sort(byId);
-  const tiles = pickVsOpeningTiles(match, count);
-  let i;
-  for (i = 0; i < tiles.length; i++) {
-    if (player[i]) placeVsOpeningWizard(player[i], tiles[i]);
-    if (enemy[i]) {
-      const mirror = { row: mirrorRow(tiles[i].row), col: tiles[i].col };
-      if (vsOpeningTileFree(match, mirror.row, mirror.col)) placeVsOpeningWizard(enemy[i], mirror);
-    }
+  function parkExtra(list) {
+    let i;
+    for (i = keep; i < list.length; i++) list[i].state = 'bench';
   }
+  parkExtra(wizardsOnTeam(match, 'player').sort(byId));
+  parkExtra(wizardsOnTeam(match, 'enemy').sort(byId));
+}
+
+function drawVsWizard(match, team) {
+  if (!match || match.gameMode !== 'vs') return null;
+  const next = wizardsOnTeam(match, team)
+    .filter(function (w) { return w.state === 'bench'; })
+    .sort(function (a, b) {
+      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
+    })[0];
+  if (!next) return null;
+  next.state = 'summoned';
+  return next;
 }
 
 function canMove(wizard) {
@@ -178,7 +157,8 @@ function teamHasPresence(match, team) {
       wizard.state === 'onboard' ||
       wizard.state === 'summoned' ||
       wizard.state === 'portaling' ||
-      wizard.state === 'emerging'
+      wizard.state === 'emerging' ||
+      wizard.state === 'bench'
     );
   });
 }

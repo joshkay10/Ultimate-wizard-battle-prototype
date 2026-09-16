@@ -41,6 +41,11 @@ function ensurePlayShell() {
     '<div id="panel-root"></div>' +
     '<div id="overlay-root"></div>';
   document.getElementById('board-canvas').addEventListener('pointerup', function (ev) {
+    const held = typeof boardHandFromEvent === 'function' ? boardHandFromEvent(ev) : null;
+    if (held) {
+      pickWizardToSummon(held.id);
+      return;
+    }
     const cell = boardCanvasCellFromEvent(ev);
     if (cell) handleTileClick(cell.row, cell.col);
   });
@@ -133,22 +138,24 @@ function renderPanel() {
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
     ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + (state.gameMode === 'defense' ? ' lands with a burst, then is spent this turn.' : ' arrives next turn with a burst, then is spent.') + '</div>'
-    : '';
+    : (state.gameMode === 'vs' ? '<div class="no-selection-hint">tap a cube under the board to portal in</div>' : '');
 
   const logLines = recentLogLines(3);
-  const logHtml = logLines.length
-    ? '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
+  const logHtml = state.gameMode === 'vs' || !logLines.length
+    ? ''
+    : '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
       return '<li>' + line + '</li>';
-    }).join('') + '</ul>'
-    : '';
+    }).join('') + '</ul>';
 
   const brief = renderMissionBrief();
   const handNote = state.gameMode === 'defense'
     ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
     : '';
-  const handLabel = wizardCards
-    ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
-    : '';
+  const handLabel = state.gameMode === 'vs'
+    ? ''
+    : (wizardCards
+      ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
+      : '');
 
   return (
     '<div class="panel">' +
@@ -317,14 +324,14 @@ function renderGameOverOverlay() {
     if (mission && next && state.justUnlocked) sub = next.name + ' is open.';
     else if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
     else if (mission) sub = 'The four islands are yours.';
-    else sub = 'the enemy team is gone';
+    else sub = 'their crystals fell, or their wizards are gone';
   } else {
     heading = mission ? 'the city fell' : 'you lose';
     sub = mission
       ? (mission.fail || 'the cluster is gone')
       : (state.gameMode === 'defense'
         ? 'your nexuses fell, or your wizards were wiped out'
-        : 'your team is gone');
+        : 'your crystals fell, or your wizards are gone');
   }
 
   let actions = '';
@@ -471,7 +478,7 @@ function render() {
 
   if (route !== 'play') {
     app.classList.add('is-doc');
-    app.classList.remove('is-play', 'is-animating', 'is-enemy-turn');
+    app.classList.remove('is-play', 'is-vs', 'is-animating', 'is-enemy-turn');
     if (extra) extra.innerHTML = '';
     document.getElementById('view-root').innerHTML = renderDocPage(route);
     if (route === 'team') bindTeamPage();
@@ -486,6 +493,7 @@ function render() {
   ensureMatch();
   maybeRecordResult();
   ensurePlayShell();
+  app.classList.toggle('is-vs', state.gameMode === 'vs');
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');

@@ -238,7 +238,7 @@ function generateTerrain(match) {
   generateMountainsInto(match, mountains, water);
   if (BOARD_SIZE >= DEFENSE_BOARD_SIZE && match.rng.next() < 0.28) generateVsGate(match, mountains, water);
   pruneTerrainSingletons(mountains);
-  if (!campsConnected(match, mountains, water)) {
+  if (Object.keys(mountains).length < 2 || !campsConnected(match, mountains, water)) {
     match.mountains = fallbackMountains(match);
     match.water = {};
     return;
@@ -248,7 +248,7 @@ function generateTerrain(match) {
     Object.keys(water).forEach(function (key) { delete water[key]; });
   }
 
-  if (countOpenSummonTiles(match, mountains, water, 'player') < 6 || countOpenSummonTiles(match, mountains, water, 'enemy') < 6) {
+  if (Object.keys(mountains).length < 2 || countOpenSummonTiles(match, mountains, water, 'player') < 6 || countOpenSummonTiles(match, mountains, water, 'enemy') < 6) {
     match.mountains = fallbackMountains(match);
     match.water = {};
     return;

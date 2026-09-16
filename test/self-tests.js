@@ -372,19 +372,22 @@ async function runSimSelfTests() {
   const waiting = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   });
-  assert(openers.length === VS_OPENING_COUNT, 'Vs starts with two wizards on the field');
-  assert(waiting.length === TEAM_SIZE - VS_OPENING_COUNT, 'the rest wait in hand to summon');
-  assert(openers.every(function (w) { return !w.summoningSickness; }), 'opening bodies can act on round 1');
-  assert(openers.every(function (w) { return isSummonTile(w.row, w.col); }), 'openers stand in the back camp');
-  const enemyOpen = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'enemy' && w.state === 'onboard';
+  const benched = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'bench';
   });
-  assert(enemyOpen.length === VS_OPENING_COUNT, 'the enemy also starts with two on the field');
-  openers.forEach(function (w) {
-    const twin = enemyOpen.some(function (e) { return e.row === mirrorRow(w.row) && e.col === w.col; });
-    assert(twin, 'enemy opening mirrors the player');
+  assert(openers.length === 0, 'Vs starts with nobody on the field');
+  assert(waiting.length === VS_HAND_START, 'Vs starts with three wizards in hand');
+  assert(benched.length === TEAM_SIZE - VS_HAND_START, 'the rest wait on the bench to be picked up');
+  const enemyHand = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'summoned';
   });
+  const enemyBench = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'bench';
+  });
+  assert(enemyHand.length === VS_HAND_START, 'the enemy also starts with three in hand');
+  assert(enemyBench.length === TEAM_SIZE - VS_HAND_START, 'enemy leftovers sit on the bench');
   const spareRime = waiting.find(function (w) { return w.element === 'ice'; });
+  assert(playerHasLegalAction(state), 'round 1 can portal a body from the starting hand');
   if (spareRime) {
     const portalTile = getPlayerSummonTiles(state)[0];
     const beforeMana = state.mana;
@@ -392,7 +395,6 @@ async function runSimSelfTests() {
     assert(sparePortal.length === 1 && sparePortal[0].type === 'portal', 'leftover bodies still portal in for mana');
     assert(state.mana === beforeMana - spareRime.cost, 'summon mana comes from the same pool');
   }
-  assert(playerHasLegalAction(state), 'round 1 can move an opener or portal another body');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -409,10 +411,30 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
+  const handBefore = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  }).length;
+  simEndPlayerTurn(state);
+  const enemyAfter = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'enemy' && w.state === 'summoned';
+  }).length;
+  assert(enemyAfter === VS_HAND_START + 1, 'enemy picks up a wizard at the start of their turn');
+  simEndEnemyTurn(state);
+  const handAfter = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'summoned';
+  }).length;
+  assert(handAfter === handBefore + 1, 'you pick up a wizard each round');
+  assert(state.mana === 3 && state.maxMana === 3, 'each round also grants 1 mana');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
   assert(state.boardSize === VS_BOARD_SIZE && BOARD_SIZE === VS_BOARD_SIZE, 'Vs is 7×7');
-  assert(state.nexuses.player.length === 0 && state.nexuses.enemy.length === 0, 'Vs has no nexuses');
+  assert(state.nexuses.player.length === 3 && state.nexuses.enemy.length === 3, 'Vs has three nexuses a side');
+  assert(state.nexuses.player.every(function (n) { return n.hp === NEXUS_HP; }), 'Vs crystals have 5 HP');
+  assert(state.nexuses.player.every(function (n) { return isSummonTile(n.row, n.col); }), 'player crystals sit in the back three rows');
+  assert(state.nexuses.enemy.every(function (n) { return isEnemySummonTile(n.row, n.col); }), 'enemy crystals sit in the far three rows');
   const walker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   walker.state = 'onboard';
   walker.row = 5;
@@ -430,14 +452,18 @@ async function runSimSelfTests() {
   stepper.row = 5;
   stepper.col = 3;
   assert(stepper.moveRange === 3, 'rime should move 3');
-  assert(getMoveTiles(state, stepper).some(t => t.row === 2 && t.col === 3), 'rime move 3 reaches midboard from the back');
+  assert(getMoveTiles(state, stepper).some(t => t.row === 3 && t.col === 2), 'rime move 3 reaches midboard from the back');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(checkWinLoss(state) === null, 'wizards in hand keep Vs going');
-  state.nexuses.enemy = [makeNexus({ id: 'ghost-crystal', row: 0, col: 3 }, 'enemy', 0)];
-  state.nexuses.enemy[0].hp = 0;
-  assert(checkWinLoss(state) === null, 'a fallen crystal does not win Vs');
+  const oneDown = state.nexuses.enemy[0];
+  oneDown.hp = 0;
+  assert(checkWinLoss(state) === null, 'one fallen crystal does not win Vs');
+  state.nexuses.enemy.forEach(function (n) { n.hp = 0; });
+  assert(checkWinLoss(state) === 'player', 'dropping all three enemy crystals wins Vs');
+  resetMatch(state, 1);
+  state.fxEnabled = false;
   Object.values(state.wizards).forEach(function (w) {
     if (w.team === 'enemy') {
       w.state = 'dead';
@@ -454,19 +480,19 @@ async function runSimSelfTests() {
   const hunter = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   hunter.state = 'onboard';
   hunter.row = 3;
-  hunter.col = 3;
+  hunter.col = 2;
   const wounded = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
   const healthy = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
   wounded.state = 'onboard';
   wounded.row = 2;
-  wounded.col = 3;
+  wounded.col = 2;
   wounded.hp = 1;
   healthy.state = 'onboard';
   healthy.row = 3;
   healthy.col = 4;
   healthy.hp = 10;
   const snipe = pickAttack(hunter, 'player');
-  assert(snipe && snipe.row === 2 && snipe.col === 3, 'AI should snipe the wounded wizard');
+  assert(snipe && snipe.row === 2 && snipe.col === 2, 'AI should snipe the wounded wizard');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -746,34 +772,34 @@ async function runSimSelfTests() {
   applySpellToWizard(blizzardMage, spellById('blizzard'));
   assert(blizzardMage.castKind === 'burst', 'blizzard is a burst');
   blizzardMage.state = 'onboard';
-  blizzardMage.row = 4;
-  blizzardMage.col = 2;
+  blizzardMage.row = 3;
+  blizzardMage.col = 3;
   const quakeDummy = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'earth');
   quakeDummy.state = 'onboard';
   quakeDummy.row = 4;
   quakeDummy.col = 4;
   quakeDummy.hp = 14;
   const blizzardAim = getCastTiles(state, blizzardMage);
-  assert(blizzardAim.some(t => t.row === 4 && t.col === 4), 'blizzard can aim two tiles east');
-  const storm = simAttack(state, blizzardMage, 4, 4, 'cast');
+  assert(blizzardAim.some(t => t.row === 3 && t.col === 5), 'blizzard can aim two tiles east');
+  const storm = simAttack(state, blizzardMage, 3, 5, 'cast');
   assert(storm.some(e => e.type === 'attack' && e.castKind === 'burst' && e.spellId === 'blizzard'), 'blizzard is a burst');
   assert(quakeDummy.hp === 13, 'blizzard deals 1 in the 3x3');
   const frozen = [];
   let rr;
   let cc;
-  for (rr = 3; rr <= 5; rr++) {
-    for (cc = 3; cc <= 5; cc++) {
+  for (rr = 2; rr <= 4; rr++) {
+    for (cc = 4; cc <= 6; cc++) {
       const trail = trailAt(state, rr, cc);
       if (trail && trail.element === 'ice') frozen.push(rr + ',' + cc);
     }
   }
   assert(frozen.length === 9, 'blizzard freezes the whole 3x3 (' + frozen.length + ')');
-  assert(!trailAt(state, 4, 2) || trailAt(state, 4, 2).element !== 'ice', 'blizzard does not freeze the caster tile outside the square');
+  assert(!trailAt(state, 3, 3) || trailAt(state, 3, 3).element !== 'ice', 'blizzard does not freeze the caster tile outside the square');
   state.nexuses.enemy = [makeNexus({ id: 'blizzard-crystal', row: 3, col: 4 }, 'enemy', NEXUS_HP)];
   const frontNexus = state.nexuses.enemy[0];
   const nexusHp = frontNexus.hp;
   blizzardMage.hasAttacked = false;
-  simAttack(state, blizzardMage, 4, 4, 'cast');
+  simAttack(state, blizzardMage, 3, 5, 'cast');
   assert(frontNexus.hp === nexusHp, 'blizzard does not chip nexuses');
 
   resetMatch(state, 1, {
@@ -994,9 +1020,13 @@ async function runSimSelfTests() {
   const expensiveWait = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   });
-  assert(expensiveWait.length === 5 && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'leftover 3-cost kits stay in hand on round 1');
+  const expensiveBench = Object.values(state.wizards).filter(function (w) {
+    return w.team === 'player' && w.state === 'bench';
+  });
+  assert(expensiveWait.length === VS_HAND_START && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'three 3-cost kits start in hand');
+  assert(expensiveBench.length === TEAM_SIZE - VS_HAND_START, 'the rest wait on the bench');
   assert(expensiveWait.every(function (w) { return !canPaySummon(state, w, 'player'); }), '2 mana cannot portal a 3-cost kit');
-  assert(playerHasLegalAction(state), 'opening bodies can still move when the rest are too expensive');
+  assert(!playerHasLegalAction(state), 'no opening bodies when the whole hand is too expensive');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1009,21 +1039,21 @@ async function runSimSelfTests() {
   const n2 = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
   pulseMage.state = 'onboard';
   pulseMage.row = 4;
-  pulseMage.col = 3;
+  pulseMage.col = 2;
   n1.state = 'onboard';
   n1.row = 3;
-  n1.col = 3;
+  n1.col = 2;
   n1.hp = 12;
   n2.state = 'onboard';
   n2.row = 4;
-  n2.col = 4;
+  n2.col = 1;
   n2.hp = 8;
-  const pulse = simAttack(state, pulseMage, 3, 3, 'cast');
+  const pulse = simAttack(state, pulseMage, 3, 2, 'cast');
   assert(pulse.some(e => e.type === 'attack' && e.castKind === 'pulse'), 'ice cast is a pulse');
   assert(n1.hp === 10, 'pulse hits the north neighbor');
   assert(n2.hp === 6, 'pulse hits every neighbor, not just the clicked tile');
-  assert(n1.row === 2 && n1.col === 3, 'pulse pushes outward');
-  assert(n2.row === 4 && n2.col === 5, 'pulse pushes the east neighbor east');
+  assert(n1.row === 2 && n1.col === 2, 'pulse pushes outward');
+  assert(n2.row === 4 && n2.col === 0, 'pulse pushes the west neighbor west');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1175,13 +1205,13 @@ async function runSimSelfTests() {
   state.water = {};
   const burned = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   burned.state = 'onboard';
-  burned.row = 4;
+  burned.row = 3;
   burned.col = 3;
   burned.hp = 12;
-  layTrail(state, 4, 4, 'fire');
-  simMove(state, burned, [{ row: 4, col: 4 }]);
+  layTrail(state, 3, 4, 'fire');
+  simMove(state, burned, [{ row: 3, col: 4 }]);
   assert(burned.hp === 11, 'walking onto fire costs 1');
-  assert(burned.row === 4 && burned.col === 4, 'fire does not block the step');
+  assert(burned.row === 3 && burned.col === 4, 'fire does not block the step');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1190,15 +1220,15 @@ async function runSimSelfTests() {
   const batterIce = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   const slider = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   batterIce.state = 'onboard';
-  batterIce.row = 4;
+  batterIce.row = 3;
   batterIce.col = 1;
   slider.state = 'onboard';
-  slider.row = 4;
+  slider.row = 3;
   slider.col = 2;
   slider.hp = 12;
-  layTrail(state, 4, 3, 'ice');
-  simAttack(state, batterIce, 4, 2, 'melee');
-  assert(slider.row === 4 && slider.col === 5, 'push over ice does not spend a pip');
+  layTrail(state, 3, 3, 'ice');
+  simAttack(state, batterIce, 3, 2, 'melee');
+  assert(slider.row === 3 && slider.col === 5, 'push over ice does not spend a pip');
 
   resetMatch(state, 1);
   state.fxEnabled = false;

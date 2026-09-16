@@ -833,8 +833,11 @@ html, body {
   display: block;
   overflow: auto;
 }
-#app.is-play #view-root {
-  overflow: hidden;
+#app.is-play.is-vs #panel-root {
+  max-height: 24%;
+}
+#app.is-play.is-vs .board-wrap {
+  padding: 2px 8px 0;
 }
 
 .page {
