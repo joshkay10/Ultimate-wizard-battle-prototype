@@ -1,5 +1,5 @@
 const DEFENSE_TEAM_SIZE = 4;
-const VS_TEAM_SIZE = 7;
+const VS_TEAM_SIZE = 4;
 const TEAM_SIZE = VS_TEAM_SIZE;
 const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];
 
@@ -12,7 +12,7 @@ const WIZARD_TYPES = [
   { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 3, cost: 3, meleeAttack: 3, meleeDisplacement: 1 }
 ];
 
-const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'fire', 'ice', 'wind', 'fire'];
+const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'fire'];
 
 function kitPlayable(id) {
   return PLAYABLE_KIT_IDS.indexOf(id) !== -1;

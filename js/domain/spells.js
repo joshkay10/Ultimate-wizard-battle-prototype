@@ -66,7 +66,7 @@ function firstSpecialId(element) {
   return pool.length ? pool[0].id : null;
 }
 
-// The free cast slot only holds basic (non-special) spells.
+// Spell 1 is a basic. Cost is 1× kit cost (free in Defense).
 function normalizeBasicSpellId(kitId, spellId) {
   const kit = kitById(kitId);
   const element = kit ? kit.element : '';
@@ -78,7 +78,7 @@ function normalizeBasicSpellId(kitId, spellId) {
   return firstBasicId(element);
 }
 
-// The paid special slot only holds special-tier spells.
+// Spell 2 is a special. Cost is 2× kit cost.
 function normalizeSpecialSpellId(kitId, spellId) {
   const kit = kitById(kitId);
   const element = kit ? kit.element : '';
@@ -90,7 +90,7 @@ function normalizeSpecialSpellId(kitId, spellId) {
   return firstSpecialId(element);
 }
 
-// Swaps the wizard's live cast fields between its free basic and its paid special.
+// Swaps the wizard's live cast fields between spell 1 and spell 2.
 function setActiveSpell(wizard, which) {
   if (!wizard) return;
   if (which === 'special' && wizard.specialSpellId) {

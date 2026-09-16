@@ -33,7 +33,8 @@ function playerHasLegalAction(match) {
   for (i = 0; i < onboard.length; i++) {
     const wizard = onboard[i];
     if (canMove(wizard) && getMoveTiles(match, wizard).length) return true;
-    if (canAttack(wizard) && (getMeleeTiles(match, wizard).length || getCastTiles(match, wizard).length)) return true;
+    if (canAttack(wizard) && getMeleeTiles(match, wizard).length) return true;
+    if (canAttack(wizard) && getCastTiles(match, wizard).length && (typeof canPayCast !== 'function' || canPayCast(match, wizard, 'player'))) return true;
   }
   return false;
 }

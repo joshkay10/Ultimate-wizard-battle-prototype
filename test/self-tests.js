@@ -142,7 +142,14 @@ async function runHeadlessMatch(seed, maxRounds) {
 
 async function runSimSelfTests() {
   const fails = [];
-  function assert(cond, msg) {
+  'use strict';
+
+// Domain tests. Loaded by test/sim-node.js. Search by assertion message.
+// Vs opening / 4v4: "Vs starts"
+// Costs: "basicManaCost" / "specialManaCost" / "spell 1"
+// Defense AI / missions: "defense" / "mission"
+
+function assert(cond, msg) {
     if (!cond) fails.push(msg);
   }
 
@@ -375,8 +382,8 @@ async function runSimSelfTests() {
   const benched = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'bench';
   });
-  assert(openers.length === VS_FIELD_START, 'Vs starts with four wizards on the board');
-  assert(waiting.length === TEAM_SIZE - VS_FIELD_START, 'the leftover three stay in hand');
+  assert(openers.length === TEAM_SIZE, 'Vs starts with four wizards on the board');
+  assert(waiting.length === 0, 'nobody waits in hand');
   assert(benched.length === 0, 'nobody waits on the bench at the opening');
   assert(openers.every(function (w) { return w.row >= SUMMON_ROW_START; }), 'your four open on your back rows');
   const enemyHand = Object.values(state.wizards).filter(function (w) {
@@ -391,15 +398,17 @@ async function runSimSelfTests() {
   assert(enemyField.length === TEAM_SIZE, 'the enemy starts on the board');
   assert(enemyField.every(function (w) { return w.row < ENEMY_ROW_END; }), 'the enemy opens on their back rows');
   assert(enemyHand.length === 0 && enemyBench.length === 0, 'the enemy has no leftover hand');
-  const spareRime = waiting.find(function (w) { return w.element === 'ice'; });
-  assert(playerHasLegalAction(state), 'round 1 can move a starting body');
-  if (spareRime) {
-    const portalTile = getPlayerSummonTiles(state)[0];
-    const beforeMana = state.mana;
-    const sparePortal = simSummon(state, spareRime, portalTile.row, portalTile.col, 'player');
-    assert(sparePortal.length === 1 && sparePortal[0].type === 'portal', 'leftover bodies still portal in for mana');
-    assert(state.mana === beforeMana - spareRime.cost, 'summon mana comes from the same pool');
+  const byId = function (a, b) {
+    return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
+  };
+  const mineSorted = openers.slice().sort(byId);
+  const foeSorted = enemyField.slice().sort(byId);
+  const last = BOARD_SIZE - 1;
+  let mirrorI;
+  for (mirrorI = 0; mirrorI < mineSorted.length; mirrorI++) {
+    assert(foeSorted[mirrorI].row === last - mineSorted[mirrorI].row && foeSorted[mirrorI].col === mineSorted[mirrorI].col, 'enemy opener ' + mirrorI + ' mirrors the player tile');
   }
+  assert(playerHasLegalAction(state), 'round 1 can move a starting body');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -407,11 +416,11 @@ async function runSimSelfTests() {
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 2, 'Pyre costs 2');
   assert(WIZARD_TYPES.find(t => t.id === 'earth').cost === 3, 'Cairn costs 3');
   assert(WIZARD_TYPES.length === 6, 'kit pool is six');
-  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,fire,ice,wind,fire', 'default team is seven cycling Pyre Rime Squall');
-  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,fire,ice,wind,fire', 'short teams fill from the default');
-  assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire,ice,wind,fire', 'short custom teams pad to seven');
-  assert(normalizeTeam(['fire', 'fire', 'fire', 'fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire,fire,fire,fire', 'duplicate kits are allowed');
-  assert(TEAM_SIZE === 7 && VS_TEAM_SIZE === 7, 'Vs team size is seven');
+  assert(DEFAULT_TEAM.join(',') === 'fire,ice,wind,fire', 'default team is four cycling Pyre Rime Squall');
+  assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,fire', 'short teams fill from the default');
+  assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire', 'four-kit custom teams stay four');
+  assert(normalizeTeam(['fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire', 'duplicate kits are allowed');
+  assert(TEAM_SIZE === 4 && VS_TEAM_SIZE === 4, 'Vs team size is four');
   assert(DEFENSE_TEAM_SIZE === 4, 'random Defense still fields four');
 
   resetMatch(state, 1);
@@ -428,7 +437,7 @@ async function runSimSelfTests() {
   const handAfter = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   }).length;
-  assert(handAfter === handBefore, 'no extra wizard is drawn when the bench is empty');
+  assert(handAfter === 0, 'Vs has no hand to draw into');
   assert(state.mana === 3 && state.maxMana === 3, 'each round still grants 1 mana');
 
   resetMatch(state, 1);
@@ -461,7 +470,7 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  assert(checkWinLoss(state) === null, 'wizards in hand keep Vs going');
+  assert(checkWinLoss(state) === null, 'starting wizards keep Vs going');
   const oneDown = state.nexuses.enemy[0];
   oneDown.hp = 0;
   assert(checkWinLoss(state) === null, 'one fallen crystal does not win Vs');
@@ -653,19 +662,19 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(playerEls.join(',') === 'fire,fire,fire,ice,ice,wind,wind', 'roster is three Pyre, two Rime, two Squall');
-  assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 7, 'enemy has seven wizards');
+  assert(playerEls.join(',') === 'fire,fire,ice,wind', 'roster is two Pyre, one Rime, one Squall');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 4, 'enemy has four wizards');
 
   resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: ['fire', 'ice', 'wind', 'earth'] });
   state.fxEnabled = false;
   const customEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
-  assert(customEls.join(',') === 'earth,fire,fire,ice,lightning,temporal,wind', 'resetMatch pads a custom player team to seven');
+  assert(customEls.join(',') === 'earth,fire,lightning,temporal', 'resetMatch keeps a four-kit custom player team');
   const rolledA = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   const rolledB = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   assert(rolledA.join(',') === rolledB.join(','), 'enemy team roll is seeded');
-  assert(rolledA.length === TEAM_SIZE, 'enemy team is seven kits');
+  assert(rolledA.length === TEAM_SIZE, 'enemy team is four kits');
   resetMatch(state, 4, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyTeam.length === 7, 'rolling an enemy team still fields seven kits');
+  assert(state.enemyTeam.length === 4, 'rolling an enemy team still fields four kits');
   const seenEnemy = {};
   let variety = 0;
   for (let s = 1; s <= 12; s++) {
@@ -679,9 +688,9 @@ async function runSimSelfTests() {
   assert(variety >= 3, 'enemy teams vary across seeds');
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
-  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,fire,ice,wind,fire', 'old three-kit arrays pad to seven');
-  assert(fromIds.map(s => s.spell).join(',') === 'stream,sheet,gust,cinder,lock,tug,brand', 'old team arrays fill free basics');
-  assert(fromIds.map(s => s.special).join(',') === 'inferno,pulse,gale,inferno,blizzard,gale,lance', 'padding also fills the special slot');
+  assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,fire', 'old three-kit arrays pad to four');
+  assert(fromIds.map(s => s.spell).join(',') === 'stream,sheet,gust,cinder', 'old team arrays fill spell 1');
+  assert(fromIds.map(s => s.special).join(',') === 'lance,pulse,draft,inferno', 'padding also fills spell 2');
   const rolledPlayable = pickEnemyTeam(createRng(3), DEFAULT_TEAM);
   assert(rolledPlayable.every(function (id) { return kitPlayable(id); }), 'enemy rolls only from the live kits');
   const mixed = randomPlayableLoadout(createRng(9));
@@ -694,19 +703,21 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   const defaultIce = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  assert(defaultIce.spellId === 'sheet' && defaultIce.castKind === 'stream', 'default Rime free cast is Sheet');
-  assert(defaultIce.specialSpellId === 'pulse' && defaultIce.specialCost === 2, 'default Rime special is Pulse (2 mana)');
-  assert(defaultIce.activeSpell === 'basic', 'wizards start on their free basic cast');
+  assert(defaultIce.spellId === 'sheet' && defaultIce.castKind === 'stream', 'default Rime spell 1 is Sheet');
+  assert(defaultIce.specialSpellId === 'pulse' && defaultIce.specialCost === 2, 'default Rime spell 2 is Pulse (2 mana)');
+  assert(defaultIce.activeSpell === 'basic', 'wizards start on spell 1');
   const defaultFires = Object.values(state.wizards).filter(x => x.team === 'player' && x.element === 'fire');
-  assert(defaultFires.map(w => w.spellId).sort().join(',') === 'brand,cinder,stream', 'default Pyres free casts are Stream, Cinder, and Brand');
-  assert(defaultFires.map(w => w.specialSpellId).sort().join(',') === 'inferno,lance,lance', 'default Pyres pack Lance and Inferno as specials');
+  assert(defaultFires.map(w => w.spellId).sort().join(',') === 'cinder,stream', 'default Pyres spell 1 are Stream and Cinder');
+  assert(defaultFires.map(w => w.specialSpellId).sort().join(',') === 'inferno,lance', 'default Pyres pack Lance and Inferno as spell 2');
   const defaultLancer = defaultFires.find(w => w.specialSpellId === 'lance');
   setActiveSpell(defaultLancer, 'special');
-  assert(defaultLancer.castKind === 'pierce', 'switching to the special arms the piercing Lance');
+  assert(defaultLancer.castKind === 'pierce', 'switching to spell 2 arms the piercing Lance');
   setActiveSpell(defaultLancer, 'basic');
-  assert(defaultLancer.castKind !== 'pierce', 'switching back restores the free basic');
+  assert(defaultLancer.castKind !== 'pierce', 'switching back restores spell 1');
+  const foeCaster = Object.values(state.wizards).find(x => x.team === 'enemy' && x.specialSpellId);
+  assert(foeCaster && foeCaster.specialSpellId, 'enemy wizards also carry a spell 2');
 
-  // The special is a mana-gated third option; the free basic never costs mana.
+  // Defense: spell 1 is free, spell 2 spends 2× kit cost.
   resetMatch(state, 1, {
     gameMode: 'defense',
     playerLoadout: [
@@ -734,10 +745,10 @@ async function runSimSelfTests() {
   state.mana = 2;
   state.maxMana = 2;
   setActiveSpell(caster, 'basic');
-  assert(caster.castKind !== 'pulse', 'the free slot holds the basic spell, not Pulse');
+  assert(caster.castKind !== 'pulse', 'the free slot holds spell 1, not Pulse');
   const freeCast = simAttack(state, caster, 4, 5, 'cast');
-  assert(freeCast.length > 0, 'the free basic cast resolves');
-  assert(state.mana === 2, 'the free basic cast never spends mana');
+  assert(freeCast.length > 0, 'Defense spell 1 resolves');
+  assert(state.mana === 2, 'Defense spell 1 never spends mana');
   caster.hasAttacked = false;
   setActiveSpell(caster, 'special');
   assert(caster.castKind === 'pulse' && caster.activeSpell === 'special', 'the special arms Pulse');
@@ -825,7 +836,7 @@ async function runSimSelfTests() {
     if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; w.intent = null; }
   });
   const lanceMage = Object.values(state.wizards).find(x => x.team === 'player' && x.specialSpellId === 'lance');
-  assert(lanceMage && specialCostOf('lance') === 3, 'lance equips as a special (cost 3)');
+  assert(lanceMage && specialManaCost(lanceMage) === 4, 'lance equips as spell 2 (2× Pyre cost)');
   applySpellToWizard(lanceMage, spellById('lance'));
   assert(lanceMage.castKind === 'pierce', 'lance is a piercing cast');
   lanceMage.state = 'onboard';
@@ -914,8 +925,9 @@ async function runSimSelfTests() {
   assert(state.nexuses.player[0].hp === 0, 'a doubled mite cracks a 2 HP crystal in one strike');
 
   resetMatch(state, 7, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyLoadout.length === 7, 'rolled enemies also have spells');
+  assert(state.enemyLoadout.length === 4, 'rolled enemies also have spells');
   assert(state.enemyLoadout.every(s => spellById(s.spell) && spellById(s.spell).element === kitById(s.kit).element), 'enemy spells match their element');
+  assert(state.enemyLoadout.every(s => s.special && isSpecialSpell(spellById(s.special))), 'rolled enemies also pack a spell 2');
 
   resetMatch(state, 1, {
     playerLoadout: [
@@ -1021,7 +1033,7 @@ async function runSimSelfTests() {
   assert(brandTick.some(e => e.type === 'damage' && e.cause === 'burn'), 'burn ticks on execute');
   assert(pulsePrey.hp === 12, 'dead bomber never fires');
 
-  resetMatch(state, 1, { playerTeam: ['earth', 'temporal', 'earth', 'temporal', 'earth', 'temporal', 'earth'], enemyTeam: DEFAULT_TEAM });
+  resetMatch(state, 1, { playerTeam: ['earth', 'temporal', 'earth', 'temporal'], enemyTeam: DEFAULT_TEAM });
   state.fxEnabled = false;
   const expensiveWait = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
@@ -1029,9 +1041,8 @@ async function runSimSelfTests() {
   const expensiveField = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'onboard';
   });
-  assert(expensiveField.length === VS_FIELD_START, 'four 3-cost kits still start on the board');
-  assert(expensiveWait.length === TEAM_SIZE - VS_FIELD_START && expensiveWait.every(function (w) { return w.cost > STARTING_MANA; }), 'leftover 3-cost kits stay in hand');
-  assert(expensiveWait.every(function (w) { return !canPaySummon(state, w, 'player'); }), '2 mana cannot portal a 3-cost kit');
+  assert(expensiveField.length === TEAM_SIZE, 'four 3-cost kits still start on the board');
+  assert(expensiveWait.length === 0, 'Vs has no leftover hand');
   assert(playerHasLegalAction(state), 'the four on the board can still move');
 
   resetMatch(state, 1);
@@ -1606,11 +1617,46 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  const vsPyre = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire' && x.state === 'summoned');
+  const vsRime = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  vsRime.hasMoved = true;
+  vsRime.hasAttacked = false;
+  state.mountains = {};
+  state.water = {};
+  const rimeFoe = Object.values(state.wizards).find(x => x.team === 'enemy');
+  rimeFoe.row = vsRime.row - 1;
+  rimeFoe.col = vsRime.col;
+  rimeFoe.state = 'onboard';
+  rimeFoe.hp = 8;
+  assert(basicManaCost(vsRime) === 1 && specialManaCost(vsRime) === 2, 'Rime spell 1 is 1× cost, spell 2 is 2×');
+  setActiveSpell(vsRime, 'basic');
+  const vsBasic = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
+  assert(vsBasic.length > 0, 'Vs spell 1 resolves');
+  assert(state.mana === 1, 'Vs spell 1 spends 1× kit cost');
+  vsRime.hasAttacked = false;
+  setActiveSpell(vsRime, 'special');
+  const vsSpecialBroke = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
+  assert(vsSpecialBroke.length === 0, 'Vs spell 2 refuses when 1 mana cannot cover 2× cost');
+  state.mana = 2;
+  const vsSpecial = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
+  assert(vsSpecial.length > 0, 'Vs spell 2 resolves when paid');
+  assert(state.mana === 0, 'Vs spell 2 spends 2× kit cost');
+  vsRime.hasAttacked = false;
+  rimeFoe.state = 'onboard';
+  rimeFoe.row = vsRime.row - 1;
+  rimeFoe.col = vsRime.col;
+  setActiveSpell(vsRime, 'basic');
+  const vsMelee = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'melee');
+  assert(vsMelee.length > 0, 'Vs melee still hits');
+  assert(state.mana === 0, 'Vs melee costs 0');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  const waitingVs = Object.values(state.wizards).filter(function (w) {
+    return w.state === 'summoned' || w.state === 'bench';
+  });
+  assert(waitingVs.length === 0, 'Vs has no off-field wizards');
   const vsTile = getPlayerSummonTiles(state)[0];
-  assert(vsTile, 'vs has a portal tile');
-  const vsOpened = simSummon(state, vsPyre, vsTile.row, vsTile.col, 'player');
-  assert(vsOpened.length && vsPyre.state === 'portaling', 'vs can now portal a 2-cost Pyre on 2 mana');
+  assert(vsTile, 'vs still has summon-zone tiles');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -2111,7 +2157,7 @@ async function runSimSelfTests() {
   resetMatch(state, 1);
   state.fxEnabled = false;
   assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
-  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 7, 'vs still rolls seven enemy wizards');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;

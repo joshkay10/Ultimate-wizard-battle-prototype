@@ -1,8 +1,7 @@
 function simAttack(match, attacker, row, col, kind) {
   if (!canAttack(attacker) || attacker.row === null) return [];
-  const usingSpecial = kind === 'cast' && attacker.activeSpell === 'special' && attacker.specialSpellId;
-  const specialCost = usingSpecial ? (attacker.specialCost || 0) : 0;
-  if (usingSpecial && teamMana(match, attacker.team) < specialCost) return [];
+  const cost = typeof attackManaCost === 'function' ? attackManaCost(match, attacker, kind) : 0;
+  if (kind === 'cast' && teamMana(match, attacker.team) < cost) return [];
   const legal = kind === 'cast' ? getCastTiles(match, attacker) : getMeleeTiles(match, attacker);
   if (!legal.some(function (tile) { return tile.row === row && tile.col === col; })) return [];
   clearMoveUndo(attacker);
@@ -15,7 +14,7 @@ function simAttack(match, attacker, row, col, kind) {
   else if (kind === 'cast' && attacker.castKind === 'pierce') result = simPierce(match, attacker, row, col);
   else result = simStrike(match, attacker, row, col, kind);
 
-  if (usingSpecial && result && result.length) spendMana(match, attacker.team, specialCost);
+  if (cost && result && result.length) spendMana(match, attacker.team, cost);
   return result;
 }
 

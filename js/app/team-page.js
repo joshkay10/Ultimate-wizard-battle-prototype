@@ -20,11 +20,12 @@ function kitCount(draft, kitId) {
 }
 
 function teamSpellButtons(slot, index, pool, slotKind) {
+  const kit = kitById(slot.kit);
+  const unit = kit ? kit.cost : 0;
+  const amount = slotKind === 'special' ? unit * 2 : unit;
   return pool.map(function (spell) {
     const active = (slotKind === 'special' ? slot.special : slot.spell) === spell.id;
-    const costTag = slotKind === 'special'
-      ? ' <span class="spell-cost">' + spell.special + ' mana</span>'
-      : '';
+    const costTag = ' <span class="spell-cost">' + amount + ' mana</span>';
     return (
       '<button type="button" class="team-spell' + (active ? ' selected' : '') + '" data-slot-index="' + index + '" data-spell-slot="' + slotKind + '" data-spell-id="' + spell.id + '">' +
         '<span class="spell-name">' + spell.name + costTag + '</span>' +
@@ -90,13 +91,13 @@ function renderTeamPage() {
           '<div class="team-kit-copy">' +
             '<div class="kit-name">' + kit.name + '</div>' +
             '<div class="kit-cast">' + basicName + ' + ' + specialName + '</div>' +
-            '<div class="kit-detail">cost ' + kit.cost + ' · ' + kit.hp + ' hp · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + '</div>' +
+            '<div class="kit-detail">melee 0 · spell 1×' + kit.cost + ' · spell 2×' + (kit.cost * 2) + ' · ' + kit.hp + ' hp</div>' +
           '</div>' +
           '<button type="button" class="team-slot-remove" data-slot-remove="' + index + '">remove</button>' +
         '</div>' +
         '<div class="team-spells">' +
-          '<p class="team-spell-label">basic cast · free</p>' + basics +
-          '<p class="team-spell-label">special · costs mana</p>' + specials +
+          '<p class="team-spell-label">spell 1 · ' + kit.cost + ' mana</p>' + basics +
+          '<p class="team-spell-label">spell 2 · ' + (kit.cost * 2) + ' mana</p>' + specials +
         '</div>' +
       '</div>'
     );
@@ -134,11 +135,11 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring seven wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body equips a <strong>free basic cast</strong> and a <strong>special</strong> — the multi-hit payoff spells that <strong>cost mana</strong>. Saved on this device. Summon cost is <strong>Vs mana</strong>; Defense drops one wizard per round, any kit, and has a small mana pool for specials.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body has <strong>melee for 0</strong>, <strong>spell 1 at 1× kit cost</strong>, and <strong>spell 2 at 2× kit cost</strong>. Saved on this device. Defense drops one wizard per round, any kit, and spends its small mana pool on spell 2 only.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +
-      '<h2 class="team-sub">Your seven</h2>' +
+      '<h2 class="team-sub">Your four</h2>' +
       '<div class="team-grid team-roster">' + roster + empty + '</div>' +
       '<h2 class="team-sub">Add</h2>' +
       '<div class="team-grid">' + adders + '</div>' +
