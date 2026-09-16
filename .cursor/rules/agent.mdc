@@ -11,8 +11,6 @@ Rules / To-do text lives only in `RULES.md` / `TODO.md`.
 
 Do not delete `afterPlayerAction` in `js/turn.js`. No sounds.
 
-Defense: 1 opening vek, city beeline, never empty-air intent, cap 3, one hole per enemy phase, one drop/round, mana for specials only. Named missions live in `js/domain/missions.js`.
+Vs only: 4v4 on a 7×7, mirrored placement, no off-field cubes. One wizard per turn (move and/or strike), then the other side. Melee 0, spell 1 = 1× kit cost, spell 2 = 2× kit cost (`js/domain/mana.js`). Mana cap 6.
 
-Vs: 4v4 on board, mirrored placement, no off-field cubes. One wizard per turn (move and/or strike), then the other side. Melee 0, spell 1 = 1× kit cost, spell 2 = 2× kit cost (`js/domain/mana.js`). Mana cap 6.
-
-Read `AGENTS.md` (file map) before changing load order, docs, or Defense AI.
+Read `AGENTS.md` (file map) before changing load order or docs.

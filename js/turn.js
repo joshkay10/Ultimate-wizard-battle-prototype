@@ -12,15 +12,6 @@ async function maybeAutoEndTurn() {
 
 async function afterPlayerAction() {
   if (typeof render === 'function') render();
-  if (!state.gameOverResult && isDefenseMode(state)) {
-    const result = checkWinLoss(state);
-    if (result) {
-      state.gameOverResult = result;
-      await present([{ type: 'gameOver', result: result }]);
-      if (typeof render === 'function') render();
-      return;
-    }
-  }
   await maybeAutoEndTurn();
 }
 
@@ -33,31 +24,12 @@ function rematch() {
   maybeAutoEndTurn();
 }
 
-function setGameMode(mode) {
-  if (mode && mode !== 'vs' && typeof missionById === 'function') {
-    const mission = missionById(mode);
-    if (mission && typeof missionIsUnlocked === 'function' && typeof loadCampaign === 'function') {
-      if (!missionIsUnlocked(mission, loadCampaign())) return;
-    }
-  }
-  if (typeof savePlaylistId === 'function') savePlaylistId(mode);
-  else saveGameMode(mode);
+function setGameMode() {
+  if (typeof savePlaylistId === 'function') savePlaylistId('vs');
   rematch();
 }
 
 let endingTurn = false;
-
-async function presentDefenseEnemyPhase() {
-  const iter = defenseEnemyPhaseParts(state);
-  let step = iter.next();
-  while (!step.done) {
-    const part = step.value;
-    if (part.events.length) await present(part.events);
-    else if (part.kind === 'walk' && typeof render === 'function') render();
-    if (part.kind === 'strike' && part.events.length) await maybeWait(90);
-    step = iter.next();
-  }
-}
 
 async function endTurn() {
   if (endingTurn || state.animating || state.gameOverResult) return;
@@ -72,11 +44,7 @@ async function endTurn() {
 
     await maybeWait(120);
     if (state.matchId !== matchId) return;
-    if (state.gameMode === 'defense') {
-      await presentDefenseEnemyPhase();
-    } else {
-      await runTeamAi('enemy');
-    }
+    await runTeamAi('enemy');
     if (state.matchId !== matchId) return;
     await present(simEndEnemyTurn(state));
     if (state.matchId !== matchId) return;

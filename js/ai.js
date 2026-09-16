@@ -20,22 +20,12 @@ async function runTeamAi(team) {
 }
 
 async function hunterRunTurn(team) {
-  await teamSummonPhase(team);
-
   const wizards = Object.values(state.wizards)
     .filter(w => w.team === team && w.state === 'onboard')
     .sort((a, b) => compareWizardActOrder(a, b, team));
-  if (state.gameMode === 'vs') {
-    const pick = wizards[0];
-    if (pick && pick.state === 'onboard') {
-      await present(teamWizardAct(pick, team));
-      await maybeWait(420);
-    }
-    return;
-  }
-  for (const wizard of wizards) {
-    if (wizard.state !== 'onboard') continue;
-    await present(teamWizardAct(wizard, team));
+  const pick = wizards[0];
+  if (pick && pick.state === 'onboard') {
+    await present(teamWizardAct(pick, team));
     await maybeWait(420);
   }
 }
@@ -64,71 +54,6 @@ function wizardActPriority(wizard, team) {
     }
   }
   return best;
-}
-
-async function teamSummonPhase(team) {
-  while (true) {
-    const affordable = Object.values(state.wizards).filter(
-      w => canPaySummon(state, w, team)
-    );
-    if (!affordable.length) break;
-
-    const tile = pickSummonTile(team);
-    if (!tile) break;
-
-    const wizard = pickSummonWizard(affordable, tile, team);
-    const events = simSummon(state, wizard, tile.row, tile.col, team);
-    if (!events.length) break;
-    await present(events);
-    await maybeWait(360);
-  }
-}
-
-function pickSummonWizard(affordable, tile, team) {
-  const threatened = mostThreatenedNexus(team);
-  const front = team === 'player' ? tile.row === SUMMON_ROW_START : tile.row === ENEMY_ROW_END - 1;
-  if (threatened && manhattan(tile.row, tile.col, threatened.row, threatened.col) <= 2) {
-    const tank = affordable.find(w => w.element === 'ice')
-      || affordable.find(w => w.element === 'earth')
-      || affordable.find(w => w.element === 'fire')
-      || affordable[0];
-    return tank;
-  }
-  if (front) {
-    return affordable.find(w => w.element === 'wind')
-      || affordable.find(w => w.element === 'fire')
-      || affordable[0];
-  }
-  return shuffledCopy(state.rng, affordable)[0];
-}
-
-function pickSummonTile(team) {
-  const candidates = getTeamSummonTiles(state, team);
-  if (!candidates.length) return null;
-
-  const threatened = mostThreatenedNexus(team);
-  const foeNexus = nearestLivingNexusFrom(team === 'player' ? SUMMON_ROW_START : 1, CENTER, opposingTeam(team));
-  let best = [];
-  let bestScore = -Infinity;
-  for (const tile of candidates) {
-    let score = 0;
-    if (threatened) {
-      const d = manhattan(tile.row, tile.col, threatened.row, threatened.col);
-      score += Math.max(0, 8 - d) * 4;
-    }
-    if (foeNexus) {
-      score += Math.max(0, 12 - manhattan(tile.row, tile.col, foeNexus.row, foeNexus.col));
-    }
-    const front = team === 'player' ? (BOARD_SIZE - 1 - tile.row) : tile.row;
-    score += front;
-    if (score > bestScore) {
-      bestScore = score;
-      best = [tile];
-    } else if (score === bestScore) {
-      best.push(tile);
-    }
-  }
-  return best[state.rng.int(best.length)];
 }
 
 function teamWizardAct(wizard, team) {
@@ -461,9 +386,6 @@ function tileThreatScore(wizard, tile, team, target) {
   if (target) {
     score += Math.max(0, 16 - manhattan(tile.row, tile.col, target.row, target.col));
   }
-  const p = portalAt(state, tile.row, tile.col);
-  if (p && p.team !== team) score += 110;
-  if (p && p.team === team) score -= 120;
   const trail = trailAt(state, tile.row, tile.col);
   if (trail && trail.element === 'fire') score -= 30;
   if (trail && trail.element === 'wind') score += 6;
@@ -524,21 +446,6 @@ function nearestThreatTile(fromWizard, team) {
       }
     });
     if (raider) return { row: raider.row, col: raider.col };
-  }
-
-  let bestPortal = null;
-  let bestPD = Infinity;
-  Object.keys(state.portals || {}).forEach(function (k) {
-    const p = state.portals[k];
-    if (!p || p.team === team) return;
-    const d = manhattan(fromWizard.row, fromWizard.col, p.row, p.col);
-    if (d < bestPD) {
-      bestPD = d;
-      bestPortal = p;
-    }
-  });
-  if (bestPortal) {
-    return { row: bestPortal.row, col: bestPortal.col };
   }
 
   const damaged = livingNexuses(state, opposingTeam(team)).slice().sort((a, b) => {

@@ -6,7 +6,7 @@ const { loadGame } = require('./load-game');
 const ctx = loadGame();
 const out = vm.runInContext(`
 (function () {
-  resetMatch(state, 12345, { gameMode: 'defense', playerLoadout: ['ice', 'ice', 'ice', 'ice'] });
+  resetMatch(state, 12345, { playerLoadout: ['ice', 'ice', 'ice', 'ice'] });
   Object.values(state.wizards).forEach(function (w) { if (w.team === 'enemy') { w.state = 'dead'; w.row = null; w.col = null; } });
   for (var r = 2; r <= 6; r++) for (var c = 2; c <= 6; c++) {
     var key = r + ',' + c;
@@ -16,10 +16,15 @@ const out = vm.runInContext(`
     if (state.voids) delete state.voids[key];
   }
   state.nexuses.player = state.nexuses.player.filter(function (n) { return !(n.row >= 3 && n.row <= 5 && n.col >= 3 && n.col <= 5); });
+  state.nexuses.enemy = state.nexuses.enemy.filter(function (n) { return !(n.row >= 3 && n.row <= 5 && n.col >= 3 && n.col <= 5); });
   var p = Object.values(state.wizards).find(function (w) { return w.team === 'player'; });
   p.state = 'onboard'; p.row = 4; p.col = 4; p.summoningSickness = false; p.hasMoved = false; p.hasAttacked = false;
   p.castKind = 'pulse'; p.spellId = 'pulse'; p.spellName = 'Pulse'; p.castAttack = 2; p.castDisplacement = 1; p.element = 'ice';
-  [[3, 4], [5, 4], [4, 5]].forEach(function (rc) { var e = createDefensePawn(state, 'melee', { state: 'onboard', row: rc[0], col: rc[1], intent: null }); e.hp = 1; e.maxHp = 1; });
+  var foes = Object.values(state.wizards).filter(function (w) { return w.team === 'enemy'; });
+  [[3, 4], [5, 4], [4, 5]].forEach(function (rc, i) {
+    var e = foes[i];
+    e.state = 'onboard'; e.row = rc[0]; e.col = rc[1]; e.hp = 1; e.maxHp = 1;
+  });
   state.currentTurn = 'player'; state.gameOverResult = null;
   var events = simAttack(state, p, 3, 4, 'cast');
   var deaths = events.filter(function (e) { return e.type === 'death'; });

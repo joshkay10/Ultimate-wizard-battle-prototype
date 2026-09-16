@@ -24,31 +24,19 @@ const ELEMENT_COLOR = {
 
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
-const DEFENSE_BOARD_SIZE = 9;
 const VS_BOARD_SIZE = 7;
+const BOARD_SIZE = VS_BOARD_SIZE;
 const SUMMON_ZONE_ROWS = 3;
-var BOARD_SIZE = DEFENSE_BOARD_SIZE;
-var CENTER = (DEFENSE_BOARD_SIZE - 1) >> 1;
-var SUMMON_ROW_START = DEFENSE_BOARD_SIZE - SUMMON_ZONE_ROWS;
-var ENEMY_ROW_END = SUMMON_ZONE_ROWS;
+const CENTER = (VS_BOARD_SIZE - 1) >> 1;
+const SUMMON_ROW_START = VS_BOARD_SIZE - SUMMON_ZONE_ROWS;
+const ENEMY_ROW_END = SUMMON_ZONE_ROWS;
 const MANA_CAP = 6;
 
 function applyMatchLayout(match) {
-  const n = match && match.gameMode === 'vs' ? VS_BOARD_SIZE : DEFENSE_BOARD_SIZE;
-  if (match) match.boardSize = n;
-  BOARD_SIZE = n;
-  CENTER = (n - 1) >> 1;
-  SUMMON_ROW_START = n - SUMMON_ZONE_ROWS;
-  ENEMY_ROW_END = SUMMON_ZONE_ROWS;
+  if (match) match.boardSize = BOARD_SIZE;
 }
 
 const NEXUS_HP = 5;
-const DEFENSE_NEXUS_HP = 2;
-const DEFENSE_NEXUS_MIN = 3;
-const DEFENSE_NEXUS_MAX = 6;
-const DEFENSE_PAWN_CAP = 3;
-const DEFENSE_SPAWN_BUDGET = 10;
-const DEFENSE_MANA_CAP = 6;
 const CRASH_DAMAGE = 1;
 const TEMP_MOUNTAIN_TURNS = 2;
 const TRAIL_TURNS = 2;

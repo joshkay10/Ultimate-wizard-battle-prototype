@@ -16,9 +16,7 @@ Read this instead of grepping the whole tree.
 | Mana spend. Melee 0, spell 1 = 1× kit cost, spell 2 = 2× kit cost | `js/domain/mana.js` (`attackManaCost`) |
 | Attacks resolve | `js/domain/attack.js` |
 | Match reset | `js/domain/match.js` |
-| Named Defense fights | `js/domain/missions.js` |
-| Defense vek AI | `js/domain/defense-ai.js` |
-| Vs hunter AI | `js/ai.js` |
+| Hunter AI | `js/ai.js` |
 | HUD, selected card | `js/ui.js` |
 | Canvas / tokens | `js/board-view.js` |
 | Clicks | `js/actions.js` |
@@ -34,11 +32,9 @@ Do not copy the script list into `js/load.js`, `test/sim-node.js`, or `test/comb
 
 Team and Elements stay hand-built in `js/pages.js` / `js/app/team-page.js`.
 
-## Missions
+## Vs
 
-`js/domain/missions.js` is the four named Defense fights. Each pins `islandId`, `loadout`, `spawnBudget`, `pawnCap`, `spawnKinds`, `cityExtra`, opening kind/tile, and player-facing `goal` / `hint`. Add a mission there. The battle track reads `MISSIONS`. Do not copy the list into `js/ui.js`.
-
-Named missions keep the remaining spawn budget after a wipe (killing the opener does not win). Clearing an island unlocks the next (`applyMissionClear`). Mission loadouts are **not** padded to four — island 1 is one wizard, then 2, 3, and a full four. Random Defense (no `missionId`) still ends on a wipe and still fields four. Play defaults to **Vs** (`playlistIdDefault`). Vs is free-play on a **7×7** with **four** wizards a side, **all on the board**, enemy mirrored onto the far row, **three nexuses** a camp. Open arena, no generated terrain. No off-field / hand cubes. **One wizard per turn** (that body may move and strike), then the other side. Mana pays for spell 1 and spell 2 (melee is free), cap **6**. Team-page loadout. Defense vek are **dark discs** (facing wedge for aim); wizards are **cubes**.
+Play is **Vs** only: a **7×7** deathmatch with **four** wizards a side, **all on the board**, enemy mirrored onto the far row, **three nexuses** a camp. Open arena, no generated terrain. No off-field / hand cubes. **One wizard per turn** (that body may move and strike), then the other side. Mana pays for spell 1 and spell 2 (melee is free), cap **6**. Team-page loadout. Wizards are **cubes**.
 
 ## Tests
 
@@ -54,14 +50,3 @@ That runs `test/sim-node.js`, `test/combo-check.js`, and `test/markdown-check.js
 - Add sounds.
 - Add video to the game unless asked.
 - Put tests on the live page.
-
-## Defense (must keep)
-
-- Open with **1** vek on the board, no telegraph, no incoming marks on round 1.
-- Beeline the nearest city nexus. Wizard shot only if the city is out of reach this turn.
-- `pickDefenseIntent` never aims empty air.
-- Cap **3** vek on the board. **10** invaders total. **One** incoming hole per enemy phase.
-- **One drop per round**, land immediately. Defense mana (start 2, +1/round, cap 6) is **specials only**.
-- Mites are 1 HP fodder and may stack (still 1 HP, hit ×2). Golems are heavies you shove into hazards.
-- Charge: body walks the path; the attack event has `path`, `spellName: 'Charge'`, `castKind: 'gust'`, 1 dmg + push 1.
-- Smash leftover knockback. City crash stays 1.

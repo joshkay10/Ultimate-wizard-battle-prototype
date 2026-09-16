@@ -46,79 +46,23 @@ const MODE_STORAGE_KEY = 'wizard-battle-mode';
 const PLAYLIST_STORAGE_KEY = 'wizard-battle-playlist';
 
 function loadPlaylistId() {
-  if (typeof localStorage === 'undefined') return playlistIdDefault();
-  try {
-    const raw = localStorage.getItem(PLAYLIST_STORAGE_KEY) || localStorage.getItem(MODE_STORAGE_KEY);
-    if (raw === 'vs') return 'vs';
-    if (raw === 'defense') return playlistIdDefault();
-    if (typeof missionById === 'function' && missionById(raw)) {
-      const mission = missionById(raw);
-      if (typeof missionIsUnlocked === 'function' && !missionIsUnlocked(mission, loadCampaign())) {
-        const open = typeof highestUnlockedMission === 'function' ? highestUnlockedMission(loadCampaign()) : null;
-        return (open && open.id) || playlistIdDefault();
-      }
-      return mission.id;
-    }
-  } catch (err) {}
-  return playlistIdDefault();
+  return 'vs';
 }
 
-function savePlaylistId(id) {
-  if (id === 'vs') {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(PLAYLIST_STORAGE_KEY, 'vs');
-      localStorage.setItem(MODE_STORAGE_KEY, 'vs');
-    }
-    return 'vs';
-  }
-  const mission = typeof missionById === 'function' ? missionById(id) : null;
-  const saved = mission ? mission.id : playlistIdDefault();
+function savePlaylistId() {
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(PLAYLIST_STORAGE_KEY, saved);
-    localStorage.setItem(MODE_STORAGE_KEY, 'defense');
+    localStorage.setItem(PLAYLIST_STORAGE_KEY, 'vs');
+    localStorage.setItem(MODE_STORAGE_KEY, 'vs');
   }
-  return saved;
+  return 'vs';
 }
 
 function loadGameMode() {
-  return loadPlaylistId() === 'vs' ? 'vs' : 'defense';
+  return 'vs';
 }
 
-function saveGameMode(mode) {
-  return savePlaylistId(mode === 'vs' ? 'vs' : (mode || playlistIdDefault()));
-}
-
-const CAMPAIGN_STORAGE_KEY = 'wizard-battle-campaign';
-
-function writeCampaign(campaign) {
-  const saved = typeof cloneCampaign === 'function' ? cloneCampaign(campaign) : campaign;
-  if (typeof localStorage === 'undefined') return saved;
-  try {
-    localStorage.setItem(CAMPAIGN_STORAGE_KEY, JSON.stringify(saved));
-  } catch (err) {}
-  return saved;
-}
-
-function loadCampaign() {
-  const base = typeof emptyCampaign === 'function' ? emptyCampaign() : { cleared: {}, unlocked: 1, complete: false };
-  if (typeof localStorage === 'undefined') return base;
-  try {
-    const raw = localStorage.getItem(CAMPAIGN_STORAGE_KEY);
-    if (raw) {
-      return typeof cloneCampaign === 'function' ? cloneCampaign(JSON.parse(raw)) : Object.assign(base, JSON.parse(raw));
-    }
-    const playlist = localStorage.getItem(PLAYLIST_STORAGE_KEY);
-    const mission = typeof missionById === 'function' ? missionById(playlist) : null;
-    if (mission && mission.number > 1) {
-      base.unlocked = mission.number;
-    }
-  } catch (err) {}
-  return base;
-}
-
-function recordCampaignClear(missionId, flawless) {
-  if (typeof applyMissionClear !== 'function') return loadCampaign();
-  return writeCampaign(applyMissionClear(loadCampaign(), missionId, flawless));
+function saveGameMode() {
+  return savePlaylistId();
 }
 
 const STATS_STORAGE_KEY = 'wizard-battle-stats';
@@ -128,24 +72,19 @@ function emptyModeStats() {
 }
 
 function readAllStats() {
-  const base = { defense: emptyModeStats(), vs: emptyModeStats() };
+  const base = { vs: emptyModeStats() };
   if (typeof localStorage === 'undefined') return base;
   try {
     const raw = localStorage.getItem(STATS_STORAGE_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw);
-    ['defense', 'vs'].forEach(function (mode) {
-      if (parsed && parsed[mode]) {
-        base[mode] = Object.assign(emptyModeStats(), parsed[mode]);
-      }
-    });
+    if (parsed && parsed.vs) base.vs = Object.assign(emptyModeStats(), parsed.vs);
   } catch (err) {}
   return base;
 }
 
-function loadModeStats(mode) {
-  mode = mode === 'vs' ? 'vs' : 'defense';
-  return readAllStats()[mode];
+function loadModeStats() {
+  return readAllStats().vs;
 }
 
 function writeAllStats(all) {
@@ -156,12 +95,9 @@ function writeAllStats(all) {
   return all;
 }
 
-// Records a finished match and returns the updated stats for that mode,
-// including the streak value *before* this match (handy for "streak broken" copy).
 function recordMatchStats(mode, outcome, flawless) {
-  mode = mode === 'vs' ? 'vs' : 'defense';
   const all = readAllStats();
-  const stats = all[mode];
+  const stats = all.vs;
   const prevStreak = stats.streak;
   if (outcome === 'player') {
     stats.wins += 1;

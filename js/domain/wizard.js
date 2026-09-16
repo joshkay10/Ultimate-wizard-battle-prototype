@@ -38,7 +38,6 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
   if (!player.length) return;
   let i;
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
-  if (match.gameMode === 'defense') return;
   const enemy = normalizeLoadout(enemyLoadout, { pad: false });
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell, enemy[i].special);
 }
@@ -72,7 +71,6 @@ function placeVsOpener(wizard, row, col) {
 }
 
 function seedVsOpening(match) {
-  if (!match || match.gameMode !== 'vs') return;
   const byId = function (a, b) {
     return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
   };
@@ -93,18 +91,6 @@ function seedVsOpening(match) {
   }
 }
 
-function drawVsWizard(match, team) {
-  if (!match || match.gameMode !== 'vs') return null;
-  const next = wizardsOnTeam(match, team)
-    .filter(function (w) { return w.state === 'bench'; })
-    .sort(function (a, b) {
-      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-    })[0];
-  if (!next) return null;
-  next.state = 'summoned';
-  return next;
-}
-
 function canMove(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasMoved && !wizard.summoningSickness && !wizard.rooted);
 }
@@ -115,7 +101,7 @@ function canAttack(wizard) {
 
 // Vs is chess-paced: one wizard acts (move and/or strike), then the other side.
 function actingWizardOnTurn(match, team) {
-  if (!match || match.gameMode !== 'vs') return null;
+  if (!match) return null;
   team = team || match.currentTurn;
   let found = null;
   Object.values(match.wizards).forEach(function (wizard) {
@@ -127,7 +113,6 @@ function actingWizardOnTurn(match, team) {
 
 function canUseWizard(match, wizard) {
   if (!wizard) return false;
-  if (!match || match.gameMode !== 'vs') return true;
   const acting = actingWizardOnTurn(match, wizard.team);
   return !acting || acting.id === wizard.id;
 }
@@ -194,7 +179,6 @@ function tickBurn(match, wizard) {
 
 function tickBurnsForTeam(match, team) {
   const events = [];
-  if (isDefenseMode(match) && team === 'enemy') return events;
   Object.values(match.wizards).forEach(function (wizard) {
     if (wizard.team !== team || wizard.state !== 'onboard') return;
     events.push.apply(events, tickBurn(match, wizard));
@@ -204,13 +188,7 @@ function tickBurnsForTeam(match, team) {
 
 function teamHasPresence(match, team) {
   return Object.values(match.wizards).some(function (wizard) {
-    return wizard.team === team && (
-      wizard.state === 'onboard' ||
-      wizard.state === 'summoned' ||
-      wizard.state === 'portaling' ||
-      wizard.state === 'emerging' ||
-      wizard.state === 'bench'
-    );
+    return wizard.team === team && wizard.state === 'onboard';
   });
 }
 

@@ -33,15 +33,6 @@ function describeEvent(ev) {
   }
 
   if (ev.type === 'intent') return '';
-  if (ev.type === 'draw') {
-    return ev.team === 'player' ? 'you pick up a wizard' : 'the enemy picks up a wizard';
-  }
-  if (ev.type === 'portal') return actorName(ev.wizardId) + ' opens a portal — arrives next turn';
-  if (ev.type === 'summon') return actorName(ev.wizardId) + ' arrives';
-  if (ev.type === 'portalBlocked') {
-    return actorName(ev.wizardId) + ' and ' + actorName(ev.blockerId) + ' die in the portal';
-  }
-
   if (ev.type === 'move') {
     const last = ev.path && ev.path.length ? ev.path[ev.path.length - 1] : null;
     const dir = last && ev.from ? compassWord(ev.from.row, ev.from.col, last.row, last.col) : '';
@@ -65,22 +56,16 @@ function describeEvent(ev) {
     if (ev.hit === 'fizzle') return '';
     const spell = ev.spellId || ev.castKind || 'cast';
     if (spell === 'pulse') return who + ' pulses';
-    if (spell === 'burst' || ev.castKind === 'summonBurst') return who + ' bursts';
+    if (spell === 'burst') return who + ' bursts';
     if (spell === 'bolt') {
       if (ev.hit === 'nexus') return who + ' bolts ' + nexusOwnerWord(ev);
       return who + ' bolts' + toward;
     }
-    if (spell === 'gust') {
-      const ram = ev.spellName === 'Charge';
-      return who + (ram ? ' charges' : ' gusts') + toward;
-    }
+    if (spell === 'gust') return who + ' gusts' + toward;
     if (spell === 'tug' || ev.castKind === 'pull') return who + ' tugs' + toward;
     if (spell === 'lock') return who + ' locks' + toward;
     if (spell === 'brand') return who + ' brands' + toward;
-    if (spell === 'stream') {
-      const shot = ev.spellName === 'Fireball';
-      return who + (shot ? ' shoots' : ' streams') + toward;
-    }
+    if (spell === 'stream') return who + ' streams' + toward;
     const named = (ev.spellName || spell).toLowerCase();
     return who + ' casts ' + named + toward;
   }
@@ -100,7 +85,6 @@ function describeEvent(ev) {
   if (ev.type === 'jump') return actorName(ev.attackerId) + "'s bolt jumps the water";
   if (ev.type === 'void') return 'a nexus becomes a void';
   if (ev.type === 'death') {
-    if (ev.cause === 'merge') return 'mites double up';
     if (ev.cause === 'water') return actorName(ev.wizardId) + ' falls in the water';
     if (ev.cause === 'void') return actorName(ev.wizardId) + ' falls into a void';
     return actorName(ev.wizardId) + ' dies';

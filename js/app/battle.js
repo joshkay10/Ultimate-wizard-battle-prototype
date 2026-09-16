@@ -1,18 +1,8 @@
 function battleResetOpts() {
-  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'defense';
-  if (playlist === 'vs') {
-    return {
-      playerLoadout: loadPlayerLoadout(),
-      rollEnemy: true,
-      gameMode: 'vs'
-    };
-  }
-  const mission = typeof missionById === 'function' ? missionById(playlist) : null;
-  if (mission) return missionResetOpts(mission);
   return {
     playerLoadout: loadPlayerLoadout(),
-    rollEnemy: false,
-    gameMode: 'defense'
+    rollEnemy: true,
+    gameMode: 'vs'
   };
 }
 
@@ -22,7 +12,6 @@ function startBattle(seed) {
   resetMatch(state, seed, opts);
   state.matchBestCombo = 0;
   state.matchDunks = 0;
-  state.justUnlocked = false;
   state.resultRecorded = false;
   state.matchSummary = null;
 }
