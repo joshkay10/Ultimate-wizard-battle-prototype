@@ -2,7 +2,7 @@
 
 What is still leftover. Shipped work is already off this list.
 
-Shipped: Vs 7×7 chess-pace deathmatch (4v4 onboard, mirrored opening, mana cap 6, melee 0 / spell 1× / spell 2 2×), Brand / Lock / Tug, smash leftover knockback, cube wizards, crash chains, move undo, four-wizard loadouts.
+Shipped: Vs-only 7×7 chess-pace deathmatch (4v4 start on the board, no summoning, mirrored opening, mana cap 6, melee 0 / spell 1× / spell 2 2×), Brand / Lock / Tug, smash leftover knockback, cube wizards, crash chains, move undo, four-wizard loadouts.
 
 ## Need from you
 

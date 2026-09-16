@@ -94,7 +94,7 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body has <strong>melee for 0</strong>, <strong>spell 1 at 1× kit cost</strong>, and <strong>spell 2 at 2× kit cost</strong>. Saved on this device.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. All four start on the board — there is no summoning. Each body has <strong>melee for 0</strong>, <strong>spell 1 at 1× kit cost</strong>, and <strong>spell 2 at 2× kit cost</strong>. Saved on this device.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +

@@ -34,7 +34,9 @@ Team and Elements stay hand-built in `js/pages.js` / `js/app/team-page.js`.
 
 ## Vs
 
-Play is **Vs** only: a **7×7** deathmatch with **four** wizards a side, **all on the board**, enemy mirrored onto the far row, **three nexuses** a camp. Open arena, no generated terrain. No off-field / hand cubes. **One wizard per turn** (that body may move and strike), then the other side. Mana pays for spell 1 and spell 2 (melee is free), cap **6**. Team-page loadout. Wizards are **cubes**.
+Play is **Vs** only: a **7×7** deathmatch with **four** wizards a side, **all on the board**, enemy mirrored onto the far row, **three nexuses** a camp. Open arena, no generated terrain. **No summoning** — no hand, no portals, no off-field cubes. Kit `cost` is mana weight for spells, not a drop fee. **One wizard per turn** (that body may move and strike), then the other side. Melee 0, spell 1 = 1× weight, spell 2 = 2×, mana cap **6**. Team-page loadout. Wizards are **cubes**.
+
+Do not re-add a drop / portal / hand loop unless asked. If a kit is too strong, retune damage, move, or mana — do not put bodies in reserve.
 
 ## Tests
 
