@@ -223,9 +223,18 @@ function manaCostBadge(amount) {
   return '<span class="special-cost">' + ICONS.mana + amount + '</span>';
 }
 
+function vsUndoWizard() {
+  const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  if (canUndoMove(selected)) return selected;
+  const actor = typeof actingWizardOnTurn === 'function' ? actingWizardOnTurn(state, 'player') : null;
+  return canUndoMove(actor) ? actor : null;
+}
+
 function renderVsPassRow() {
+  const undoOk = !state.animating && canAct() && !!vsUndoWizard();
   return (
     '<div class="action-row is-pass">' +
+      '<button class="action-btn undo" id="undo-move-btn" ' + (undoOk ? '' : 'disabled') + '>undo</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
     '</div>'
   );

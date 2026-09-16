@@ -62,9 +62,13 @@ function setAction(action) {
 
 function undoSelectedMove() {
   if (state.animating || !canAct()) return;
-  const wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  let wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+  if (!canUndoMove(wizard) && typeof actingWizardOnTurn === 'function') {
+    wizard = actingWizardOnTurn(state, 'player');
+  }
   if (!canUndoMove(wizard)) return;
   present(simUndoMove(state, wizard)).then(function () {
+    state.selectedWizardId = wizard.id;
     state.selectedAction = 'move';
     afterPlayerAction();
   });
