@@ -57,8 +57,8 @@ const STARTING_MANA = 2;
 // Three crystals per camp: two back wings and one forward center, vertically mirrored.
 function vsNexusLayout() {
   const last = BOARD_SIZE - 1;
-  const frontEnemy = Math.min(2, ENEMY_ROW_END - 1);
-  const frontPlayer = Math.max(last - 2, SUMMON_ROW_START);
+  const frontEnemy = Math.min(1, ENEMY_ROW_END - 1);
+  const frontPlayer = Math.max(last - 1, SUMMON_ROW_START);
   return {
     enemy: [
       { id: 'enemy-back-west', row: 0, col: 1 },

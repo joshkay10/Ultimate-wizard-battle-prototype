@@ -135,6 +135,11 @@ function benchOtherWizards() {
   });
 }
 
+function pinMelee(wizard, dmg, push) {
+  wizard.meleeAttack = dmg;
+  wizard.meleeDisplacement = push;
+}
+
 async function runHeadlessMatch(seed, maxRounds) {
   const prev = state.fxEnabled;
   state.fxEnabled = false;
@@ -195,6 +200,7 @@ async function runSimSelfTests() {
   ember.state = 'onboard';
   ember.row = 0;
   ember.col = BOARD_SIZE - 3;
+  pinMelee(ember, 5, 2);
   gale.state = 'onboard';
   gale.row = 0;
   gale.col = BOARD_SIZE - 2;
@@ -218,6 +224,7 @@ async function runSimSelfTests() {
   batter.state = 'onboard';
   batter.row = 4;
   batter.col = 2;
+  pinMelee(batter, 5, 2);
   shoved.state = 'onboard';
   shoved.row = 4;
   shoved.col = 3;
@@ -243,6 +250,7 @@ async function runSimSelfTests() {
   chainAtk.state = 'onboard';
   chainAtk.row = 4;
   chainAtk.col = 1;
+  pinMelee(chainAtk, 5, 2);
   chainA.state = 'onboard';
   chainA.row = 4;
   chainA.col = 2;
@@ -268,6 +276,7 @@ async function runSimSelfTests() {
   edgeAtk.state = 'onboard';
   edgeAtk.row = 4;
   edgeAtk.col = BOARD_SIZE - 2;
+  pinMelee(edgeAtk, 5, 2);
   edgeHit.state = 'onboard';
   edgeHit.row = 4;
   edgeHit.col = BOARD_SIZE - 1;
@@ -285,6 +294,7 @@ async function runSimSelfTests() {
   gustCrash.state = 'onboard';
   gustCrash.row = 4;
   gustCrash.col = 2;
+  gustCrash.castDisplacement = 3;
   pinned.state = 'onboard';
   pinned.row = 4;
   pinned.col = 3;
@@ -302,6 +312,7 @@ async function runSimSelfTests() {
   bumpAtk.state = 'onboard';
   bumpAtk.row = 4;
   bumpAtk.col = 2;
+  pinMelee(bumpAtk, 5, 2);
   bumpHit.state = 'onboard';
   bumpHit.row = 4;
   bumpHit.col = 3;
@@ -334,6 +345,7 @@ async function runSimSelfTests() {
   overkillPyre.row = 4;
   overkillPyre.col = 2;
   overkillPyre.hasMoved = true;
+  pinMelee(overkillPyre, 5, 2);
   const overkillPawn = createDefensePawn(state, 'melee', {
     state: 'onboard', row: 4, col: 3, hp: 3, maxHp: 3, intent: null
   });
@@ -435,6 +447,13 @@ async function runSimSelfTests() {
   assert(simMove(state, other, pathBFS(state, other, otherStep.row, otherStep.col) || []).length === 0, 'a second wizard cannot move on the same Vs turn');
   simUndoMove(state, actor);
   assert(canUseWizard(state, other), 'undoing the only move lets you pick a different wizard');
+  assert(kitById('fire').moveRange === 2 && kitById('ice').moveRange === 2 && kitById('wind').moveRange === 3, 'Pyre and Rime walk 2, Squall walks 3');
+  assert(kitById('fire').meleeAttack === 2 && kitById('fire').hp === 4, 'Pyre melee chips, it does not one-shot');
+  assert(kitById('ice').meleeAttack === 1 && kitById('wind').meleeAttack === 1, 'Rime and Squall punches are 1 dmg');
+  assert(spellById('stream').castRange === 3 && spellById('stream').castAttack === 2, 'Stream is a line of 3 for 2 dmg');
+  assert(spellById('sheet').castRange === 3 && spellById('gust').castDisplacement === 2, 'Sheet is short; Gust pushes 2');
+  assert(spellById('cinder').castAttack === 1 && spellById('draft').castDisplacement === 3, 'Cinder pokes 1; Draft shoves 3');
+  assert(spellById('stream').castAttack < kitById('ice').hp, 'a full-HP Rime lives through Stream');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -475,10 +494,15 @@ async function runSimSelfTests() {
   assert(state.nexuses.player.every(function (n) { return n.hp === NEXUS_HP; }), 'Vs crystals have 5 HP');
   assert(state.nexuses.player.every(function (n) { return isSummonTile(n.row, n.col); }), 'player crystals sit in the back three rows');
   assert(state.nexuses.enemy.every(function (n) { return isEnemySummonTile(n.row, n.col); }), 'enemy crystals sit in the far three rows');
+  const playerFront = state.nexuses.player.find(function (n) { return n.id === 'player-front'; });
+  const enemyFront = state.nexuses.enemy.find(function (n) { return n.id === 'enemy-front'; });
+  assert(playerFront && playerFront.row === BOARD_SIZE - 2, 'the forward crystal sits one row in, not on the camp lip');
+  assert(enemyFront && enemyFront.row === 1, 'the enemy forward crystal mirrors that');
+  assert(Math.abs(playerFront.row - enemyFront.row) >= 3, 'the two forward crystals do not stare across one empty row');
   const walker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   walker.state = 'onboard';
   walker.row = 5;
-  walker.col = 3;
+  walker.col = 2;
   const moves = getMoveTiles(state, walker);
   assert(moves.length > 0, 'move range should be open');
   assert(!moves.some(t => nexusAt(state, t.row, t.col)), 'move range should not include a nexus');
@@ -490,9 +514,10 @@ async function runSimSelfTests() {
   const stepper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   stepper.state = 'onboard';
   stepper.row = 5;
-  stepper.col = 3;
-  assert(stepper.moveRange === 3, 'rime should move 3');
-  assert(getMoveTiles(state, stepper).some(t => t.row === 3 && t.col === 2), 'rime move 3 reaches midboard from the back');
+  stepper.col = 2;
+  assert(stepper.moveRange === 2, 'rime should move 2');
+  assert(getMoveTiles(state, stepper).some(t => t.row === 3 && t.col === 2), 'rime move 2 reaches the center file');
+  assert(!getMoveTiles(state, stepper).some(t => t.row <= 1), 'one walk cannot reach the far camp');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -541,17 +566,17 @@ async function runSimSelfTests() {
   state.water = {};
   const arriving = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   toHand(arriving);
-  const opened = simSummon(state, arriving, 5, 3, 'player');
+  const opened = simSummon(state, arriving, 5, 2, 'player');
   assert(opened.length === 1 && opened[0].type === 'portal', 'summon should open a portal');
   assert(arriving.state === 'portaling', 'wizard waits in the portal');
-  assert(!!portalAt(state, 5, 3), 'portal occupies the tile');
-  assert(simMove(state, arriving, [{ row: 4, col: 3 }]).length === 0, 'portaling wizard cannot move');
+  assert(!!portalAt(state, 5, 2), 'portal occupies the tile');
+  assert(simMove(state, arriving, [{ row: 4, col: 2 }]).length === 0, 'portaling wizard cannot move');
   simEndPlayerTurn(state);
   assert(arriving.state === 'portaling', 'portal does not resolve until the owner\'s next turn');
   await runTeamAi('enemy');
   simEndEnemyTurn(state);
   assert(arriving.state === 'onboard', 'wizard arrives at the start of the next turn');
-  assert(!portalAt(state, 5, 3), 'portal closes on arrival');
+  assert(!portalAt(state, 5, 2), 'portal closes on arrival');
   assert(arriving.summoningSickness, 'arrived wizard has summoning sickness');
   assert(!canMove(arriving) && !canAttack(arriving), 'sickness blocks move and attack');
   simEndPlayerTurn(state);
@@ -567,10 +592,10 @@ async function runSimSelfTests() {
   const doomed = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   toHand(doomed);
   const blocker = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
-  simSummon(state, doomed, 5, 3, 'player');
+  simSummon(state, doomed, 5, 2, 'player');
   blocker.state = 'onboard';
   blocker.row = 5;
-  blocker.col = 3;
+  blocker.col = 2;
   blocker.hp = 8;
   const blocked = simResolvePortals(state, 'player');
   assert(doomed.state === 'dead', 'blocked summon dies');
@@ -586,10 +611,10 @@ async function runSimSelfTests() {
   const allyIn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   toHand(allyIn);
   const allyOn = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  simSummon(state, allyIn, 5, 3, 'player');
+  simSummon(state, allyIn, 5, 2, 'player');
   allyOn.state = 'onboard';
   allyOn.row = 5;
-  allyOn.col = 3;
+  allyOn.col = 2;
   const allyBlock = simResolvePortals(state, 'player');
   assert(allyIn.state === 'dead', 'incoming dies if an ally stands on the portal');
   assert(allyOn.state === 'dead', 'ally standing on the portal dies too');
@@ -1235,11 +1260,11 @@ async function runSimSelfTests() {
   state.water = {};
   const gust = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   gust.state = 'onboard';
-  gust.row = 5;
+  gust.row = 4;
   gust.col = 4;
   const gustTiles = getCastTiles(state, gust);
-  assert(gustTiles.some(t => t.row === 5 && t.col === 1), 'gust reaches range 3');
-  assert(!gustTiles.some(t => t.row === 5 && t.col === 0), 'gust does not reach range 4');
+  assert(gustTiles.some(t => t.row === 4 && t.col === 1), 'gust reaches range 3');
+  assert(!gustTiles.some(t => t.row === 4 && t.col === 0), 'gust does not reach range 4');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1275,6 +1300,7 @@ async function runSimSelfTests() {
   batterIce.state = 'onboard';
   batterIce.row = 3;
   batterIce.col = 1;
+  pinMelee(batterIce, 5, 2);
   slider.state = 'onboard';
   slider.row = 3;
   slider.col = 2;
@@ -2252,10 +2278,10 @@ async function runSimSelfTests() {
       assert(openers[0].row === mission.opening.row && openers[0].col === mission.opening.col, mission.id + ' pins the opener tile');
     }
     assert(state.nexuses.player.length === 3, mission.id + ' pins a 3-crystal city');
-    assert(kitById('fire').hp === 3 && kitById('ice').hp === 3 && kitById('wind').hp === 2, 'wizard HP is 2–3, not a 12 HP sponge');
+    assert(kitById('fire').hp === 4 && kitById('ice').hp === 4 && kitById('wind').hp === 4, 'live kits sit at 4 HP, not a 12 HP sponge');
     if (mission.id === 'mission-1') {
       const only = Object.values(state.wizards).filter(function (w) { return w.team === 'player'; });
-      assert(only.length === 1 && only[0].name === 'Squall' && only[0].hp === 2, 'the pass teaches with one 2 HP Squall');
+      assert(only.length === 1 && only[0].name === 'Squall' && only[0].hp === 4, 'the pass teaches with one Squall');
     }
     const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
     resetMatch(state, mission.seed, { missionId: mission.id });

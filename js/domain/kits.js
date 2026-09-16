@@ -4,12 +4,12 @@ const TEAM_SIZE = VS_TEAM_SIZE;
 const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];
 
 const WIZARD_TYPES = [
-  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 3, hp: 3, cost: 2, meleeAttack: 5, meleeDisplacement: 2 },
-  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 3, hp: 3, cost: 1, meleeAttack: 4, meleeDisplacement: 2 },
-  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 4, hp: 2, cost: 2, meleeAttack: 3, meleeDisplacement: 2 },
-  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 4, cost: 3, meleeAttack: 4, meleeDisplacement: 1 },
-  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 3, hp: 3, cost: 2, meleeAttack: 3, meleeDisplacement: 1 },
-  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 3, hp: 3, cost: 3, meleeAttack: 3, meleeDisplacement: 1 }
+  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 2, hp: 4, cost: 2, meleeAttack: 2, meleeDisplacement: 1 },
+  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 2, hp: 4, cost: 1, meleeAttack: 1, meleeDisplacement: 1 },
+  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 3, hp: 4, cost: 2, meleeAttack: 1, meleeDisplacement: 2 },
+  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 5, cost: 3, meleeAttack: 2, meleeDisplacement: 1 },
+  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 2, hp: 4, cost: 2, meleeAttack: 1, meleeDisplacement: 1 },
+  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 2, hp: 4, cost: 3, meleeAttack: 1, meleeDisplacement: 1 }
 ];
 
 const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'fire'];

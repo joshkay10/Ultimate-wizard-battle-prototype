@@ -61,12 +61,12 @@ Melee is a simple adjacent punch for everyone, and it costs **0**. Each wizard a
 
 | Wizard | Cost | Move | HP | Melee (dmg / push) | Spell 1 |
 | --- | --- | --- | --- | --- | --- |
-| Pyre (fire) | 2 | 3 | 3 | 5 / 2 | **Stream** — line 4, 3 dmg / 1 push, paints fire |
-| Rime (ice) | 1 | 3 | 3 | 4 / 2 | **Sheet** — line 4, 1 dmg, paints ice |
-| Squall (wind) | 2 | 4 | 2 | 3 / 2 | **Gust** — line 3, 1 dmg / 3 push, paints wind |
-| Cairn (earth) | 3 | 2 | 4 | 4 / 1 | **Raise** — empty tile becomes a mountain |
-| Volt (lightning) | 2 | 3 | 3 | 3 / 1 | **Jolt** — neighbors, 1 dmg, silence |
-| Chrono (temporal) | 3 | 3 | 3 | 3 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
+| Pyre (fire) | 2 | 2 | 4 | 2 / 1 | **Stream** — line 3, 2 dmg / 1 push, paints fire |
+| Rime (ice) | 1 | 2 | 4 | 1 / 1 | **Sheet** — line 3, 1 dmg, paints ice |
+| Squall (wind) | 2 | 3 | 4 | 1 / 2 | **Gust** — line 3, 1 dmg / 2 push, paints wind |
+| Cairn (earth) | 3 | 2 | 5 | 2 / 1 | **Raise** — empty tile becomes a mountain |
+| Volt (lightning) | 2 | 2 | 4 | 1 / 1 | **Jolt** — neighbors, 1 dmg, silence |
+| Chrono (temporal) | 3 | 2 | 4 | 1 / 1 | **Swap** — swap with a wizard, or blink to an empty tile |
 
 ### Spell 2 — the third action
 
@@ -78,16 +78,16 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 
 | Spell | Kit | Shape | What it does |
 | --- | --- | --- | --- |
-| Stream | Pyre | line 4 | 3 dmg / 1 push, paints fire |
+| Stream | Pyre | line 3 | 2 dmg / 1 push, paints fire |
 | Lance | Pyre | pierce 4 | 2 dmg to **everything** in the line, paints fire, flies over crystals |
 | Inferno | Pyre | 3×3 | 2 dmg, paints fire, skips nexuses |
-| Cinder | Pyre | one tile | 2 dmg, paints fire |
+| Cinder | Pyre | one tile | 1 dmg, paints fire |
 | Pulse | Rime | neighbors | 2 dmg / 1 out, paints ice |
 | Blizzard | Rime | 3×3 | 1 dmg, freezes ground, skips nexuses |
-| Sheet | Rime | line 4 | 1 dmg, paints ice, no push |
-| Gust | Squall | line 3 | 1 dmg / 3 push, paints wind, fans fire |
+| Sheet | Rime | line 3 | 1 dmg, paints ice, no push |
+| Gust | Squall | line 3 | 1 dmg / 2 push, paints wind, fans fire |
 | Gale | Squall | 3×3 | 0 dmg / 1 out, paints wind |
-| Draft | Squall | line 4 | 0 dmg / 4 push, paints wind |
+| Draft | Squall | line 4 | 0 dmg / 3 push, paints wind |
 | Raise | Cairn | empty tile | temporary mountain |
 | Quake | Cairn | 3×3 | 2 dmg / 1 out, hits crystals |
 | Spike | Cairn | one tile | 3 dmg, hits crystals |
@@ -100,8 +100,8 @@ Each kit picks one spell from its element. Burst spells aim a tile in range; the
 
 ## Unique casts
 
-- **Stream / gust / sheet / draft** — straight line, cardinals only. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.
-- **Lance** — a piercing beam. Unlike stream it does **not** stop on the first body: it hits **every** wizard along the line of 4 and paints fire the whole way, so one cast can wipe a row of fodder. Mountains block it; it flies over crystals without chipping the city.
+- **Stream / gust / sheet / draft** — straight line, cardinals only. Stream and sheet are a line of **3**; gust is 3; draft (spell 2) is 4. Stops on the first wizard or nexus. Mountains block. Water and voids do not. Gust still fans fire.
+- **Lance** — a piercing beam. Unlike stream it does **not** stop on the first body: it hits **every** wizard along the line of 4 and paints fire the whole way, so one cast can chip a whole file. Mountains block it; it flies over crystals without chipping the city.
 - **Pulse / jolt** — hitting any highlighted neighbor fires the whole ring. Empty tiles, allies, enemies, and nexuses in the ring all count. Pulse survivors are pushed away from the caster.
 - **Burst (inferno, blizzard, gale, quake, arc, cinder, spike)** — click an aim tile in range. The square around it is the effect. Friendly fire is on. Blizzard freeze is ice paint, not a status.
 - **Raise** — an empty tile in range becomes a temporary mountain. Blocks walk, summon, melee, cast, and push until it crumbles.
