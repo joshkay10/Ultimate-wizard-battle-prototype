@@ -1,4 +1,3 @@
-const DEFENSE_TEAM_SIZE = 4;
 const VS_TEAM_SIZE = 4;
 const TEAM_SIZE = VS_TEAM_SIZE;
 const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];

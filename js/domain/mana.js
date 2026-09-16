@@ -8,13 +8,6 @@ function spendMana(match, team, amount) {
 }
 
 function refillManaPools(match) {
-  if (match.gameMode === 'defense') {
-    // Defense has its own small pool, spent only on specials (drops stay free).
-    const cap = typeof DEFENSE_MANA_CAP === 'number' ? DEFENSE_MANA_CAP : 6;
-    match.maxMana = Math.min(cap, match.maxMana + 1);
-    match.mana = match.maxMana;
-    return;
-  }
   match.maxMana = Math.min(MANA_CAP, match.maxMana + 1);
   match.mana = match.maxMana;
   match.enemyMaxMana = Math.min(MANA_CAP, match.enemyMaxMana + 1);
@@ -22,7 +15,6 @@ function refillManaPools(match) {
 }
 
 // Melee is always free. Spell 1 costs 1× kit cost. Spell 2 costs 2× kit cost.
-// Defense mana is specials only — basics stay free there.
 function basicManaCost(wizard) {
   return wizard && wizard.cost ? wizard.cost : 0;
 }
@@ -34,7 +26,6 @@ function specialManaCost(wizard) {
 function attackManaCost(match, wizard, kind, which) {
   if (!wizard || kind !== 'cast') return 0;
   const special = (which || wizard.activeSpell) === 'special' && wizard.specialSpellId;
-  if (match && match.gameMode === 'defense' && !special) return 0;
   return special ? specialManaCost(wizard) : basicManaCost(wizard);
 }
 

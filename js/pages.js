@@ -59,7 +59,7 @@ function renderElementsPage() {
           '</tbody>' +
         '</table>' +
       '</div>' +
-      '<p class="note">Water and voids kill on enter. Portals are walkable — but if anyone is standing on a portal when it resolves, the incoming wizard and the one standing there both die. Living nexuses block walk and eat a cast. A dead nexus is a void.</p>' +
+      '<p class="note">Water and voids kill on enter. Living nexuses block walk and eat a cast. A dead nexus is a void.</p>' +
 
       '<h2>Trail on trail</h2>' +
       '<p>Painting a tile replaces whatever was there. You cannot paint a mountain, water, void, or nexus. A gust that hits fire spreads fire along the rest of the gust.</p>' +

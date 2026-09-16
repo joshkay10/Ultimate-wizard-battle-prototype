@@ -41,11 +41,6 @@ function ensurePlayShell() {
     '<div id="panel-root"></div>' +
     '<div id="overlay-root"></div>';
   document.getElementById('board-canvas').addEventListener('pointerup', function (ev) {
-    const held = typeof boardHandFromEvent === 'function' ? boardHandFromEvent(ev) : null;
-    if (held) {
-      pickWizardToSummon(held.id);
-      return;
-    }
     const cell = boardCanvasCellFromEvent(ev);
     if (cell) handleTileClick(cell.row, cell.col);
   });
@@ -55,151 +50,39 @@ function ensureMatch() {
   if (!state.rng) startBattle();
 }
 
-function defenseCityFlawless() {
-  const list = state.nexuses && state.nexuses.player ? state.nexuses.player : [];
-  if (!list.length) return false;
-  return list.every(function (n) { return n.hp >= n.maxHp; });
-}
-
 function maybeRecordResult() {
   if (!state.gameOverResult || state.resultRecorded) return;
   state.resultRecorded = true;
-  const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
-  const flawless = mode === 'defense' && state.gameOverResult === 'player' && defenseCityFlawless();
   const rec = typeof recordMatchStats === 'function'
-    ? recordMatchStats(mode, state.gameOverResult, flawless)
+    ? recordMatchStats('vs', state.gameOverResult, false)
     : { stats: { streak: 0, best: 0, flawless: 0, wins: 0 }, prevStreak: 0 };
   const playerNex = state.nexuses && state.nexuses.player ? state.nexuses.player : [];
-  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
-  const next = mission && typeof nextMission === 'function' ? nextMission(mission) : null;
-  const campaignBefore = typeof loadCampaign === 'function' ? loadCampaign() : null;
-  const nextWasOpen = !!(next && typeof missionIsUnlocked === 'function' && campaignBefore && missionIsUnlocked(next, campaignBefore));
   state.matchSummary = {
     result: state.gameOverResult,
-    mode: mode,
+    mode: 'vs',
     rounds: state.turnCount,
-    invaders: typeof defenseEverSpawned === 'function' ? defenseEverSpawned(state) : 0,
-    invadersTotal: typeof defenseSpawnBudget === 'function' ? defenseSpawnBudget(state) : DEFENSE_SPAWN_BUDGET,
-    missionTitle: state.missionTitle || '',
-    missionName: mission ? (mission.name || state.missionTitle) : (state.missionTitle || ''),
     crystals: playerNex.filter(function (n) { return n.hp > 0; }).length,
     crystalsTotal: playerNex.length,
-    flawless: flawless,
+    flawless: false,
     dunks: state.matchDunks || 0,
     bestCombo: state.matchBestCombo || 0,
     stats: rec.stats,
     prevStreak: rec.prevStreak
   };
-  if (state.gameOverResult === 'player' && state.missionId && typeof recordCampaignClear === 'function') {
-    recordCampaignClear(state.missionId, flawless);
-  }
-  state.justUnlocked = !!(state.gameOverResult === 'player' && next && !nextWasOpen);
 }
 
 function renderPanel() {
-  if (state.gameMode === 'vs') {
-    const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-    return (
-      '<div class="panel is-vs-hud">' +
-        renderSelectedCard(selected) +
-        renderVsPassRow() +
-      '</div>'
-    );
-  }
-
-  const wizardCards = Object.values(state.wizards)
-    .filter(w => w.team === 'player' && (w.state === 'summoned' || w.state === 'portaling'))
-    .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10))
-    .map(wiz => {
-      const inHand = wiz.state === 'summoned';
-      const arriving = wiz.state === 'portaling';
-      const isPicked = wiz.id === state.placingWizardId;
-      const clickable = inHand && canPaySummon(state, wiz, 'player');
-      const cardClasses = 'wizard-card ' + wiz.element
-        + (inHand ? ' in-hand' : ' summoned')
-        + (arriving ? ' arriving' : '')
-        + (isPicked ? ' placing' : '');
-      const costBadge = state.gameMode === 'defense'
-        ? ''
-        : '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.cost + '</div>';
-
-      return (
-        '<div class="' + cardClasses + '">' +
-          '<button class="wizard-card-hit" data-roster-id="' + wiz.id + '" data-clickable="' + (clickable ? '1' : '0') + '" ' + (clickable ? '' : 'disabled') + '>' +
-            '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, '#ffffff') + '</div>' +
-            '<div class="wizard-card-top">' +
-              '<div class="wizard-card-id">' +
-                '<div class="wizard-card-name">' + wiz.name + (arriving ? ' <span class="arriving-tag">arriving</span>' : '') + '</div>' +
-                '<div class="wizard-card-element">' + (wiz.spellName || wiz.element) + '</div>' +
-              '</div>' +
-              costBadge +
-            '</div>' +
-            '<div class="wizard-stats">' +
-              '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
-              '<span class="wizard-stat">' + ICONS.cast + '<span>' + castStatText(wiz) + '</span></span>' +
-              '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '</span></span>' +
-            '</div>' +
-          '</button>' +
-        '</div>'
-      );
-    })
-    .join('');
-
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-  const placingHint = (state.gameMode !== 'vs' && state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + ' lands with a burst, then is spent this turn.</div>'
-    : '';
-
-  const logLines = recentLogLines(3);
-  const logHtml = state.gameMode === 'vs' || !logLines.length
-    ? ''
-    : '<p class="panel-section-label">log</p><ul class="action-log">' + logLines.map(function (line) {
-      return '<li>' + line + '</li>';
-    }).join('') + '</ul>';
-
-  const brief = renderMissionBrief();
-  const handNote = state.gameMode === 'defense'
-    ? (state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn')
-    : '';
-  const handLabel = state.gameMode === 'vs'
-    ? ''
-    : (wizardCards
-      ? '<p class="panel-section-label">in hand' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
-      : '');
-
   return (
-    '<div class="panel">' +
-      brief +
-      placingHint +
-      '<div>' +
-        renderInspect(selected) +
-        renderActionRow(selected) +
-        handLabel +
-        logHtml +
-      '</div>' +
+    '<div class="panel is-vs-hud">' +
+      renderSelectedCard(selected) +
+      renderVsPassRow() +
     '</div>'
   );
 }
 
 function wizardStatusBits(wiz) {
   const bits = [];
-  if (wiz.pawnKind) {
-    if ((wiz.stack || 1) >= 2) {
-      bits.push('stacked \u00d7' + wiz.stack);
-      bits.push('hits for ' + (wiz.meleeAttack * wiz.stack));
-    }
-    if (wiz.rooted) bits.push('locked');
-    if (wiz.burn) bits.push('burn ' + wiz.burn);
-    if (wiz.intent) {
-      const dir = compassWord(0, 0, wiz.intent.dr, wiz.intent.dc);
-      const strikeAt = defenseStrikeIndex(state, wiz);
-      if (strikeAt >= 0) bits.push(defenseOrdinal(strikeAt + 1) + ' to strike');
-      bits.push(defenseKindLabel(wiz.pawnKind) + (dir ? ' ' + dir : ''));
-    } else {
-      bits.push('no telegraph');
-    }
-    return bits;
-  }
   if (wiz.rooted) bits.push('locked');
   if (wiz.burn) bits.push('burn ' + wiz.burn);
   if (wiz.summoningSickness) {
@@ -311,8 +194,8 @@ function renderSelectedCard(wiz) {
 }
 
 function renderInspect(selected) {
-  if (!selected || selected.state !== 'onboard' || state.placingWizardId) {
-    if (state.selectedWizardId && state.wizards[state.selectedWizardId] && (state.selectedAction === 'cast' || state.selectedAction === 'special') && !state.placingWizardId) {
+  if (!selected || selected.state !== 'onboard') {
+    if (state.selectedWizardId && state.wizards[state.selectedWizardId] && (state.selectedAction === 'cast' || state.selectedAction === 'special')) {
       const wiz = state.wizards[state.selectedWizardId];
       return '<div class="no-selection-hint"><strong>' + spellLabel(wiz) + '</strong> — ' + castHintFor(wiz) + '</div>';
     }
@@ -328,7 +211,7 @@ function renderInspect(selected) {
       '<div class="inspect-icon ' + selected.element + '">' + iconSpan(selected.element, '#ffffff') + '</div>' +
       '<div class="inspect-copy">' +
         '<div class="inspect-name">' + selected.name + enemyTag + '</div>' +
-        '<div class="inspect-spell">' + (selected.pawnKind ? defenseKindLabel(selected.pawnKind) + ' ' + (selected.castRange || 1) + ' · ' : (selected.spellName || selected.element) + ' · ') + selected.hp + '/' + selected.maxHp + ' hp</div>' +
+        '<div class="inspect-spell">' + (selected.spellName || selected.element) + ' · ' + selected.hp + '/' + selected.maxHp + ' hp</div>' +
         '<div class="inspect-status">' + bits.join(' · ') + '</div>' +
       '</div>' +
       hint +
@@ -342,7 +225,6 @@ function renderActionRow(selected) {
     selected &&
     selected.state === 'onboard' &&
     selected.team === 'player' &&
-    !state.placingWizardId &&
     !state.animating &&
     canAct()
   );
@@ -366,7 +248,7 @@ function renderActionRow(selected) {
     ? '<button class="action-btn special' + (usable && !atkDisabled && state.selectedAction === 'special' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' + ICONS.cast + ' ' + specialSpent + '<span class="special-cost">' + ICONS.mana + specialCost + '</span></button>'
     : '';
 
-  if (state.gameMode === 'vs' && !usable) {
+  if (!usable) {
     return (
       '<div class="action-row is-pass">' +
         '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
@@ -397,35 +279,19 @@ function renderGameOverStats() {
   const s = state.matchSummary;
   if (!s) return '';
   const chips = [];
-  const isDefense = s.mode === 'defense';
   const win = s.result === 'player';
-
-  if (win && isDefense) {
-    chips.push(statChip('invaders wiped', s.invaders + '/' + (s.invadersTotal || DEFENSE_SPAWN_BUDGET)));
-  }
   chips.push(statChip('rounds', s.rounds));
-  if (isDefense && win) {
-    chips.push(statChip('crystals held', s.crystals + '/' + s.crystalsTotal, s.flawless ? 'good' : ''));
-  }
-  if (s.dunks >= 1) {
-    chips.push(statChip('dunks', s.dunks, 'hot'));
-  }
-  if (s.bestCombo >= 2) {
-    chips.push(statChip('best combo', '\u00d7' + s.bestCombo, 'hot'));
-  }
+  if (s.dunks >= 1) chips.push(statChip('dunks', s.dunks, 'hot'));
+  if (s.bestCombo >= 2) chips.push(statChip('best combo', '\u00d7' + s.bestCombo, 'hot'));
   chips.push(statChip(win ? 'win streak' : 'best streak', win ? s.stats.streak : s.stats.best, win && s.stats.streak >= 2 ? 'good' : ''));
-
-  const banner = s.flawless
-    ? '<div class="game-over-flawless">FLAWLESS DEFENSE</div>'
-    : (!win && s.prevStreak >= 2 ? '<div class="game-over-streak-break">streak of ' + s.prevStreak + ' broken</div>' : '');
-
+  const banner = !win && s.prevStreak >= 2
+    ? '<div class="game-over-streak-break">streak of ' + s.prevStreak + ' broken</div>'
+    : '';
   return banner + '<div class="game-over-stats">' + chips.join('') + '</div>';
 }
 
 function renderGameOverOverlay() {
   if (!state.gameOverResult) return '';
-  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
-  const next = mission && typeof nextMission === 'function' ? nextMission(mission) : null;
   const win = state.gameOverResult === 'player';
   let heading;
   let sub;
@@ -433,65 +299,28 @@ function renderGameOverOverlay() {
     heading = 'draw';
     sub = 'both teams were wiped at the same time';
   } else if (win) {
-    heading = mission ? (mission.name || mission.title) : 'you win';
-    if (mission && next && state.justUnlocked) sub = next.name + ' is open.';
-    else if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
-    else if (mission) sub = 'The four islands are yours.';
-    else sub = 'their crystals fell, or their wizards are gone';
+    heading = 'you win';
+    sub = 'their crystals fell, or their wizards are gone';
   } else {
-    heading = mission ? 'the city fell' : 'you lose';
-    sub = mission
-      ? (mission.fail || 'the cluster is gone')
-      : (state.gameMode === 'defense'
-        ? 'your nexuses fell, or your wizards were wiped out'
-        : 'your crystals fell, or your wizards are gone');
+    heading = 'you lose';
+    sub = 'your crystals fell, or your wizards are gone';
   }
-
-  let actions = '';
-  if (mission && win && next) {
-    actions =
-      '<button class="end-turn-btn rematch-btn" id="next-island-btn" type="button" data-playlist="' + next.id + '">Next: ' + next.name + '</button>' +
-      '<button class="game-over-ghost" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
-  } else if (mission && win) {
-    actions =
-      '<button class="end-turn-btn rematch-btn" id="next-island-btn" type="button" data-playlist="vs">Play Vs</button>' +
-      '<button class="game-over-ghost" id="rematch-btn" type="button">Replay ' + mission.name + '</button>';
-  } else if (mission) {
-    actions =
-      '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
-  } else {
-    actions = '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>';
-  }
-
-  const teamLink = state.missionId
-    ? '<a class="game-over-team" href="' + routeHref('team') + '">mission team</a>'
-    : '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>';
-
   return (
     '<div class="game-over-overlay">' +
       '<div class="game-over-card' + (win ? ' is-win' : '') + '">' +
         '<div class="game-over-heading">' + heading + '</div>' +
         '<div class="game-over-sub">' + sub + '</div>' +
         renderGameOverStats() +
-        '<div class="game-over-actions">' + actions + '</div>' +
-        teamLink +
+        '<div class="game-over-actions">' +
+          '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">new match</button>' +
+        '</div>' +
+        '<a class="game-over-team" href="' + routeHref('team') + '">edit loadout</a>' +
       '</div>' +
     '</div>'
   );
 }
 
 function attachHandlers() {
-  document.querySelectorAll('[data-roster-id]').forEach(el => {
-    el.addEventListener('click', () => {
-      if (el.getAttribute('data-clickable') !== '1') return;
-      const id = el.getAttribute('data-roster-id');
-      const w = state.wizards[id];
-      if (!w) return;
-      if (w.state === 'summoned') pickWizardToSummon(id);
-      else if (w.state === 'onboard') selectWizard(id);
-    });
-  });
-
   document.querySelectorAll('.action-btn').forEach(el => {
     el.addEventListener('click', () => {
       if (el.id === 'undo-move-btn') return;
@@ -511,13 +340,6 @@ function attachHandlers() {
       rematch();
     });
   }
-  const nextIslandBtn = document.getElementById('next-island-btn');
-  if (nextIslandBtn) {
-    nextIslandBtn.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      setGameMode(nextIslandBtn.getAttribute('data-playlist'));
-    });
-  }
   const newMatchBtn = document.getElementById('new-match-btn');
   if (newMatchBtn) {
     newMatchBtn.addEventListener('click', function (ev) {
@@ -525,60 +347,6 @@ function attachHandlers() {
       rematch();
     });
   }
-  document.querySelectorAll('.campaign-track [data-playlist]').forEach(function (el) {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      if (el.disabled) return;
-      const id = el.getAttribute('data-playlist');
-      if (id && id !== playlistSelectValue()) setGameMode(id);
-    });
-  });
-}
-
-function defenseDropHud() {
-  const inHand = Object.values(state.wizards).some(function (w) {
-    return w.team === 'player' && w.state === 'summoned';
-  });
-  if (!inHand) return '<div class="topbar-mana topbar-drop is-empty" aria-hidden="true"></div>';
-  if (state.playerSummonedThisTurn) {
-    return '<div class="topbar-mana topbar-drop is-spent">dropped</div>';
-  }
-  return '<div class="topbar-mana topbar-drop">1 drop</div>';
-}
-
-function renderMissionBrief() {
-  if (state.gameMode !== 'defense' || !state.missionId || typeof missionById !== 'function') return '';
-  const mission = missionById(state.missionId);
-  if (!mission || !mission.goal) return '';
-  return (
-    '<div class="mission-brief">' +
-      '<div class="mission-goal">' + mission.goal + '</div>' +
-      (mission.hint ? '<div class="mission-hint">' + mission.hint + '</div>' : '') +
-    '</div>'
-  );
-}
-
-function playlistSelectValue() {
-  if (state.gameMode === 'vs') return 'vs';
-  if (state.missionId) return state.missionId;
-  return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'mission-1';
-}
-
-function renderCampaignTrack() {
-  const selected = playlistSelectValue();
-  const missions = typeof MISSIONS !== 'undefined' ? MISSIONS : [];
-  const campaign = typeof loadCampaign === 'function' ? loadCampaign() : (typeof emptyCampaign === 'function' ? emptyCampaign() : { unlocked: 99, cleared: {} });
-  let html = '<div class="campaign-track" role="tablist" aria-label="islands">';
-  missions.forEach(function (m) {
-    const open = typeof missionIsUnlocked === 'function' ? missionIsUnlocked(m, campaign) : true;
-    const on = selected === m.id;
-    const cleared = !!(campaign.cleared && campaign.cleared[m.id]);
-    const star = !!(cleared && campaign.cleared[m.id].flawless);
-    html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (star ? ' is-star' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (star ? ' · flawless' : (cleared ? ' · clear' : '')) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
-  });
-  html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
-  html += '</div>';
-  return html;
 }
 
 function render() {
@@ -586,7 +354,6 @@ function render() {
   const route = currentRoute();
   document.title = routeTitle(route);
   const app = document.getElementById('app');
-
   const extra = document.getElementById('site-nav-extra');
 
   if (route !== 'play') {
@@ -602,30 +369,18 @@ function render() {
   }
 
   app.classList.remove('is-doc');
-  app.classList.add('is-play');
+  app.classList.add('is-play', 'is-vs');
   ensureMatch();
   maybeRecordResult();
   ensurePlayShell();
-  app.classList.toggle('is-vs', state.gameMode === 'vs');
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
-  const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
-  const islandName = mission ? (mission.name || mission.title) : (state.mapName || '');
-  const island = state.gameMode === 'defense' && islandName
-    ? '<span class="topbar-map">' + islandName + '</span>'
-    : '';
-  const manaHud = '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
-  const leftHud = state.gameMode === 'defense'
-    ? '<div class="topbar-left">' + defenseDropHud() + manaHud + '</div>'
-    : manaHud;
-  const retryLabel = mission ? 'retry' : 'new match';
-  if (mission) document.title = mission.name + ' — Wizard Battle';
   document.getElementById('topbar').innerHTML =
-    leftHud +
-    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + (island ? ' &middot; ' + island : '') + '</div>' +
-    '<button class="new-match-btn" id="new-match-btn" type="button">' + retryLabel + '</button>';
-  if (extra) extra.innerHTML = renderCampaignTrack();
+    '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>' +
+    '<div class="topbar-round">round ' + state.turnCount + ' &middot; ' + turnLabel + '</div>' +
+    '<button class="new-match-btn" id="new-match-btn" type="button">new match</button>';
+  if (extra) extra.innerHTML = '';
   document.getElementById('panel-root').innerHTML = renderPanel();
   document.getElementById('overlay-root').innerHTML = renderGameOverOverlay();
   drawBoard();

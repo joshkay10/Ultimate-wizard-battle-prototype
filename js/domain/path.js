@@ -116,7 +116,7 @@ function getRaiseTiles(match, wizard) {
       const dist = manhattan(wizard.row, wizard.col, r, c);
       if (dist < 1 || dist > range) continue;
       if (!inBounds(r, c)) continue;
-      if (isBlocked(match, r, c) || portalAt(match, r, c) || hazardAt(match, r, c)) continue;
+      if (isBlocked(match, r, c) || hazardAt(match, r, c)) continue;
       result.push({ row: r, col: c });
     }
   }
