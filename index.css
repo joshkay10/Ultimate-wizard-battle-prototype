@@ -494,6 +494,45 @@ html, body {
   border-color: var(--tile-selected-border);
   background: var(--tile-selected);
 }
+.wizard-card.selected-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(560px, 100%);
+  max-width: 560px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+.wizard-card-hit.is-static {
+  cursor: default;
+}
+.wizard-card-hit.is-static:active { transform: none; }
+.wizard-card.selected-profile .inspect-status {
+  grid-column: 1 / -1;
+}
+.panel.is-vs-hud {
+  padding: 8px 12px 10px;
+  align-items: flex-start;
+}
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.profile-actions .action-btn {
+  flex: 1 1 7.5em;
+}
+.profile-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.profile-costs .special-cost {
+  margin-left: 4px;
+}
 .wizard-card-icon {
   grid-row: 1 / 3;
   grid-column: 1;
@@ -833,13 +872,12 @@ html, body {
   display: block;
   overflow: auto;
 }
-#app.is-play.is-vs .topbar,
-#app.is-play.is-vs #panel-root,
-#app.is-play.is-vs .site-nav {
-  display: none;
+#app.is-play.is-vs #panel-root {
+  max-height: none;
+  flex: 0 0 auto;
 }
 #app.is-play.is-vs .board-wrap {
-  padding: 0;
+  padding: 4px 0 0;
   flex: 1 1 auto;
 }
 

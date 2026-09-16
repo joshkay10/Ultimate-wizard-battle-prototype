@@ -154,17 +154,31 @@ function teamWizardAct(wizard, team) {
 function pickAttack(wizard, team) {
   let best = null;
   let bestScore = 0;
-  function consider(kind, tiles) {
+  let bestSpell = wizard.activeSpell || 'basic';
+  const prev = wizard.activeSpell || 'basic';
+  function consider(kind, tiles, spellMode) {
     tiles.forEach(t => {
-      const score = attackScore(wizard, t, kind, team);
+      let score = attackScore(wizard, t, kind, team);
+      if (kind === 'cast' && typeof attackManaCost === 'function') {
+        score -= attackManaCost(state, wizard, 'cast', spellMode) * 6;
+      }
       if (score > bestScore) {
         bestScore = score;
         best = { row: t.row, col: t.col, kind: kind, score: score };
+        bestSpell = spellMode || 'basic';
       }
     });
   }
-  consider('melee', getMeleeTiles(state, wizard));
-  consider('cast', getCastTiles(state, wizard));
+  consider('melee', getMeleeTiles(state, wizard), prev);
+  if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
+  if (typeof canPayCast !== 'function' || canPayCast(state, wizard, team, 'basic')) {
+    consider('cast', getCastTiles(state, wizard), 'basic');
+  }
+  if (wizard.specialSpellId && typeof canCastSpecial === 'function' && canCastSpecial(state, wizard, team)) {
+    if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'special');
+    consider('cast', getCastTiles(state, wizard), 'special');
+  }
+  if (typeof setActiveSpell === 'function') setActiveSpell(wizard, best && best.kind === 'cast' ? bestSpell : prev);
   return best;
 }
 

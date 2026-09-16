@@ -25,14 +25,10 @@ function createWizard(match, typeId, team, spellId, specialId) {
   };
   applySpellToWizard(wizard, spellById(normalizeSpellId(typeId, spellId)));
   wizard.basicSpellId = wizard.spellId;
-  // Only the player fields a paid special for now; enemies cast their one spell freely.
-  if ((team || 'player') === 'player' && specialId) {
-    wizard.specialSpellId = normalizeSpecialSpellId(typeId, specialId);
-    wizard.specialCost = specialCostOf(wizard.specialSpellId);
-  } else {
-    wizard.specialSpellId = null;
-    wizard.specialCost = 0;
-  }
+  wizard.basicCost = type.cost || 0;
+  wizard.specialCost = (type.cost || 0) * 2;
+  const special = specialId || firstSpecialId(type.element);
+  wizard.specialSpellId = special ? normalizeSpecialSpellId(typeId, special) : null;
   match.wizards[id] = wizard;
   return id;
 }
@@ -44,7 +40,7 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
   if (match.gameMode === 'defense') return;
   const enemy = normalizeLoadout(enemyLoadout, { pad: false });
-  for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
+  for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell, enemy[i].special);
 }
 
 function vsDeployTiles(match, team) {
@@ -66,29 +62,35 @@ function vsDeployTiles(match, team) {
   return tiles;
 }
 
+function placeVsOpener(wizard, row, col) {
+  wizard.state = 'onboard';
+  wizard.row = row;
+  wizard.col = col;
+  wizard.hasMoved = false;
+  wizard.hasAttacked = false;
+  wizard.summoningSickness = false;
+}
+
 function seedVsOpening(match) {
   if (!match || match.gameMode !== 'vs') return;
   const byId = function (a, b) {
     return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
   };
-  function deploy(team, count) {
-    const list = wizardsOnTeam(match, team).sort(byId);
-    const tiles = vsDeployTiles(match, team);
-    const n = Math.min(count, list.length, tiles.length);
-    let i;
-    for (i = 0; i < n; i++) {
-      list[i].state = 'onboard';
-      list[i].row = tiles[i].row;
-      list[i].col = tiles[i].col;
-      list[i].hasMoved = false;
-      list[i].hasAttacked = false;
-      list[i].summoningSickness = false;
+  const player = wizardsOnTeam(match, 'player').sort(byId);
+  const enemy = wizardsOnTeam(match, 'enemy').sort(byId);
+  const tiles = vsDeployTiles(match, 'player');
+  const last = BOARD_SIZE - 1;
+  const n = Math.min(player.length, tiles.length);
+  let i;
+  for (i = 0; i < n; i++) {
+    placeVsOpener(player[i], tiles[i].row, tiles[i].col);
+    if (!enemy[i]) continue;
+    const row = last - tiles[i].row;
+    const col = tiles[i].col;
+    if (inBounds(row, col) && !isBlocked(match, row, col) && !hazardAt(match, row, col)) {
+      placeVsOpener(enemy[i], row, col);
     }
-    for (; i < list.length; i++) list[i].state = 'summoned';
   }
-  const field = typeof VS_FIELD_START === 'number' ? VS_FIELD_START : 4;
-  deploy('player', field);
-  deploy('enemy', wizardsOnTeam(match, 'enemy').length);
 }
 
 function drawVsWizard(match, team) {

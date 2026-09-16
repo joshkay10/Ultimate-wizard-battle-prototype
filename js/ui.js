@@ -97,6 +97,16 @@ function maybeRecordResult() {
 }
 
 function renderPanel() {
+  if (state.gameMode === 'vs') {
+    const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
+    return (
+      '<div class="panel is-vs-hud">' +
+        renderSelectedCard(selected) +
+        renderVsPassRow() +
+      '</div>'
+    );
+  }
+
   const wizardCards = Object.values(state.wizards)
     .filter(w => w.team === 'player' && (w.state === 'summoned' || w.state === 'portaling'))
     .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10))
@@ -205,6 +215,88 @@ function wizardStatusBits(wiz) {
   return bits;
 }
 
+function manaCostBadge(amount) {
+  return '<span class="special-cost">' + ICONS.mana + amount + '</span>';
+}
+
+function renderVsPassRow() {
+  return (
+    '<div class="action-row is-pass">' +
+      '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
+    '</div>'
+  );
+}
+
+function renderSelectedCard(wiz) {
+  if (!wiz || wiz.state !== 'onboard') {
+    return '<div class="no-selection-hint">tap a wizard</div>';
+  }
+  const bits = wizardStatusBits(wiz);
+  const basic = spellById(wiz.basicSpellId || wiz.spellId);
+  const special = wiz.specialSpellId ? spellById(wiz.specialSpellId) : null;
+  const basicCost = typeof basicManaCost === 'function' ? basicManaCost(wiz) : (wiz.cost || 0);
+  const specialCost = typeof specialManaCost === 'function' ? specialManaCost(wiz) : (wiz.specialCost || 0);
+  const mine = wiz.team === 'player';
+  const usable = mine && !state.animating && canAct() && !wiz.summoningSickness;
+  const atkOk = usable && canAttack(wiz);
+  const affordBasic = atkOk && (typeof canPayCast !== 'function' || canPayCast(state, wiz, 'player', 'basic'));
+  const affordSpecial = atkOk && !!special && (typeof canCastSpecial !== 'function' || canCastSpecial(state, wiz, 'player'));
+  const enemyTag = mine ? '' : ' <span class="arriving-tag">enemy</span>';
+  const basicName = basic ? basic.name : 'spell 1';
+  const specialName = special ? special.name : 'spell 2';
+  const meleeOn = usable && atkOk && state.selectedAction === 'melee';
+  const basicOn = usable && atkOk && state.selectedAction === 'cast';
+  const specialOn = usable && atkOk && state.selectedAction === 'special';
+  const attacks = mine
+    ? (
+      '<div class="profile-actions">' +
+        '<button class="action-btn melee' + (meleeOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="melee" ' + (atkOk ? '' : 'disabled') + '>' +
+          ICONS.melee + ' melee' + manaCostBadge(0) +
+        '</button>' +
+        '<button class="action-btn cast' + (basicOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="cast" ' + (affordBasic ? '' : 'disabled') + '>' +
+          ICONS.cast + ' ' + basicName.toLowerCase() + manaCostBadge(basicCost) +
+        '</button>' +
+        (special
+          ? '<button class="action-btn special' + (specialOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' +
+              ICONS.cast + ' ' + specialName.toLowerCase() + manaCostBadge(specialCost) +
+            '</button>'
+          : '') +
+      '</div>'
+    )
+    : (
+      '<div class="profile-costs">' +
+        '<span>melee ' + manaCostBadge(0) + '</span>' +
+        '<span>' + basicName.toLowerCase() + ' ' + manaCostBadge(basicCost) + '</span>' +
+        (special ? '<span>' + specialName.toLowerCase() + ' ' + manaCostBadge(specialCost) + '</span>' : '') +
+      '</div>'
+    );
+  const hint = (state.selectedAction === 'cast' || state.selectedAction === 'special') && mine
+    ? '<div class="inspect-hint"><strong>' + spellLabel(wiz) + '</strong> — ' + castHintFor(wiz) + '</div>'
+    : '';
+  return (
+    '<div class="wizard-card selected-profile ' + wiz.element + '">' +
+      '<div class="wizard-card-hit is-static">' +
+        '<div class="wizard-card-icon ' + wiz.element + '">' + iconSpan(wiz.element, '#ffffff') + '</div>' +
+        '<div class="wizard-card-top">' +
+          '<div class="wizard-card-id">' +
+            '<div class="wizard-card-name">' + wiz.name + enemyTag + '</div>' +
+            '<div class="wizard-card-element">' + (wiz.spellName || wiz.element) + '</div>' +
+          '</div>' +
+          '<div class="wizard-cost-badge ' + wiz.element + '">' + wiz.hp + '/' + wiz.maxHp + '</div>' +
+        '</div>' +
+        '<div class="wizard-stats">' +
+          '<span class="wizard-stat">' + ICONS.melee + '<span>' + wiz.meleeAttack + '/' + wiz.meleeDisplacement + '</span></span>' +
+          '<span class="wizard-stat">' + ICONS.cast + '<span>' + castStatText(wiz) + '</span></span>' +
+          '<span class="wizard-stat">' + ICONS.heart + '<span>' + wiz.hp + '</span></span>' +
+        '</div>' +
+        (bits.length ? '<div class="inspect-status">' + bits.join(' · ') + '</div>' : '') +
+      '</div>' +
+      attacks +
+      hint +
+    '</div>'
+  );
+}
+
 function renderInspect(selected) {
   if (!selected || selected.state !== 'onboard' || state.placingWizardId) {
     if (state.selectedWizardId && state.wizards[state.selectedWizardId] && (state.selectedAction === 'cast' || state.selectedAction === 'special') && !state.placingWizardId) {
@@ -250,7 +342,7 @@ function renderActionRow(selected) {
   const basicSpell = selected ? spellById(selected.basicSpellId || selected.spellId) : null;
   const basicLabel = basicSpell ? basicSpell.name.toLowerCase() : 'cast';
   const specialSpell = selected && selected.specialSpellId ? spellById(selected.specialSpellId) : null;
-  const specialCost = selected ? (selected.specialCost || 0) : 0;
+  const specialCost = selected ? (typeof specialManaCost === 'function' ? specialManaCost(selected) : (selected.specialCost || 0)) : 0;
   const affordSpecial = !!(usable && specialSpell && !atkDisabled && typeof canCastSpecial === 'function' && canCastSpecial(state, selected, 'player'));
   const moveLabel = sick ? 'sick' : (moved ? 'moved' : 'move');
   const meleeLabel = sick ? 'sick' : (attacked ? 'spent' : 'melee');

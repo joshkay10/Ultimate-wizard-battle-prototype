@@ -2,10 +2,7 @@ const DEFAULT_LOADOUT = [
   { kit: 'fire', spell: 'stream', special: 'lance' },
   { kit: 'ice', spell: 'sheet', special: 'pulse' },
   { kit: 'wind', spell: 'gust', special: 'draft' },
-  { kit: 'fire', spell: 'cinder', special: 'inferno' },
-  { kit: 'ice', spell: 'lock', special: 'blizzard' },
-  { kit: 'wind', spell: 'tug', special: 'gale' },
-  { kit: 'fire', spell: 'brand', special: 'lance' }
+  { kit: 'fire', spell: 'cinder', special: 'inferno' }
 ];
 
 function emptyLoadoutSlot(kitId) {
@@ -90,9 +87,16 @@ function randomPlayableLoadout(rng) {
   let i;
   for (i = 0; i < TEAM_SIZE; i++) {
     const kitId = kits[rng.int(kits.length)];
-    const pool = spellsForElement((kitById(kitId) || {}).element);
-    const spell = pool.length ? pool[rng.int(pool.length)] : defaultSpellForKit(kitById(kitId));
-    out.push({ kit: kitId, spell: spell ? spell.id : normalizeSpellId(kitId, null) });
+    const kit = kitById(kitId);
+    const basics = basicsForElement((kit || {}).element);
+    const specials = specialsForElement((kit || {}).element);
+    const spell = basics.length ? basics[rng.int(basics.length)] : defaultSpellForKit(kit);
+    const special = specials.length ? specials[rng.int(specials.length)] : null;
+    out.push({
+      kit: kitId,
+      spell: spell ? spell.id : normalizeSpellId(kitId, null),
+      special: special ? special.id : normalizeSpecialSpellId(kitId, null)
+    });
   }
   return out;
 }
@@ -125,8 +129,15 @@ function loadoutNamed(loadout) {
 function pickEnemyLoadout(rng, playerLoadout) {
   const kits = pickEnemyTeam(rng, loadoutKitIds(playerLoadout));
   return kits.map(function (kitId) {
-    const pool = spellsForElement((kitById(kitId) || {}).element);
-    const spell = pool.length ? pool[rng.int(pool.length)] : defaultSpellForKit(kitById(kitId));
-    return { kit: kitId, spell: spell ? spell.id : normalizeSpellId(kitId, null) };
+    const kit = kitById(kitId);
+    const basics = basicsForElement((kit || {}).element);
+    const specials = specialsForElement((kit || {}).element);
+    const spell = basics.length ? basics[rng.int(basics.length)] : defaultSpellForKit(kit);
+    const special = specials.length ? specials[rng.int(specials.length)] : null;
+    return {
+      kit: kitId,
+      spell: spell ? spell.id : normalizeSpellId(kitId, null),
+      special: special ? special.id : normalizeSpecialSpellId(kitId, null)
+    };
   });
 }

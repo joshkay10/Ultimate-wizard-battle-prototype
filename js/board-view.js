@@ -234,10 +234,22 @@ function highlightSet() {
     return { tiles: getTeamSummonTiles(state, team), kind: 'summon' };
   } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
     if (state.gameMode === 'vs') {
+      if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
+        return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
+      }
+      if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
+        const which = state.selectedAction === 'special' ? 'special' : 'basic';
+        if (typeof canPayCast === 'function' && !canPayCast(state, selectedWizard, 'player', which)) {
+          return { tiles: tiles, kind: kind };
+        }
+        return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+      }
       if (canMove(selectedWizard)) return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
       if (canAttack(selectedWizard)) {
-        const cast = getCastTiles(state, selectedWizard);
-        if (cast.length) return { tiles: cast, kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+        if (typeof canPayCast !== 'function' || canPayCast(state, selectedWizard, 'player')) {
+          const cast = getCastTiles(state, selectedWizard);
+          if (cast.length) return { tiles: cast, kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+        }
         return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
       }
     } else if (state.selectedAction === 'move' && canMove(selectedWizard)) {
