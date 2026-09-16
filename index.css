@@ -499,6 +499,7 @@ html, body {
   flex-direction: column;
   gap: 8px;
   width: 100%;
+  max-width: 560px;
 }
 .wizard-card-hit.is-static {
   cursor: default;
@@ -509,6 +510,7 @@ html, body {
 }
 .panel.is-vs-hud {
   padding: 8px 12px 10px;
+  align-items: flex-start;
 }
 .profile-actions {
   display: flex;
