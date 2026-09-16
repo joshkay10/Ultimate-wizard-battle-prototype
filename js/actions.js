@@ -95,6 +95,32 @@ function handleTileClick(row, col) {
     return;
   }
 
+  if (state.gameMode === 'vs') {
+    if (canMove(wizard)) {
+      const moveTiles = getMoveTiles(state, wizard);
+      const isMove = moveTiles.some(function (t) { return t.row === row && t.col === col; });
+      if (isMove) {
+        const path = pathBFS(state, wizard, row, col);
+        if (path) present(simMove(state, wizard, path)).then(afterPlayerAction);
+        return;
+      }
+    }
+    if (canAttack(wizard)) {
+      const meleeTiles = getMeleeTiles(state, wizard);
+      if (meleeTiles.some(function (t) { return t.row === row && t.col === col; })) {
+        resolveMeleeAttack(wizard, row, col);
+        return;
+      }
+      const castTiles = getCastTiles(state, wizard);
+      if (castTiles.some(function (t) { return t.row === row && t.col === col; })) {
+        resolveCastAttack(wizard, row, col);
+        return;
+      }
+    }
+    reselectOrBail();
+    return;
+  }
+
   if (state.selectedAction === 'move') {
     if (!canMove(wizard)) { reselectOrBail(); return; }
     const moveTiles = getMoveTiles(state, wizard);

@@ -833,11 +833,14 @@ html, body {
   display: block;
   overflow: auto;
 }
-#app.is-play.is-vs #panel-root {
-  max-height: 24%;
+#app.is-play.is-vs .topbar,
+#app.is-play.is-vs #panel-root,
+#app.is-play.is-vs .site-nav {
+  display: none;
 }
 #app.is-play.is-vs .board-wrap {
-  padding: 2px 8px 0;
+  padding: 0;
+  flex: 1 1 auto;
 }
 
 .page {

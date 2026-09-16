@@ -99,16 +99,24 @@ function boardLayout() {
   if (!css) return null;
   const dpr = window.devicePixelRatio || 1;
   const vs = state.gameMode === 'vs';
-  const rack = vs ? Math.max(40, css * 0.135) : Math.max(12, css * 0.04);
+  let topRack = vs ? Math.max(8, css * 0.02) : Math.max(12, css * 0.04);
+  let botRack = topRack;
+  if (vs) {
+    if (handWizardsFor('enemy').length) topRack = Math.max(44, css * 0.12);
+    if (handWizardsFor('player').length) botRack = Math.max(48, css * 0.13);
+  }
   const lift = Math.max(5, css * 0.016);
   const gap = lift + 1;
-  const span = css - rack * 2;
-  const cell = (span - gap * (BOARD_SIZE - 1) - lift) / BOARD_SIZE;
+  const side = Math.max(10, css * 0.03);
+  const vSpan = css - topRack - botRack - lift;
+  const hSpan = css - side * 2 - lift;
+  const span = Math.min(vSpan, hSpan);
+  const cell = (span - gap * (BOARD_SIZE - 1)) / BOARD_SIZE;
   const boardW = cell * BOARD_SIZE + gap * (BOARD_SIZE - 1);
   const boardH = boardW;
   const left = (css - boardW) / 2;
-  const top = rack;
-  return { canvas, css, dpr, gap, pad: left, cell, lift, rack, left, top, boardW, boardH, vs };
+  const top = topRack + Math.max(0, (vSpan - boardH) / 2);
+  return { canvas, css, dpr, gap, pad: left, cell, lift, rack: botRack, topRack, botRack, left, top, boardW, boardH, vs };
 }
 
 function cellRect(layout, row, col) {
@@ -123,10 +131,26 @@ function boxToOv(box) {
   return { x: box.x, y: box.y, s: box.s };
 }
 
+function offBoardRank(wizardState) {
+  if (wizardState === 'summoned') return 0;
+  if (wizardState === 'portaling') return 1;
+  return 2;
+}
+
+function handReady(wizard) {
+  return !!(wizard && wizard.state === 'summoned');
+}
+
 function handWizardsFor(team) {
   return Object.values(state.wizards)
-    .filter(function (w) { return w.team === team && w.state === 'summoned'; })
-    .sort(function (a, b) { return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10); });
+    .filter(function (w) {
+      return w.team === team && (w.state === 'summoned' || w.state === 'bench' || w.state === 'portaling');
+    })
+    .sort(function (a, b) {
+      const rank = offBoardRank(a.state) - offBoardRank(b.state);
+      if (rank) return rank;
+      return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
+    });
 }
 
 function handRackBoxes(layout, team) {
@@ -134,15 +158,34 @@ function handRackBoxes(layout, team) {
   const list = handWizardsFor(team);
   const n = list.length;
   if (!n) return [];
-  const size = Math.min(layout.cell * 0.78, layout.rack * 0.72);
-  const gap = Math.max(4, size * 0.16);
-  const total = n * size + (n - 1) * gap;
-  const x0 = (layout.css - total) / 2;
-  const y = team === 'player'
-    ? layout.css - layout.rack + (layout.rack - size) * 0.45
-    : (layout.rack - size) * 0.4;
-  return list.map(function (wizard, i) {
-    return { wizard: wizard, x: x0 + i * (size + gap), y: y, s: size };
+  const rack = team === 'player' ? layout.botRack : layout.topRack;
+  const readySize = Math.min(layout.cell * 0.98, rack * 0.8);
+  const benchSize = Math.min(readySize * 0.64, rack * 0.5);
+  const sizes = list.map(function (w) {
+    return w.state === 'bench' ? benchSize : readySize;
+  });
+  const gap = Math.max(5, readySize * 0.12);
+  let firstBench = -1;
+  let i;
+  for (i = 0; i < n; i++) {
+    if (list[i].state === 'bench') {
+      firstBench = i;
+      break;
+    }
+  }
+  const split = firstBench > 0 ? gap * 0.8 : 0;
+  let total = split;
+  for (i = 0; i < n; i++) total += sizes[i] + (i ? gap : 0);
+  let x = (layout.css - total) / 2;
+  return list.map(function (wizard, idx) {
+    const s = sizes[idx];
+    if (idx === firstBench && split) x += split;
+    const y = team === 'player'
+      ? layout.top + layout.boardH + layout.lift + Math.max(4, (rack - s) * 0.35)
+      : Math.max(6, (rack - s) * 0.35);
+    const box = { wizard: wizard, x: x, y: y, s: s };
+    x += s + gap;
+    return box;
   });
 }
 
@@ -156,6 +199,7 @@ function boardHandFromEvent(ev) {
   let i;
   for (i = 0; i < boxes.length; i++) {
     const b = boxes[i];
+    if (!handReady(b.wizard)) continue;
     if (x >= b.x && x < b.x + b.s && y >= b.y && y < b.y + b.s) return b.wizard;
   }
   return null;
@@ -189,13 +233,18 @@ function highlightSet() {
     const team = placing && placing.team ? placing.team : 'player';
     return { tiles: getTeamSummonTiles(state, team), kind: 'summon' };
   } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
-    if (state.selectedAction === 'move' && canMove(selectedWizard)) {
+    if (state.gameMode === 'vs') {
+      if (canMove(selectedWizard)) return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
+      if (canAttack(selectedWizard)) {
+        const cast = getCastTiles(state, selectedWizard);
+        if (cast.length) return { tiles: cast, kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
+        return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
+      }
+    } else if (state.selectedAction === 'move' && canMove(selectedWizard)) {
       return { tiles: getMoveTiles(state, selectedWizard), kind: 'move' };
-    }
-    if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
+    } else if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
       return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
-    }
-    if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
+    } else if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(selectedWizard)) {
       return { tiles: getCastTiles(state, selectedWizard), kind: 'cast', castKind: selectedWizard.castKind || 'stream' };
     }
   }
@@ -1111,13 +1160,13 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.restore();
   }
   ctx.restore();
-  if (!flash && wizard.team === state.currentTurn && !wizard.pawnKind && !wizard.hidden) {
+  if (!flash && !wizard.offBoard && wizard.team === state.currentTurn && !wizard.pawnKind && !wizard.hidden) {
     const pipR = Math.max(1.8, box.s * 0.038);
     const pipY = cy - r * 0.78;
     drawActionPip(ctx, cx - r * 0.22, pipY, pipR, wizard.hasMoved, yours);
     drawActionPip(ctx, cx + r * 0.22, pipY, pipR, wizard.hasAttacked, yours);
   }
-  if (wizard.hidden && !flash) {
+  if (wizard.hidden && !flash && !wizard.offBoard) {
     ctx.save();
     ctx.fillStyle = 'rgba(244,245,242,0.92)';
     ctx.beginPath();
@@ -1128,7 +1177,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
     ctx.closePath();
     ctx.fill();
     ctx.restore();
-  } else if (!flash) {
+  } else if (!flash && wizard.element) {
     drawElementIcon(ctx, wizard.element, cx, cy - r * 0.14, r * 0.48, colors.icon);
   }
   if (wizard.silenced && !flash) {
@@ -1163,7 +1212,7 @@ function drawTokenAt(ctx, box, wizard, selected, flash, scale) {
   ctx.font = '700 ' + Math.max(8, box.s * 0.18) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  if (!wizard.hidden) ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
+  if (!wizard.hidden && !wizard.offBoard) ctx.fillText(String(wizard.hp), cx, cy + r * 0.5);
   if (!flash && wizard.pawnKind === 'mite' && (wizard.stack || 1) >= 2) {
     ctx.save();
     ctx.font = '800 ' + Math.max(9, box.s * 0.17) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
@@ -1634,16 +1683,24 @@ function drawHandRacks(ctx, layout) {
   if (!layout.vs) return;
   const enemy = handRackBoxes(layout, 'enemy');
   enemy.forEach(function (b) {
-    const ghost = { hidden: true, team: 'enemy', hp: '', element: null };
-    drawTokenAt(ctx, b, ghost, false, false, 1);
+    const waiting = b.wizard.state === 'bench';
+    const ghost = { hidden: true, team: 'enemy', hp: '', element: null, offBoard: true };
+    ctx.save();
+    if (waiting) ctx.globalAlpha = 0.48;
+    drawTokenAt(ctx, b, ghost, false, false, waiting ? 1.15 : 1.35);
+    ctx.restore();
   });
   const mine = handRackBoxes(layout, 'player');
   mine.forEach(function (b) {
     const wiz = b.wizard;
-    const can = canPaySummon(state, wiz, 'player');
+    const waiting = wiz.state === 'bench';
+    const can = !waiting && canPaySummon(state, wiz, 'player');
+    const token = Object.assign({}, wiz, { offBoard: true });
     ctx.save();
-    if (!can) ctx.globalAlpha = 0.55;
-    drawTokenAt(ctx, b, wiz, wiz.id === state.placingWizardId, false, wiz.id === state.placingWizardId ? 1.08 : 1);
+    if (waiting) ctx.globalAlpha = 0.42;
+    else if (!can) ctx.globalAlpha = 0.58;
+    const scale = waiting ? 1.15 : (wiz.id === state.placingWizardId ? 1.45 : 1.35);
+    drawTokenAt(ctx, b, token, wiz.id === state.placingWizardId, false, scale);
     ctx.restore();
   });
 }

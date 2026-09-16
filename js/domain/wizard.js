@@ -47,18 +47,48 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
 }
 
+function vsDeployTiles(match, team) {
+  const tiles = [];
+  const last = BOARD_SIZE - 1;
+  const cols = [0, 2, 4, 6, 3, 1, 5];
+  const rows = team === 'player' ? [last, last - 1, SUMMON_ROW_START] : [0, 1, ENEMY_ROW_END - 1];
+  let r;
+  let i;
+  for (r = 0; r < rows.length; r++) {
+    for (i = 0; i < cols.length; i++) {
+      const row = rows[r];
+      const col = cols[i];
+      if (!inBounds(row, col)) continue;
+      if (isBlocked(match, row, col) || hazardAt(match, row, col)) continue;
+      tiles.push({ row: row, col: col });
+    }
+  }
+  return tiles;
+}
+
 function seedVsOpening(match) {
   if (!match || match.gameMode !== 'vs') return;
-  const keep = typeof VS_HAND_START === 'number' ? VS_HAND_START : 3;
   const byId = function (a, b) {
     return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
   };
-  function parkExtra(list) {
+  function deploy(team, count) {
+    const list = wizardsOnTeam(match, team).sort(byId);
+    const tiles = vsDeployTiles(match, team);
+    const n = Math.min(count, list.length, tiles.length);
     let i;
-    for (i = keep; i < list.length; i++) list[i].state = 'bench';
+    for (i = 0; i < n; i++) {
+      list[i].state = 'onboard';
+      list[i].row = tiles[i].row;
+      list[i].col = tiles[i].col;
+      list[i].hasMoved = false;
+      list[i].hasAttacked = false;
+      list[i].summoningSickness = false;
+    }
+    for (; i < list.length; i++) list[i].state = 'summoned';
   }
-  parkExtra(wizardsOnTeam(match, 'player').sort(byId));
-  parkExtra(wizardsOnTeam(match, 'enemy').sort(byId));
+  const field = typeof VS_FIELD_START === 'number' ? VS_FIELD_START : 4;
+  deploy('player', field);
+  deploy('enemy', wizardsOnTeam(match, 'enemy').length);
 }
 
 function drawVsWizard(match, team) {

@@ -125,7 +125,7 @@ function missionResetOpts(mission) {
 }
 
 function playlistIdDefault() {
-  return MISSIONS[0] ? MISSIONS[0].id : 'defense';
+  return 'vs';
 }
 
 function isVsPlaylist(id) {
