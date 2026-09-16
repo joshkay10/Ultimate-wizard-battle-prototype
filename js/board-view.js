@@ -234,6 +234,9 @@ function highlightSet() {
     return { tiles: getTeamSummonTiles(state, team), kind: 'summon' };
   } else if (selectedWizard && selectedWizard.team === 'player' && !state.animating) {
     if (state.gameMode === 'vs') {
+      if (typeof canUseWizard === 'function' && !canUseWizard(state, selectedWizard)) {
+        return { tiles: tiles, kind: kind };
+      }
       if (state.selectedAction === 'melee' && canAttack(selectedWizard)) {
         return { tiles: getMeleeTiles(state, selectedWizard), kind: 'melee' };
       }

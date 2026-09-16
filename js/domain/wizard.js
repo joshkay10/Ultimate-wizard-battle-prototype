@@ -113,6 +113,25 @@ function canAttack(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness && !wizard.rooted);
 }
 
+// Vs is chess-paced: one wizard acts (move and/or strike), then the other side.
+function actingWizardOnTurn(match, team) {
+  if (!match || match.gameMode !== 'vs') return null;
+  team = team || match.currentTurn;
+  let found = null;
+  Object.values(match.wizards).forEach(function (wizard) {
+    if (wizard.team !== team || wizard.state !== 'onboard') return;
+    if (wizard.hasMoved || (wizard.hasAttacked && !wizard.silenceSkip)) found = wizard;
+  });
+  return found;
+}
+
+function canUseWizard(match, wizard) {
+  if (!wizard) return false;
+  if (!match || match.gameMode !== 'vs') return true;
+  const acting = actingWizardOnTurn(match, wizard.team);
+  return !acting || acting.id === wizard.id;
+}
+
 function clearMoveUndo(wizard) {
   if (wizard) wizard.moveUndo = null;
 }

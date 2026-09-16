@@ -13,12 +13,12 @@ The footer is a four-island campaign (the pass, the canal, the alley, the moat) 
 | 3 | The Alley | Pierce the line | Three wizards. 8 mites, brutes, bombers. Opener is a bomber |
 | 4 | The Moat | Shove the Golem | Full four. 10: Golem opener, then bombers, chargers, and brutes |
 
-Play opens on **Vs**: a 7×7 deathmatch with the four-wizard team from the Team page. All four of yours start on the board. The enemy’s four open on the mirrored far-row tiles. Open arena. Three crystals a side. No off-field cubes. Mission rosters are locked.
+Play opens on **Vs**: a 7×7 deathmatch with the four-wizard team from the Team page. All four of yours start on the board. The enemy’s four open on the mirrored far-row tiles. One wizard acts, then the other side. Open arena. Three crystals a side. No off-field cubes. Mission rosters are locked.
 
 ## Modes
 
 - **Defense** (missions 1–4, or a random island in tests) — Into the Breach holdout. You defend a **city of 3–6 nexuses (2 HP each)** — named missions pin **3** (6 HP total), packed in one or two clusters. There are no enemy crystals. Each match is a **named island** — the pass, the canal, the moat, twin towns, and the rest — not a random scatter of rocks. Terrain can sit against the city. Weak vek (dark discs) telegraph, then after your turn they **execute** every strike, then **move and telegraph one body at a time**. Strikes go **north to south, then west to east** — numbered on the telegraph. Each strike finishes — damage, death, and voids — before the next pawn winds up. A city shot outranks a wizard shot. They beeline the nearest nexus. If they cannot hit the city this turn they punch a wizard in range, otherwise they walk toward the city. They only telegraph a strike that actually hits a wizard or the city — no punching empty air. They will not aim a charge into water or a void; you can still shove them into one. A match has a **spawn budget** of invaders (opening counts) — **4 / 6 / 8 / 10** on missions 1–4, **10** on a free island. At most **3** on the board at once (Into the Breach’s usual island; mission 1 caps at 2). New bodies stream in **one hole per enemy phase**. On a named mission the remaining budget still arrives after a wipe — killing the opener does not end the island. On a free island, new bodies only stream in if someone is still standing. Incoming holes open on **open field ground** — not the last two rows, not city, water, or mountains. They can start far from the city. **One** pawn is already on the board at the start, with **no telegraph and no incoming marks** on round 1. Missions lock their roster (one Squall on island 1). **One drop per round** — any kit, anywhere on an open tile — they land **immediately**, burst (push only), then are spent that turn. Drops are free. Defense also has a **small mana pool** (start 2, +1/round, cap 6) spent only on specials. The map is not mirrored. You **win if you wipe every pawn** (on the board and incoming) — missions also require the spawn budget to be spent. You lose if the cluster falls or your wizards are wiped.
-- **Vs** — a lighter 7×7. **Three nexuses** a camp (5 HP). **Four** wizards a side, **all on the board**. The enemy mirrors your opening tiles onto the far row. **Each turn you gain 1 mana.** **Melee is free. Spell 1 costs 1× kit cost. Spell 2 costs 2× kit cost.** Wipe the other team, or drop all three of their crystals, to win.
+- **Vs** — a lighter 7×7. **Three nexuses** a camp (5 HP). **Four** wizards a side, **all on the board**. The enemy mirrors your opening tiles onto the far row. **Chess pace:** one wizard acts (move and/or strike), then the other side. **Each round you gain 1 mana**, cap **6**. **Melee is free. Spell 1 costs 1× kit cost. Spell 2 costs 2× kit cost.** Wipe the other team, or drop all three of their crystals, to win.
 
 ## Defense enemies
 
@@ -42,8 +42,8 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - Pick kits and spells on the Team page. That loadout is saved on this device and used for **Vs**. Named missions lock their own roster.
 - The enemy rolls **four kits from the same pool** each **Vs** match (copies allowed), each with a random spell 1 and spell 2 of their element. New match and rematch both roll a new enemy.
 - **Defense:** one drop per round from the island roster. Cost does not matter.
-- **Vs:** all four start on the board. Rime is **1**, Pyre and Squall are **2**. Round 1 has 2 mana. Each later round you gain 1 mana. Melee is **0**. Spell 1 costs **1×** that kit cost. Spell 2 costs **2×**.
-- Your turn also ends on its own when you have nothing left to summon, move, or attack.
+- **Vs:** all four start on the board. **One wizard per turn.** Rime is **1**, Pyre and Squall are **2**. Round 1 has 2 mana. Each later round you gain 1 mana, cap **6**. Melee is **0**. Spell 1 costs **1×** that kit cost. Spell 2 costs **2×**.
+- Your turn also ends on its own when you have nothing left to summon, move, or attack. **Vs** ends after that one wizard is spent.
 
 ## Setup
 
@@ -53,7 +53,7 @@ If you push them, they still fire in the **same direction** from the new tile. S
 - **Water** is a canal, moat, lake, or pool depending on the island. You can walk or get pushed onto it — and you **die**. You cannot summon onto it. Line spells fly over it.
 - **Voids** open when a nexus drops to 0 HP. That tile is a hole: entering it kills you, same as water. The dead crystal does not stay on the board.
 - **Vs** terrain is an open 7×7. **Defense** maps are named islands and are not mirrored.
-- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap 10. Each team has its own pool. Mana refills to max at the start of your turn. That pool pays for **spell 1 and spell 2**. Melee is free. **Defense** keeps its free one drop per round, and also has its own small mana pool (start 2, +1/round, cap 6) spent only on spell 2.
+- **Vs** round 1 starts with **2 mana**. Max mana goes up by 1 each round, cap **6**. Each team has its own pool. Mana refills to max at the start of your turn. That pool pays for **spell 1 and spell 2**. Melee is free. **Defense** keeps its free one drop per round, and also has its own small mana pool (start 2, +1/round, cap 6) spent only on spell 2.
 
 ## Wizards
 
@@ -114,10 +114,10 @@ On your turn you may, in any order:
 
 1. **Summon**
    - **Defense:** **one wizard per round**. Cost is ignored. Drop them on any open tile (not a nexus, mountain, water, void, occupied tile, or incoming pawn mark). They land **immediately**, fire a **burst** (pulse shape, no damage, 1 push out), then have **summoning sickness** for the rest of this turn.
-   - **Vs:** all four start on the board. No portal hand. Specials and spell 1 draw from this mana.
-2. **Move** — each onboard wizard that has not moved may move once, up to its move range. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
-3. **Attack** — each onboard wizard that has not attacked may attack once, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
-4. **End turn** — the other player takes their turn. If you have nothing left to summon, move, or attack, the turn ends on its own. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
+   - **Vs:** all four start on the board. **One wizard per turn** — that body may move and strike, then the enemy acts one wizard. No portal hand. Spell 1 and spell 2 draw from this mana.
+2. **Move** — **Defense:** each onboard wizard that has not moved may move once. **Vs:** only the wizard you activate this turn may move. Other wizards, living nexuses, mountains, water, and voids block the path. You cannot walk onto water or a void. **Undo** the last move of a wizard if they have not attacked yet. After a melee or spell, that undo is gone.
+3. **Attack** — **Defense:** each onboard wizard that has not attacked may attack once. **Vs:** only the activated wizard may strike, melee or cast. Empty tiles, enemies, allies, and nexuses are all valid (except where a unique cast says otherwise).
+4. **End turn** — the other player takes their turn. **Vs** auto-ends when that one wizard has nothing left to do. **Defense** auto-ends when every wizard is spent. A pending move-undo still counts as something to do, so the turn will not auto-end until you attack or undo.
 
 ## Combat
 

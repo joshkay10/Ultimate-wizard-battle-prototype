@@ -97,6 +97,17 @@ function spawnShelved(team, kind, extra) {
   return w;
 }
 
+function unlockTeam(team) {
+  team = team || 'player';
+  Object.values(state.wizards).forEach(function (w) {
+    if (w.team !== team || w.pawnKind) return;
+    w.hasMoved = false;
+    w.hasAttacked = false;
+    w.silenceSkip = false;
+    w.moveUndo = null;
+  });
+}
+
 function toHand(wizard) {
   if (!wizard) return;
   wizard.state = 'summoned';
@@ -412,6 +423,18 @@ async function runSimSelfTests() {
     assert(foeSorted[mirrorI].row === last - mineSorted[mirrorI].row && foeSorted[mirrorI].col === mineSorted[mirrorI].col, 'enemy opener ' + mirrorI + ' mirrors the player tile');
   }
   assert(playerHasLegalAction(state), 'round 1 can move a starting body');
+  const actor = mineSorted[0];
+  const other = mineSorted[1];
+  const step = getMoveTiles(state, actor)[0];
+  assert(step, 'the first wizard has a walk');
+  const walked = simMove(state, actor, pathBFS(state, actor, step.row, step.col));
+  assert(walked.length > 0 && actor.hasMoved, 'the first wizard can walk');
+  assert(canUseWizard(state, actor) && !canUseWizard(state, other), 'Vs locks to the wizard that moved');
+  const otherStep = getMoveTiles(state, other)[0];
+  assert(otherStep, 'the second wizard still has tiles, but cannot use them');
+  assert(simMove(state, other, pathBFS(state, other, otherStep.row, otherStep.col) || []).length === 0, 'a second wizard cannot move on the same Vs turn');
+  simUndoMove(state, actor);
+  assert(canUseWizard(state, other), 'undoing the only move lets you pick a different wizard');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
   assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
@@ -776,6 +799,13 @@ async function runSimSelfTests() {
   for (capGuard = 0; capGuard < 12; capGuard++) refillManaPools(state);
   assert(state.maxMana === DEFENSE_MANA_CAP, 'defense mana grows and caps at DEFENSE_MANA_CAP');
   assert(state.mana === state.maxMana, 'defense mana refills to full each turn');
+
+  resetMatch(state, 1);
+  state.fxEnabled = false;
+  let vsCapGuard;
+  for (vsCapGuard = 0; vsCapGuard < 12; vsCapGuard++) refillManaPools(state);
+  assert(state.maxMana === MANA_CAP && MANA_CAP === 6, 'Vs mana grows and caps at 6');
+  assert(state.enemyMaxMana === MANA_CAP, 'enemy mana caps at 6 too');
 
   resetMatch(state, 1, {
     playerLoadout: [
@@ -1372,6 +1402,7 @@ async function runSimSelfTests() {
   assert(crystal.hp === 0, 'last nexus hit drops it');
   assert(voidAt(state, crystal.row, crystal.col), 'dead nexus becomes a void');
   assert(!nexusAt(state, crystal.row, crystal.col), 'dead nexus no longer occupies the tile');
+  unlockTeam('player');
   const holeWalker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   holeWalker.state = 'onboard';
   holeWalker.row = crystal.row;
@@ -1393,6 +1424,7 @@ async function runSimSelfTests() {
   const boltWall = spawnShelved('player', 'lightning', { row: 4, col: 4 });
   const earthWall = spawnShelved('player', 'earth', { row: 5, col: 6 });
   simAttack(state, earthWall, 4, 6, 'cast');
+  unlockTeam('player');
   const grounded = simAttack(state, boltWall, 4, 6, 'cast');
   assert(grounded.some(e => e.type === 'fizzle'), 'bolt fizzles on a raised wall');
   assert(grounded.every(e => e.type !== 'jump'), 'grounded bolt does not jump');

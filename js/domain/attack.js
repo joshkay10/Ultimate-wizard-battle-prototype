@@ -1,4 +1,5 @@
 function simAttack(match, attacker, row, col, kind) {
+  if (typeof canUseWizard === 'function' && !canUseWizard(match, attacker)) return [];
   if (!canAttack(attacker) || attacker.row === null) return [];
   const cost = typeof attackManaCost === 'function' ? attackManaCost(match, attacker, kind) : 0;
   if (kind === 'cast' && teamMana(match, attacker.team) < cost) return [];

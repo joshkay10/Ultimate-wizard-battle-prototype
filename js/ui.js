@@ -208,6 +208,10 @@ function wizardStatusBits(wiz) {
     return bits;
   }
   else if (wiz.silenced) bits.push('silenced');
+  if (typeof canUseWizard === 'function' && state && wiz.team === 'player' && !canUseWizard(state, wiz)) {
+    bits.push('wait');
+    return bits;
+  }
   if (wiz.hasMoved) bits.push('moved');
   else bits.push('can move');
   if (wiz.hasAttacked && !wiz.silenceSkip) bits.push('attacked');
@@ -237,7 +241,7 @@ function renderSelectedCard(wiz) {
   const basicCost = typeof basicManaCost === 'function' ? basicManaCost(wiz) : (wiz.cost || 0);
   const specialCost = typeof specialManaCost === 'function' ? specialManaCost(wiz) : (wiz.specialCost || 0);
   const mine = wiz.team === 'player';
-  const usable = mine && !state.animating && canAct() && !wiz.summoningSickness;
+  const usable = mine && !state.animating && canAct() && !wiz.summoningSickness && (typeof canUseWizard !== 'function' || canUseWizard(state, wiz));
   const atkOk = usable && canAttack(wiz);
   const affordBasic = atkOk && (typeof canPayCast !== 'function' || canPayCast(state, wiz, 'player', 'basic'));
   const affordSpecial = atkOk && !!special && (typeof canCastSpecial !== 'function' || canCastSpecial(state, wiz, 'player'));

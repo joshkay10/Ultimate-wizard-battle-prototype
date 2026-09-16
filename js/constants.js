@@ -31,7 +31,7 @@ var BOARD_SIZE = DEFENSE_BOARD_SIZE;
 var CENTER = (DEFENSE_BOARD_SIZE - 1) >> 1;
 var SUMMON_ROW_START = DEFENSE_BOARD_SIZE - SUMMON_ZONE_ROWS;
 var ENEMY_ROW_END = SUMMON_ZONE_ROWS;
-const MANA_CAP = 10;
+const MANA_CAP = 6;
 
 function applyMatchLayout(match) {
   const n = match && match.gameMode === 'vs' ? VS_BOARD_SIZE : DEFENSE_BOARD_SIZE;

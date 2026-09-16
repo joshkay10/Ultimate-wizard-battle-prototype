@@ -27,7 +27,7 @@ function playerHasLegalAction(match) {
   if (canPortal && getPlayerSummonTiles(match).length) return true;
 
   const onboard = Object.values(match.wizards).filter(function (wizard) {
-    return wizard.team === 'player' && wizard.state === 'onboard';
+    return wizard.team === 'player' && wizard.state === 'onboard' && (typeof canUseWizard !== 'function' || canUseWizard(match, wizard));
   });
   let i;
   for (i = 0; i < onboard.length; i++) {

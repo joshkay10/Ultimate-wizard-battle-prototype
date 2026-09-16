@@ -25,6 +25,14 @@ async function hunterRunTurn(team) {
   const wizards = Object.values(state.wizards)
     .filter(w => w.team === team && w.state === 'onboard')
     .sort((a, b) => compareWizardActOrder(a, b, team));
+  if (state.gameMode === 'vs') {
+    const pick = wizards[0];
+    if (pick && pick.state === 'onboard') {
+      await present(teamWizardAct(pick, team));
+      await maybeWait(420);
+    }
+    return;
+  }
   for (const wizard of wizards) {
     if (wizard.state !== 'onboard') continue;
     await present(teamWizardAct(wizard, team));
