@@ -38,12 +38,12 @@ function createWizard(match, typeId, team, spellId, specialId) {
 }
 
 function seedRosters(match, playerLoadout, enemyLoadout) {
-  const player = normalizeLoadout(playerLoadout, { pad: !match.missionId });
+  const player = normalizeLoadout(playerLoadout, { pad: false });
   if (!player.length) return;
   let i;
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
   if (match.gameMode === 'defense') return;
-  const enemy = normalizeLoadout(enemyLoadout);
+  const enemy = normalizeLoadout(enemyLoadout, { pad: false });
   for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell);
 }
 

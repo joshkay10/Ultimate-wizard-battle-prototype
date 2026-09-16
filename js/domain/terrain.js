@@ -115,7 +115,8 @@ function countOpenSummonTiles(match, mountains, water, team) {
 function fallbackMountains(match) {
   const map = {};
   const empty = {};
-  const seeds = [[1, 0], [2, 0], [2, 1], [1, 8], [2, 8], [2, 7]];
+  const last = BOARD_SIZE - 1;
+  const seeds = [[1, 0], [2, 0], [2, 1], [1, last], [2, last], [2, last - 1]];
   let i;
   for (i = 0; i < seeds.length; i++) {
     stampVerticalPair(match, map, map, empty, seeds[i][0], seeds[i][1]);
@@ -166,20 +167,21 @@ function pickTerrainSeed(match, mountains, water, cols, maxRow, colWeight) {
 }
 
 function generateMountainsInto(match, mountains, water) {
+  const last = BOARD_SIZE - 1;
   function edgeWeight(c, r) {
-    const edge = (c === 0 || c === 8) ? 5 : (c === 1 || c === 7) ? 3 : 1;
+    const edge = (c === 0 || c === last) ? 5 : (c === 1 || c === last - 1) ? 3 : 1;
     const rowW = r === 0 ? 2 : 3;
     return edge * rowW;
   }
   growTerrainCluster(
     match, mountains, mountains, water,
-    pickTerrainSeed(match, mountains, water, [0, 1, 2], 3, edgeWeight),
+    pickTerrainSeed(match, mountains, water, [0, 1, 2], Math.min(3, CENTER), edgeWeight),
     3 + match.rng.int(2),
     true
   );
   growTerrainCluster(
     match, mountains, mountains, water,
-    pickTerrainSeed(match, mountains, water, [8, 7, 6], 3, edgeWeight),
+    pickTerrainSeed(match, mountains, water, [last, last - 1, last - 2], Math.min(3, CENTER), edgeWeight),
     2 + match.rng.int(3),
     true
   );
@@ -193,12 +195,15 @@ function generateWaterInto(match, mountains, water) {
     const rowW = r <= 1 ? 1 : 3;
     return colW * rowW;
   }
+  const lakeCols = [];
+  let c;
+  for (c = 1; c < BOARD_SIZE - 1; c++) lakeCols.push(c);
   const groups = 1 + match.rng.int(2);
   let g;
   for (g = 0; g < groups; g++) {
     growTerrainCluster(
       match, water, mountains, water,
-      pickTerrainSeed(match, mountains, water, [1, 2, 3, 4, 5, 6, 7], 4, lakeWeight),
+      pickTerrainSeed(match, mountains, water, lakeCols, CENTER, lakeWeight),
       2 + match.rng.int(3),
       false
     );
@@ -207,10 +212,11 @@ function generateWaterInto(match, mountains, water) {
 }
 
 function generateVsGate(match, mountains, water) {
-  stampVerticalPair(match, mountains, mountains, water, 2, 2);
-  stampVerticalPair(match, mountains, mountains, water, 2, 3);
-  stampVerticalPair(match, mountains, mountains, water, 2, 5);
-  stampVerticalPair(match, mountains, mountains, water, 2, 6);
+  const mid = CENTER;
+  stampVerticalPair(match, mountains, mountains, water, 2, mid - 2);
+  stampVerticalPair(match, mountains, mountains, water, 2, mid - 1);
+  stampVerticalPair(match, mountains, mountains, water, 2, mid + 1);
+  stampVerticalPair(match, mountains, mountains, water, 2, mid + 2);
 }
 
 function generateTerrain(match) {

@@ -24,11 +24,24 @@ const ELEMENT_COLOR = {
 
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
-const BOARD_SIZE = 9;
-const CENTER = 4; // 0-indexed center of 9x9
+const DEFENSE_BOARD_SIZE = 9;
+const VS_BOARD_SIZE = 7;
+const SUMMON_ZONE_ROWS = 3;
+var BOARD_SIZE = DEFENSE_BOARD_SIZE;
+var CENTER = (DEFENSE_BOARD_SIZE - 1) >> 1;
+var SUMMON_ROW_START = DEFENSE_BOARD_SIZE - SUMMON_ZONE_ROWS;
+var ENEMY_ROW_END = SUMMON_ZONE_ROWS;
 const MANA_CAP = 10;
-const SUMMON_ROW_START = BOARD_SIZE - 3;
-const ENEMY_ROW_END = 3; // rows 0,1,2 = enemy zone (mirrors player's bottom-3-rows zone)
+
+function applyMatchLayout(match) {
+  const n = match && match.gameMode === 'vs' ? VS_BOARD_SIZE : DEFENSE_BOARD_SIZE;
+  if (match) match.boardSize = n;
+  BOARD_SIZE = n;
+  CENTER = (n - 1) >> 1;
+  SUMMON_ROW_START = n - SUMMON_ZONE_ROWS;
+  ENEMY_ROW_END = SUMMON_ZONE_ROWS;
+}
+
 const NEXUS_HP = 5;
 const DEFENSE_NEXUS_HP = 2;
 const DEFENSE_NEXUS_MIN = 3;

@@ -314,20 +314,20 @@ function renderGameOverOverlay() {
   let sub;
   if (state.gameOverResult === 'draw') {
     heading = 'draw';
-    sub = 'all nexuses on both sides fell at the same time';
+    sub = 'both teams were wiped at the same time';
   } else if (win) {
     heading = mission ? (mission.name || mission.title) : 'you win';
     if (mission && next && state.justUnlocked) sub = next.name + ' is open.';
     else if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
     else if (mission) sub = 'The four islands are yours.';
-    else sub = 'all enemy nexuses fell, or their wizards were wiped out';
+    else sub = 'the enemy team is gone';
   } else {
     heading = mission ? 'the city fell' : 'you lose';
     sub = mission
       ? (mission.fail || 'the cluster is gone')
       : (state.gameMode === 'defense'
         ? 'your nexuses fell, or your wizards were wiped out'
-        : 'all of your nexuses fell, or your wizards were wiped out');
+        : 'your team is gone');
   }
 
   let actions = '';

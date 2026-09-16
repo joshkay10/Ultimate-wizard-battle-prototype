@@ -8,7 +8,7 @@ npm start
 
 Then [http://127.0.0.1:8080/](http://127.0.0.1:8080/). Live GitHub Pages: [joshkay10.github.io/Ultimate-wizard-battle-prototype](https://joshkay10.github.io/Ultimate-wizard-battle-prototype/).
 
-Six kits in the pool. You bring four. Copies are allowed, and each body brings one spell from its element. Pick them on [Team](team.html) for **Vs**. The campaign locks a four per island.
+Six kits in the pool. You bring seven in **Vs**. Copies are allowed, and each body brings one spell from its element. Pick them on [Team](team.html) for **Vs**. The campaign locks a roster per island.
 
 - [Play](index.html)
 - [Team](team.html)
