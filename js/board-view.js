@@ -108,7 +108,7 @@ function boardLayout() {
   const boardH = boardW;
   const left = (css - boardW) / 2;
   const top = topRack + Math.max(0, (vSpan - boardH) / 2);
-  return { canvas, css, dpr, gap, pad: left, cell, lift, rack: botRack, topRack, botRack, left, top, boardW, boardH, vs };
+  return { canvas, css, dpr, gap, pad: left, cell, lift, rack: botRack, topRack, botRack, left, top, boardW, boardH };
 }
 
 function cellRect(layout, row, col) {
