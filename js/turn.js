@@ -34,7 +34,7 @@ function rematch() {
 }
 
 function setGameMode(mode) {
-  if (mode && mode !== 'vs' && typeof missionById === 'function') {
+  if (mode && typeof missionById === 'function') {
     const mission = missionById(mode);
     if (mission && typeof missionIsUnlocked === 'function' && typeof loadCampaign === 'function') {
       if (!missionIsUnlocked(mission, loadCampaign())) return;
@@ -72,11 +72,7 @@ async function endTurn() {
 
     await maybeWait(120);
     if (state.matchId !== matchId) return;
-    if (state.gameMode === 'defense') {
-      await presentDefenseEnemyPhase();
-    } else {
-      await runTeamAi('enemy');
-    }
+    await presentDefenseEnemyPhase();
     if (state.matchId !== matchId) return;
     await present(simEndEnemyTurn(state));
     if (state.matchId !== matchId) return;

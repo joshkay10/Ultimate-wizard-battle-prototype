@@ -25,16 +25,19 @@ const ELEMENT_COLOR = {
 const ELEMENT_ICON_ORDER = ['fire', 'ice', 'wind', 'earth', 'lightning', 'temporal'];
 
 const DEFENSE_BOARD_SIZE = 9;
-const VS_BOARD_SIZE = 7;
 const SUMMON_ZONE_ROWS = 3;
 var BOARD_SIZE = DEFENSE_BOARD_SIZE;
 var CENTER = (DEFENSE_BOARD_SIZE - 1) >> 1;
 var SUMMON_ROW_START = DEFENSE_BOARD_SIZE - SUMMON_ZONE_ROWS;
 var ENEMY_ROW_END = SUMMON_ZONE_ROWS;
 const MANA_CAP = 6;
+const SUMMON_MANA_COST = 1;
+const STOCK_DAMAGE = 1;
+const STOCK_PUSH = 1;
+const STOCK_RANGE = 1;
 
 function applyMatchLayout(match) {
-  const n = match && match.gameMode === 'vs' ? VS_BOARD_SIZE : DEFENSE_BOARD_SIZE;
+  const n = DEFENSE_BOARD_SIZE;
   if (match) match.boardSize = n;
   BOARD_SIZE = n;
   CENTER = (n - 1) >> 1;

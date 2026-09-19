@@ -1,19 +1,9 @@
 function checkWinLoss(match) {
-  if (isDefenseMode(match)) {
-    const mineDead = teamNexusesFallen(match, 'player');
-    if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
-    if (typeof defenseWaveCleared === 'function' ? defenseWaveCleared(match) : !teamHasPresence(match, 'enemy')) {
-      return 'player';
-    }
-    return null;
+  const mineDead = teamNexusesFallen(match, 'player');
+  if (mineDead || !teamHasPresence(match, 'player')) return 'enemy';
+  if (typeof defenseWaveCleared === 'function' ? defenseWaveCleared(match) : !teamHasPresence(match, 'enemy')) {
+    return 'player';
   }
-  const playerNexusDead = teamNexusesFallen(match, 'player');
-  const enemyNexusDead = teamNexusesFallen(match, 'enemy');
-  const playerWiped = !teamHasPresence(match, 'player');
-  const enemyWiped = !teamHasPresence(match, 'enemy');
-  if ((playerNexusDead || playerWiped) && (enemyNexusDead || enemyWiped)) return 'draw';
-  if (playerNexusDead || playerWiped) return 'enemy';
-  if (enemyNexusDead || enemyWiped) return 'player';
   return null;
 }
 

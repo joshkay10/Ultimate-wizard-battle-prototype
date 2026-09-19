@@ -54,13 +54,13 @@ function isEnemySummonTile(row, col) {
 }
 
 function canSummonAt(match, row, col, team) {
-  if (!match || match.gameMode !== 'defense' || team !== 'player') return false;
+  if (!match || team !== 'player') return false;
   return inBounds(row, col) && isOpenTile(match, row, col);
 }
 
 function summonTilesFor(match, team) {
   const tiles = [];
-  if (!match || match.gameMode !== 'defense' || team !== 'player') return tiles;
+  if (!match || team !== 'player') return tiles;
   let r;
   let c;
   for (r = 0; r < BOARD_SIZE; r++) {

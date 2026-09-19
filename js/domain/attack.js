@@ -1,12 +1,15 @@
 function simAttack(match, attacker, row, col, kind) {
   if (typeof canUseWizard === 'function' && !canUseWizard(match, attacker)) return [];
   if (!canAttack(attacker) || attacker.row === null) return [];
-  const cost = typeof attackManaCost === 'function' ? attackManaCost(match, attacker, kind) : 0;
-  if (kind === 'cast' && teamMana(match, attacker.team) < cost) return [];
+  const which = attacker.activeSpell || 'basic';
+  const cost = typeof attackManaCost === 'function' ? attackManaCost(match, attacker, kind, which) : 0;
+  if (kind === 'cast' && (!isFinite(cost) || teamMana(match, attacker.team) < cost)) return [];
   const legal = kind === 'cast' ? getCastTiles(match, attacker) : getMeleeTiles(match, attacker);
   if (!legal.some(function (tile) { return tile.row === row && tile.col === col; })) return [];
   clearMoveUndo(attacker);
 
+  const prevCredit = match.killCreditId;
+  match.killCreditId = attacker.id;
   let result;
   if (kind === 'cast' && attacker.castKind === 'pulse') result = simPulse(match, attacker, row, col);
   else if (kind === 'cast' && attacker.castKind === 'raise') result = simRaise(match, attacker, row, col);
@@ -16,6 +19,7 @@ function simAttack(match, attacker, row, col, kind) {
   else result = simStrike(match, attacker, row, col, kind);
 
   if (cost && result && result.length) spendMana(match, attacker.team, cost);
+  match.killCreditId = prevCredit;
   return result;
 }
 

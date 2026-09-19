@@ -49,8 +49,7 @@ function loadPlaylistId() {
   if (typeof localStorage === 'undefined') return playlistIdDefault();
   try {
     const raw = localStorage.getItem(PLAYLIST_STORAGE_KEY) || localStorage.getItem(MODE_STORAGE_KEY);
-    if (raw === 'vs') return 'vs';
-    if (raw === 'defense') return playlistIdDefault();
+    if (raw === 'vs' || raw === 'defense') return playlistIdDefault();
     if (typeof missionById === 'function' && missionById(raw)) {
       const mission = missionById(raw);
       if (typeof missionIsUnlocked === 'function' && !missionIsUnlocked(mission, loadCampaign())) {
@@ -64,13 +63,6 @@ function loadPlaylistId() {
 }
 
 function savePlaylistId(id) {
-  if (id === 'vs') {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(PLAYLIST_STORAGE_KEY, 'vs');
-      localStorage.setItem(MODE_STORAGE_KEY, 'vs');
-    }
-    return 'vs';
-  }
   const mission = typeof missionById === 'function' ? missionById(id) : null;
   const saved = mission ? mission.id : playlistIdDefault();
   if (typeof localStorage !== 'undefined') {
@@ -81,11 +73,11 @@ function savePlaylistId(id) {
 }
 
 function loadGameMode() {
-  return loadPlaylistId() === 'vs' ? 'vs' : 'defense';
+  return 'defense';
 }
 
 function saveGameMode(mode) {
-  return savePlaylistId(mode === 'vs' ? 'vs' : (mode || playlistIdDefault()));
+  return savePlaylistId(mode || playlistIdDefault());
 }
 
 const CAMPAIGN_STORAGE_KEY = 'wizard-battle-campaign';

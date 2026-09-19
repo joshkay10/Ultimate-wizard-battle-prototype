@@ -62,7 +62,7 @@ function renderLockedMissionTeam(mission) {
   return (
     '<article class="page team-page is-locked">' +
       '<h1>' + (mission.name || mission.title) + '</h1>' +
-      '<p class="lede">' + (mission.goal || '') + (mission.hint ? ' ' + mission.hint : '') + ' This roster is locked for the island. Switch to <strong>Vs</strong> to edit your own team.</p>' +
+      '<p class="lede">' + (mission.goal || '') + (mission.hint ? ' ' + mission.hint : '') + ' This roster is locked for the island. Extra bodies pad to four off the field.</p>' +
       '<p class="team-count ready">' + names + '</p>' +
       '<h2 class="team-sub">Locked roster</h2>' +
       '<div class="team-grid team-roster">' + roster + '</div>' +
@@ -91,7 +91,7 @@ function renderTeamPage() {
           '<div class="team-kit-copy">' +
             '<div class="kit-name">' + kit.name + '</div>' +
             '<div class="kit-cast">' + basicName + ' + ' + specialName + '</div>' +
-            '<div class="kit-detail">move ' + kit.moveRange + ' · melee ' + kit.meleeAttack + '/' + kit.meleeDisplacement + ' · ' + kit.hp + ' hp</div>' +
+            '<div class="kit-detail">move ' + kit.moveRange + ' · stock ' + kit.meleeAttack + '/' + kit.meleeDisplacement + ' · ' + kit.hp + ' hp</div>' +
           '</div>' +
           '<button type="button" class="team-slot-remove" data-slot-remove="' + index + '">remove</button>' +
         '</div>' +
@@ -135,7 +135,7 @@ function renderTeamPage() {
   return (
     '<article class="page team-page">' +
       '<h1>Team</h1>' +
-      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. Copies are allowed. Cairn, Volt, and Chrono are on the bench for now. Each body has <strong>melee for 0</strong>, <strong>spell 1 at 1× kit cost</strong>, and <strong>spell 2 at 2× kit cost</strong>. Saved on this device. Defense drops one wizard per round, any kit, and spends its small mana pool on spell 2 only.</p>' +
+      '<p class="lede">Bring four wizards from Pyre, Rime, and Squall. They start <strong>off the field</strong>. Summon is a spell (1 mana). Each body gets <strong>1 move and 1 attack</strong> per turn. Everyone has a free <strong>stock</strong> punch (1 dmg / 1 push / range 1). Spell 1 unlocks after a kill, spell 2 after two. Spells cost mana, cap 6.</p>' +
       '<p class="team-count' + (ready ? ' ready' : '') + '">' +
         (ready ? names : 'choose ' + (TEAM_SIZE - selected.length) + ' more') +
       '</p>' +

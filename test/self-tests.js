@@ -88,6 +88,7 @@ function spawnShelved(team, kind, extra) {
     hasMoved: false,
     hasAttacked: false,
     summoningSickness: false,
+    kills: 2,
     silenced: false,
     silenceSkip: false,
     moveUndo: null
@@ -95,6 +96,12 @@ function spawnShelved(team, kind, extra) {
   if (extra) Object.keys(extra).forEach(function (k) { w[k] = extra[k]; });
   state.wizards[id] = w;
   return w;
+}
+
+function spawnFoe(extra) {
+  extra = extra || {};
+  const kind = extra.kit === 'lightning' || extra.kit === 'temporal' ? extra.kit : 'earth';
+  return spawnShelved('enemy', kind, extra);
 }
 
 function unlockTeam(team) {
@@ -105,6 +112,7 @@ function unlockTeam(team) {
     w.hasAttacked = false;
     w.silenceSkip = false;
     w.moveUndo = null;
+    w.kills = 2;
   });
 }
 
@@ -122,6 +130,10 @@ function benchOtherWizards() {
       w.col = null;
       w.summoningSickness = false;
     }
+  });
+  Object.keys(keep).forEach(function (id) {
+    const w = state.wizards[id];
+    if (w && w.team === 'player') w.kills = 2;
   });
 }
 
@@ -143,7 +155,11 @@ async function runHeadlessMatch(seed, maxRounds) {
       if (state.gameOverResult) break;
     }
     if (state.currentTurn === 'enemy' && !state.gameOverResult) {
-      await runTeamAi('enemy');
+      if (typeof simDefenseEnemyPhase === 'function') {
+        simDefenseEnemyPhase(state).forEach(function (e) { state.log.push(e); });
+      } else {
+        await runTeamAi('enemy');
+      }
       simEndEnemyTurn(state).forEach(function (e) { state.log.push(e); });
     }
   }
@@ -169,6 +185,13 @@ async function runSimSelfTests() {
   const prevFx = state.fxEnabled;
   state.fxEnabled = false;
 
+  const realSpellTier = wizardSpellTier;
+  wizardSpellTier = function (wizard) {
+    if (wizard && wizard.lockSpells) return realSpellTier(wizard);
+    if (wizard && wizard.team === 'player') return 2;
+    return realSpellTier(wizard);
+  };
+
   resetMatch(state, 1);
   state.mountains = {};
   state.water = {};
@@ -186,7 +209,7 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   const ember = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
-  const gale = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
+  const gale = spawnFoe({ element: 'wind', row: 0, col: BOARD_SIZE - 2, hp: 12, maxHp: 12 });
   ember.state = 'onboard';
   ember.row = 0;
   ember.col = BOARD_SIZE - 3;
@@ -210,7 +233,7 @@ async function runSimSelfTests() {
   state.water = {};
   const batter = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
   const shoved = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
-  const wallWiz = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
+  const wallWiz = spawnFoe({ element: 'wind', row: 4, col: 4, hp: 8, maxHp: 8 });
   batter.state = 'onboard';
   batter.row = 4;
   batter.col = 2;
@@ -262,7 +285,7 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   const edgeAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
-  const edgeHit = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const edgeHit = spawnFoe({ element: 'ice' });
   edgeAtk.state = 'onboard';
   edgeAtk.row = 4;
   edgeAtk.col = BOARD_SIZE - 2;
@@ -280,7 +303,7 @@ async function runSimSelfTests() {
   state.mountains = { '4,4': true };
   state.water = {};
   const gustCrash = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  const pinned = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const pinned = spawnFoe({ element: 'ice' });
   gustCrash.state = 'onboard';
   gustCrash.row = 4;
   gustCrash.col = 2;
@@ -298,7 +321,7 @@ async function runSimSelfTests() {
   state.mountains = { '4,5': true };
   state.water = {};
   const bumpAtk = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
-  const bumpHit = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const bumpHit = spawnFoe({ element: 'ice' });
   bumpAtk.state = 'onboard';
   bumpAtk.row = 4;
   bumpAtk.col = 2;
@@ -383,11 +406,12 @@ async function runSimSelfTests() {
   assert(!canUndoMove(walkerUndo), 'undo is spent after undoing');
 
   simMove(state, walkerUndo, undoPath);
-  simAttack(state, walkerUndo, 5, 6, 'cast');
-  assert(!canUndoMove(walkerUndo), 'cannot undo a move after a spell');
+  simAttack(state, walkerUndo, 5, 6, 'melee');
+  assert(!canUndoMove(walkerUndo), 'cannot undo a move after a stock punch');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
+  assert(state.gameMode === 'defense', 'Play is Defense');
   assert(state.mana === 2 && state.maxMana === 2, 'round 1 starts with 2 mana');
   const openers = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'onboard';
@@ -398,54 +422,50 @@ async function runSimSelfTests() {
   const benched = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'bench';
   });
-  assert(openers.length === TEAM_SIZE, 'Vs starts with four wizards on the board');
-  assert(waiting.length === 0, 'nobody waits in hand');
+  assert(openers.length === 0, 'nobody starts on the board');
+  assert(waiting.length === TEAM_SIZE, 'four wizards wait off the field');
   assert(benched.length === 0, 'nobody waits on the bench at the opening');
-  assert(openers.every(function (w) { return w.row >= SUMMON_ROW_START; }), 'your four open on your back rows');
-  const enemyHand = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'enemy' && w.state === 'summoned';
-  });
-  const enemyBench = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'enemy' && w.state === 'bench';
-  });
-  const enemyField = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'enemy' && w.state === 'onboard';
-  });
-  assert(enemyField.length === TEAM_SIZE, 'the enemy starts on the board');
-  assert(enemyField.every(function (w) { return w.row < ENEMY_ROW_END; }), 'the enemy opens on their back rows');
-  assert(enemyHand.length === 0 && enemyBench.length === 0, 'the enemy has no leftover hand');
-  const byId = function (a, b) {
-    return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-  };
-  const mineSorted = openers.slice().sort(byId);
-  const foeSorted = enemyField.slice().sort(byId);
-  const last = BOARD_SIZE - 1;
-  let mirrorI;
-  for (mirrorI = 0; mirrorI < mineSorted.length; mirrorI++) {
-    assert(foeSorted[mirrorI].row === last - mineSorted[mirrorI].row && foeSorted[mirrorI].col === mineSorted[mirrorI].col, 'enemy opener ' + mirrorI + ' mirrors the player tile');
-  }
-  assert(playerHasLegalAction(state), 'round 1 can move a starting body');
-  const actor = mineSorted[0];
-  const other = mineSorted[1];
-  const step = getMoveTiles(state, actor)[0];
-  assert(step, 'the first wizard has a walk');
-  const walked = simMove(state, actor, pathBFS(state, actor, step.row, step.col));
-  assert(walked.length > 0 && actor.hasMoved, 'the first wizard can walk');
-  assert(canUseWizard(state, actor) && !canUseWizard(state, other), 'Vs locks to the wizard that moved');
-  const otherStep = getMoveTiles(state, other)[0];
-  assert(otherStep, 'the second wizard still has tiles, but cannot use them');
-  assert(simMove(state, other, pathBFS(state, other, otherStep.row, otherStep.col) || []).length === 0, 'a second wizard cannot move on the same Vs turn');
-  simUndoMove(state, actor);
-  assert(canUseWizard(state, other), 'undoing the only move lets you pick a different wizard');
+  assert(Object.values(state.wizards).filter(function (w) { return w.team === 'player'; }).length === 4, 'Defense fields four');
+  assert(playerHasLegalAction(state), 'round 1 can summon');
+  const dropper = waiting[0];
+  const dropTiles = getPlayerSummonTiles(state);
+  assert(dropTiles.length > 0, 'summon has open tiles');
+  assert(canPaySummon(state, dropper, 'player'), 'summon costs 1 and round 1 has 2 mana');
+  const landed = simSummon(state, dropper, dropTiles[0].row, dropTiles[0].col, 'player');
+  assert(landed.some(function (e) { return e.type === 'summon'; }), 'summon lands');
+  assert(state.mana === 1, 'summon spends 1 mana');
+  assert(dropper.state === 'onboard' && !dropper.summoningSickness, 'they land ready to act');
+  assert(canMove(dropper) && canAttack(dropper), 'summoned wizard can move and attack this turn');
+  const step = getMoveTiles(state, dropper)[0];
+  assert(step, 'the summoned wizard has a walk');
+  const walked = simMove(state, dropper, pathBFS(state, dropper, step.row, step.col));
+  assert(walked.length > 0 && dropper.hasMoved, 'the first wizard can walk');
+  const other = waiting.find(function (w) { return w.id !== dropper.id && w.state === 'summoned'; });
+  assert(other, 'three still wait off the field');
+  assert(canPaySummon(state, other, 'player'), 'a second summon is legal if mana remains');
+  const secondTile = dropTiles.find(function (t) { return t.row !== dropper.row || t.col !== dropper.col; });
+  const second = simSummon(state, other, secondTile.row, secondTile.col, 'player');
+  assert(second.some(function (e) { return e.type === 'summon'; }), 'second summon lands the same turn');
+  assert(state.mana === 0, 'two summons spend the round-1 pool');
+  assert(canMove(other), 'the second body can also act this turn');
   assert(kitById('fire').moveRange === 2 && kitById('ice').moveRange === 2 && kitById('wind').moveRange === 3, 'Pyre and Rime walk 2, Squall walks 3');
-  assert(kitById('fire').meleeAttack === 2 && kitById('fire').hp === 4, 'Pyre melee chips, it does not one-shot');
-  assert(kitById('ice').meleeAttack === 1 && kitById('wind').meleeAttack === 1, 'Rime and Squall punches are 1 dmg');
+  assert(kitById('fire').meleeAttack === STOCK_DAMAGE && kitById('fire').hp === 4, 'every kit shares the stock punch');
+  assert(kitById('ice').meleeAttack === 1 && kitById('wind').meleeAttack === 1 && kitById('wind').meleeDisplacement === 1, 'stock is 1 dmg / 1 push');
+  assert(STOCK_DAMAGE === 1 && STOCK_PUSH === 1 && STOCK_RANGE === 1, 'stock is 1/1/1');
+  const grower = waiting[0];
+  grower.lockSpells = true;
+  grower.kills = 0;
+  assert(wizardSpellTier(grower) === 0 && !canUseBasicSpell(grower), 'stock only until a kill');
+  grower.kills = 1;
+  assert(canUseBasicSpell(grower) && !canUseSpecialSpell(grower), 'one kill unlocks spell 1');
+  grower.kills = 2;
+  assert(canUseSpecialSpell(grower), 'two kills unlock spell 2');
   assert(spellById('stream').castRange === 3 && spellById('stream').castAttack === 2, 'Stream is a line of 3 for 2 dmg');
   assert(spellById('sheet').castRange === 3 && spellById('gust').castDisplacement === 2, 'Sheet is short; Gust pushes 2');
   assert(spellById('cinder').castAttack === 1 && spellById('draft').castDisplacement === 3, 'Cinder pokes 1; Draft shoves 3');
   assert(spellById('stream').castAttack < kitById('ice').hp, 'a full-HP Rime lives through Stream');
   const round1Kits = WIZARD_TYPES.filter(t => t.cost <= STARTING_MANA).map(t => t.id);
-  assert(round1Kits.indexOf('ice') !== -1, 'Rime is a round-1 drop');
+  assert(round1Kits.indexOf('ice') !== -1, 'Rime spell 1 is a round-1 spend');
   assert(kitById('ice').cost === 1, 'Rime costs 1 after the cost cut');
   assert(WIZARD_TYPES.find(t => t.id === 'wind').cost === 2, 'Squall costs 2');
   assert(WIZARD_TYPES.find(t => t.id === 'fire').cost === 2, 'Pyre costs 2');
@@ -455,40 +475,29 @@ async function runSimSelfTests() {
   assert(normalizeTeam(['fire']).join(',') === 'fire,ice,wind,fire', 'short teams fill from the default');
   assert(normalizeTeam(['earth', 'lightning', 'temporal', 'fire']).join(',') === 'earth,lightning,temporal,fire', 'four-kit custom teams stay four');
   assert(normalizeTeam(['fire', 'fire', 'fire', 'fire']).join(',') === 'fire,fire,fire,fire', 'duplicate kits are allowed');
-  assert(TEAM_SIZE === 4 && VS_TEAM_SIZE === 4, 'Vs team size is four');
-  assert(DEFENSE_TEAM_SIZE === 4, 'random Defense still fields four');
+  assert(TEAM_SIZE === 4 && DEFENSE_TEAM_SIZE === 4, 'Defense team size is four');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   const handBefore = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   }).length;
+  assert(handBefore === 4, 'four still wait if you pass the first turn');
   simEndPlayerTurn(state);
-  const enemyAfter = Object.values(state.wizards).filter(function (w) {
-    return w.team === 'enemy' && w.state === 'summoned';
-  }).length;
-  assert(enemyAfter === 0, 'the enemy has no bench to pick up from');
   simEndEnemyTurn(state);
   const handAfter = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'summoned';
   }).length;
-  assert(handAfter === 0, 'Vs has no hand to draw into');
+  assert(handAfter === 4, 'passing does not auto-drop anyone');
   assert(state.mana === 3 && state.maxMana === 3, 'each round still grants 1 mana');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
-  assert(state.boardSize === VS_BOARD_SIZE && BOARD_SIZE === VS_BOARD_SIZE, 'Vs is 7×7');
-  assert(state.nexuses.player.length === 3 && state.nexuses.enemy.length === 3, 'Vs has three nexuses a side');
-  assert(state.nexuses.player.every(function (n) { return n.hp === NEXUS_HP; }), 'Vs crystals have 5 HP');
-  assert(state.nexuses.player.every(function (n) { return isSummonTile(n.row, n.col); }), 'player crystals sit in the back three rows');
-  assert(state.nexuses.enemy.every(function (n) { return isEnemySummonTile(n.row, n.col); }), 'enemy crystals sit in the far three rows');
-  const playerFront = state.nexuses.player.find(function (n) { return n.id === 'player-front'; });
-  const enemyFront = state.nexuses.enemy.find(function (n) { return n.id === 'enemy-front'; });
-  assert(playerFront && playerFront.row === BOARD_SIZE - 2, 'the forward crystal sits one row in, not on the camp lip');
-  assert(enemyFront && enemyFront.row === 1, 'the enemy forward crystal mirrors that');
-  assert(Math.abs(playerFront.row - enemyFront.row) >= 3, 'the two forward crystals do not stare across one empty row');
+  assert(state.boardSize === DEFENSE_BOARD_SIZE && BOARD_SIZE === DEFENSE_BOARD_SIZE, 'Defense is 9×9');
+  assert(state.nexuses.player.length >= 3, 'the city has a crystal cluster');
+  assert(state.nexuses.enemy.length === 0, 'there is no enemy camp');
   const walker = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   walker.state = 'onboard';
   walker.row = 5;
@@ -506,93 +515,34 @@ async function runSimSelfTests() {
   stepper.row = 5;
   stepper.col = 2;
   assert(stepper.moveRange === 2, 'rime should move 2');
-  assert(getMoveTiles(state, stepper).some(t => t.row === 3 && t.col === 2), 'rime move 2 reaches the center file');
-  assert(!getMoveTiles(state, stepper).some(t => t.row <= 1), 'one walk cannot reach the far camp');
+  assert(getMoveTiles(state, stepper).some(t => t.row === 3 && t.col === 2), 'rime move 2 reaches two tiles up');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  assert(checkWinLoss(state) === null, 'starting wizards keep Vs going');
-  const oneDown = state.nexuses.enemy[0];
+  assert(checkWinLoss(state) === null, 'a living city and a living vek keep Defense going');
+  const oneDown = state.nexuses.player[0];
   oneDown.hp = 0;
-  assert(checkWinLoss(state) === null, 'one fallen crystal does not win Vs');
-  state.nexuses.enemy.forEach(function (n) { n.hp = 0; });
-  assert(checkWinLoss(state) === 'player', 'dropping all three enemy crystals wins Vs');
-  resetMatch(state, 1);
-  state.fxEnabled = false;
-  Object.values(state.wizards).forEach(function (w) {
-    if (w.team === 'enemy') {
-      w.state = 'dead';
-      w.row = null;
-      w.col = null;
-    }
-  });
-  assert(checkWinLoss(state) === 'player', 'wiping the enemy team is a Vs win');
+  assert(checkWinLoss(state) === null, 'one fallen crystal does not lose Defense');
+  state.nexuses.player.forEach(function (n) { n.hp = 0; });
+  assert(checkWinLoss(state) === 'enemy', 'dropping the whole city loses');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  state.mountains = {};
-  state.water = {};
   const hunter = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   hunter.state = 'onboard';
   hunter.row = 3;
   hunter.col = 2;
-  const wounded = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
-  const healthy = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
-  wounded.state = 'onboard';
-  wounded.row = 2;
-  wounded.col = 2;
-  wounded.hp = 1;
-  healthy.state = 'onboard';
-  healthy.row = 3;
-  healthy.col = 4;
-  healthy.hp = 10;
+  hunter.kills = 1;
+  const wounded = createDefensePawn(state, 'melee', { state: 'onboard', row: 2, col: 2, hp: 1, maxHp: 3 });
+  const healthy = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 4, hp: 3, maxHp: 3 });
   const snipe = pickAttack(hunter, 'player');
-  assert(snipe && snipe.row === 2 && snipe.col === 2, 'AI should snipe the wounded wizard');
+  assert(snipe && snipe.row === 2 && snipe.col === 2, 'AI should snipe the wounded pawn');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  const mountainKeys = Object.keys(state.mountains);
-  assert(mountainKeys.length === 0, 'Vs opens on an empty arena');
-  assert(Object.keys(state.water).length === 0, 'Vs opens with no water');
   state.nexuses.player.concat(state.nexuses.enemy).forEach(function (n) {
     assert(!mountainAt(state, n.row, n.col), 'no mountain on a nexus');
     assert(!waterAt(state, n.row, n.col), 'no water on a nexus');
-  });
-  function assertVerticalMirror(map, label) {
-    Object.keys(map).forEach(function (k) {
-      const p = k.split(',');
-      const r = parseInt(p[0], 10);
-      const c = parseInt(p[1], 10);
-      const mirror = map[(BOARD_SIZE - 1 - r) + ',' + c];
-      assert(!!mirror, label + ' at ' + k + ' should be vertically mirrored');
-    });
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        const a = !!map[r + ',' + c];
-        const b = !!map[(BOARD_SIZE - 1 - r) + ',' + c];
-        assert(a === b, 'top/bottom 3 rows of ' + label + ' must match columns');
-      }
-    }
-  }
-  assertVerticalMirror(state.mountains, 'mountain');
-  assertVerticalMirror(state.water, 'water');
-  mountainKeys.forEach(function (k) {
-    const p = k.split(',');
-    const r = parseInt(p[0], 10);
-    const c = parseInt(p[1], 10);
-    const n = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(function (d) {
-      return mountainAt(state, r + d[0], c + d[1]);
-    }).length;
-    assert(n > 0, 'mountains should not be loners (' + k + ')');
-  });
-  Object.keys(state.water).forEach(function (k) {
-    const p = k.split(',');
-    const r = parseInt(p[0], 10);
-    const c = parseInt(p[1], 10);
-    const n = [[-1, 0], [1, 0], [0, -1], [0, 1]].filter(function (d) {
-      return waterAt(state, r + d[0], c + d[1]);
-    }).length;
-    assert(n > 0, 'water should not be loners (' + k + ')');
   });
   const scout = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
   scout.state = 'onboard';
@@ -602,6 +552,7 @@ async function runSimSelfTests() {
   if (mountainAt(state, scout.row, scout.col) || waterAt(state, scout.row, scout.col)) scout.col = 4;
   const scoutMoves = getMoveTiles(state, scout);
   assert(!scoutMoves.some(t => mountainAt(state, t.row, t.col)), 'cannot walk onto mountains');
+  scout.kills = 1;
   const castsFromLane = getCastTiles(state, scout);
   assert(!castsFromLane.some(t => mountainAt(state, t.row, t.col)), 'cannot cast onto a mountain');
 
@@ -613,28 +564,15 @@ async function runSimSelfTests() {
   flyer.state = 'onboard';
   flyer.row = 5;
   flyer.col = 3;
+  flyer.kills = 1;
   const waterCast = getCastTiles(state, flyer);
   assert(waterCast.some(t => t.row === 5 && t.col === 4), 'cast can target water');
   assert(waterCast.some(t => t.row === 5 && t.col === 6), 'cast continues past water');
-  assert(getMeleeTiles(state, flyer).every(t => !waterAt(state, t.row, t.col)), 'melee cannot target water');
+  assert(getMeleeTiles(state, flyer).every(t => !waterAt(state, t.row, t.col)), 'stock cannot target water');
   assert(!getMoveTiles(state, flyer).some(t => t.row === 5 && t.col === 4), 'cannot walk onto water');
   const drown = simMove(state, flyer, [{ row: 5, col: 4 }]);
   assert(flyer.state === 'dead', 'water still kills if you are forced onto it');
   assert(drown.some(e => e.type === 'death' && e.cause === 'water'), 'water death is logged');
-
-  let waterMaps = 0;
-  let dryMaps = 0;
-  for (let s = 1; s <= 40; s++) {
-    resetMatch(state, s);
-    assertVerticalMirror(state.mountains, 'mountain seed ' + s);
-    assertVerticalMirror(state.water, 'water seed ' + s);
-    if (Object.keys(state.water).length) waterMaps++;
-    else dryMaps++;
-    assert(campsConnected(state, state.mountains, state.water), 'camps should stay connected on seed ' + s);
-    assert(Object.keys(state.mountains).length === 0, 'Vs stays an open arena on seed ' + s);
-  }
-  assert(waterMaps === 0, 'the simplified Vs map has no water');
-  assert(dryMaps === 40, 'every Vs seed is a dry open board');
 
   resetMatch(state, 1);
   const mtnA = Object.keys(state.mountains).sort().join(',') + '|' + Object.keys(state.water).sort().join(',');
@@ -646,29 +584,16 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   const playerEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
   assert(playerEls.join(',') === 'fire,fire,ice,wind', 'roster is two Pyre, one Rime, one Squall');
-  assert(Object.values(state.wizards).filter(w => w.team === 'enemy').length === 4, 'enemy has four wizards');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 0, 'there are no enemy wizards');
 
-  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'], enemyTeam: ['fire', 'ice', 'wind', 'earth'] });
+  resetMatch(state, 1, { playerTeam: ['earth', 'lightning', 'temporal', 'fire'] });
   state.fxEnabled = false;
   const customEls = Object.values(state.wizards).filter(w => w.team === 'player').map(w => w.element).sort();
   assert(customEls.join(',') === 'earth,fire,lightning,temporal', 'resetMatch keeps a four-kit custom player team');
   const rolledA = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   const rolledB = pickEnemyTeam(createRng(11), DEFAULT_TEAM);
   assert(rolledA.join(',') === rolledB.join(','), 'enemy team roll is seeded');
-  assert(rolledA.length === TEAM_SIZE, 'enemy team is four kits');
-  resetMatch(state, 4, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyTeam.length === 4, 'rolling an enemy team still fields four kits');
-  const seenEnemy = {};
-  let variety = 0;
-  for (let s = 1; s <= 12; s++) {
-    resetMatch(state, s, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-    const key = state.enemyTeam.slice().sort().join(',');
-    if (!seenEnemy[key]) {
-      seenEnemy[key] = true;
-      variety += 1;
-    }
-  }
-  assert(variety >= 3, 'enemy teams vary across seeds');
+  assert(rolledA.length === TEAM_SIZE, 'enemy team helper still returns four kits');
 
   const fromIds = normalizeLoadout(['fire', 'ice', 'wind']);
   assert(fromIds.map(s => s.kit).join(',') === 'fire,ice,wind,fire', 'old three-kit arrays pad to four');
@@ -697,8 +622,6 @@ async function runSimSelfTests() {
   assert(defaultLancer.castKind === 'pierce', 'switching to spell 2 arms the piercing Lance');
   setActiveSpell(defaultLancer, 'basic');
   assert(defaultLancer.castKind !== 'pierce', 'switching back restores spell 1');
-  const foeCaster = Object.values(state.wizards).find(x => x.team === 'enemy' && x.specialSpellId);
-  assert(foeCaster && foeCaster.specialSpellId, 'enemy wizards also carry a spell 2');
 
   // Defense: spell 1 is free, spell 2 spends 2× kit cost.
   resetMatch(state, 1, {
@@ -721,6 +644,7 @@ async function runSimSelfTests() {
   caster.state = 'onboard';
   caster.row = 4;
   caster.col = 4;
+  caster.kills = 2;
   caster.summoningSickness = false;
   caster.hasMoved = true;
   caster.hasAttacked = false;
@@ -730,11 +654,13 @@ async function runSimSelfTests() {
   setActiveSpell(caster, 'basic');
   assert(caster.castKind !== 'pulse', 'the free slot holds spell 1, not Pulse');
   const freeCast = simAttack(state, caster, 4, 5, 'cast');
-  assert(freeCast.length > 0, 'Defense spell 1 resolves');
-  assert(state.mana === 2, 'Defense spell 1 never spends mana');
+  assert(freeCast.length > 0, 'spell 1 resolves once unlocked');
+  assert(state.mana === 1, 'spell 1 spends 1× kit cost (Rime is 1)');
   caster.hasAttacked = false;
   setActiveSpell(caster, 'special');
   assert(caster.castKind === 'pulse' && caster.activeSpell === 'special', 'the special arms Pulse');
+  assert(!canCastSpecial(state, caster, 'player'), '1 mana cannot cover a 2-cost special');
+  state.mana = 2;
   assert(canCastSpecial(state, caster, 'player'), '2 mana covers a 2-cost special');
   const paidCast = simAttack(state, caster, 3, 4, 'cast');
   assert(paidCast.length > 0, 'the special resolves when affordable');
@@ -751,15 +677,8 @@ async function runSimSelfTests() {
   assert(state.mana === STARTING_MANA, 'defense opens at the starting mana');
   let capGuard;
   for (capGuard = 0; capGuard < 12; capGuard++) refillManaPools(state);
-  assert(state.maxMana === DEFENSE_MANA_CAP, 'defense mana grows and caps at DEFENSE_MANA_CAP');
-  assert(state.mana === state.maxMana, 'defense mana refills to full each turn');
-
-  resetMatch(state, 1);
-  state.fxEnabled = false;
-  let vsCapGuard;
-  for (vsCapGuard = 0; vsCapGuard < 12; vsCapGuard++) refillManaPools(state);
-  assert(state.maxMana === MANA_CAP && MANA_CAP === 6, 'Vs mana grows and caps at 6');
-  assert(state.enemyMaxMana === MANA_CAP, 'enemy mana caps at 6 too');
+  assert(state.maxMana === MANA_CAP && MANA_CAP === 6, 'mana grows and caps at 6');
+  assert(state.mana === state.maxMana, 'mana refills to full each turn');
 
   resetMatch(state, 1, {
     playerLoadout: [
@@ -781,7 +700,7 @@ async function runSimSelfTests() {
   blizzardMage.state = 'onboard';
   blizzardMage.row = 3;
   blizzardMage.col = 3;
-  const quakeDummy = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'earth');
+  const quakeDummy = spawnFoe({ element: 'earth', hp: 14, maxHp: 14 });
   quakeDummy.state = 'onboard';
   quakeDummy.row = 4;
   quakeDummy.col = 4;
@@ -915,9 +834,8 @@ async function runSimSelfTests() {
   assert(state.nexuses.player[0].hp === 0, 'a doubled mite cracks a 2 HP crystal in one strike');
 
   resetMatch(state, 7, { playerTeam: DEFAULT_TEAM, rollEnemy: true });
-  assert(state.enemyLoadout.length === 4, 'rolled enemies also have spells');
-  assert(state.enemyLoadout.every(s => spellById(s.spell) && spellById(s.spell).element === kitById(s.kit).element), 'enemy spells match their element');
-  assert(state.enemyLoadout.every(s => s.special && isSpecialSpell(spellById(s.special))), 'rolled enemies also pack a spell 2');
+  assert(state.enemyLoadout.length === 0, 'Defense does not roll enemy wizards');
+  assert(state.enemyTeam.length === 0, 'there is no enemy wizard team');
 
   resetMatch(state, 1, {
     playerLoadout: [
@@ -933,8 +851,7 @@ async function runSimSelfTests() {
   assert(rimes.length === 4, 'four Rimes is a legal team');
   assert(rimes.map(w => w.spellId).sort().join(',') === 'lock,lock,sheet,sheet', 'duplicate kits keep their own free casts');
   assert(rimes.map(w => w.specialSpellId).sort().join(',') === 'blizzard,blizzard,pulse,pulse', 'duplicate kits keep their own specials');
-  const enemyFires = Object.values(state.wizards).filter(w => w.team === 'enemy' && w.element === 'fire');
-  assert(enemyFires.length === 2, 'enemy can roll duplicate kits');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 0, 'no enemy wizard kits');
 
   resetMatch(state, 1, {
     playerLoadout: [
@@ -981,6 +898,7 @@ async function runSimSelfTests() {
   locker.row = 2;
   locker.col = 2;
   locker.hasAttacked = false;
+  state.mana = 6;
   const lockPawn = createDefensePawn(state, 'charge', {
     state: 'onboard',
     row: 2,
@@ -1002,6 +920,7 @@ async function runSimSelfTests() {
   brander.row = 6;
   brander.col = 2;
   brander.hasAttacked = false;
+  state.mana = 6;
   const brandPawn = createDefensePawn(state, 'fireball', {
     state: 'onboard',
     row: 6,
@@ -1031,9 +950,9 @@ async function runSimSelfTests() {
   const expensiveField = Object.values(state.wizards).filter(function (w) {
     return w.team === 'player' && w.state === 'onboard';
   });
-  assert(expensiveField.length === TEAM_SIZE, 'four 3-cost kits still start on the board');
-  assert(expensiveWait.length === 0, 'Vs has no leftover hand');
-  assert(playerHasLegalAction(state), 'the four on the board can still move');
+  assert(expensiveWait.length === TEAM_SIZE, 'four 3-cost kits start off the field');
+  assert(expensiveField.length === 0, 'nobody starts on the board');
+  assert(playerHasLegalAction(state), 'summon is still a legal action');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
@@ -1042,8 +961,8 @@ async function runSimSelfTests() {
   state.tempMountains = {};
   const pulseMage = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   applySpellToWizard(pulseMage, spellById('pulse'));
-  const n1 = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
-  const n2 = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'wind');
+  const n1 = spawnFoe({ element: 'fire', hp: 12, maxHp: 12 });
+  const n2 = spawnFoe({ element: 'wind', hp: 8, maxHp: 8 });
   pulseMage.state = 'onboard';
   pulseMage.row = 4;
   pulseMage.col = 2;
@@ -1087,7 +1006,7 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   const bolt = spawnShelved('player', 'lightning', { row: 4, col: 4 });
-  const victim = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const victim = spawnFoe({ element: 'ice', hp: 12, maxHp: 12 });
   bolt.state = 'onboard';
   bolt.row = 4;
   bolt.col = 4;
@@ -1159,7 +1078,7 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = {};
   const chrono = spawnShelved('player', 'temporal', { row: 4, col: 4 });
-  const swapped = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'fire');
+  const swapped = spawnFoe({ element: 'fire' });
   chrono.state = 'onboard';
   chrono.row = 4;
   chrono.col = 4;
@@ -1280,7 +1199,9 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   await runTeamAi('player');
   const stillField = Object.values(state.wizards).filter(w => w.team === 'player' && w.state === 'onboard');
-  assert(stillField.length === TEAM_SIZE, 'noop brain does not move anyone');
+  assert(stillField.length === 0, 'noop brain does not summon anyone');
+  const stillHand = Object.values(state.wizards).filter(w => w.team === 'player' && w.state === 'summoned');
+  assert(stillHand.length === TEAM_SIZE, 'noop leaves the four off the field');
   state.aiBrain = prevBrain;
 
   const batch = await runAiVsAiBatch({ games: 8, startSeed: 20, maxRounds: 20, brain: 'hunter' });
@@ -1296,7 +1217,7 @@ async function runSimSelfTests() {
   state.water = {};
   state.voids = {};
   const pusher = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'wind');
-  const doomedPush = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const doomedPush = spawnFoe({ element: 'ice', hp: 12, maxHp: 12 });
   pusher.state = 'onboard';
   pusher.row = 4;
   pusher.col = 3;
@@ -1315,7 +1236,7 @@ async function runSimSelfTests() {
   state.water = {};
   state.voids = {};
   const voidShove = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'fire');
-  const voidVictim = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const voidVictim = spawnFoe({ element: 'ice', hp: 12, maxHp: 12 });
   voidShove.state = 'onboard';
   voidShove.row = 4;
   voidShove.col = 3;
@@ -1388,7 +1309,7 @@ async function runSimSelfTests() {
   state.mountains = {};
   state.water = { '4,5': true, '4,6': true };
   const jumper = spawnShelved('player', 'lightning', { row: 4, col: 4 });
-  const soaked = Object.values(state.wizards).find(x => x.team === 'enemy' && x.element === 'ice');
+  const soaked = spawnFoe({ element: 'ice', hp: 12, maxHp: 12 });
   jumper.state = 'onboard';
   jumper.row = 4;
   jumper.col = 4;
@@ -1537,22 +1458,22 @@ async function runSimSelfTests() {
     makeNexus({ id: 'player-cluster-2', row: 7, col: 0 }, 'player', DEFENSE_NEXUS_HP)
   ];
   state.nexuses.enemy = [];
-  const dropper = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  const lander = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
   const burstTarget = createDefensePawn(state, 'melee', { state: 'onboard', row: 3, col: 5, hp: 5, maxHp: 5 });
-  const drop = simSummon(state, dropper, 3, 4, 'player');
-  assert(drop.some(e => e.type === 'summon'), 'defense drop lands immediately');
-  assert(drop.some(e => e.castKind === 'summonBurst' && e.damage === 0), 'landing fires a damage-free burst');
-  assert(dropper.state === 'onboard' && dropper.row === 3 && dropper.col === 4, 'wizard lands immediately');
-  assert(dropper.summoningSickness, 'dropped wizard has summoning sickness');
-  assert(!canMove(dropper) && !canAttack(dropper), 'sickness blocks the rest of the turn');
-  assert(burstTarget.col === 6, 'burst pushes a neighbor away with no damage (' + burstTarget.col + ')');
-  assert(burstTarget.hp === 5, 'burst does not deal damage');
+  const drop = simSummon(state, lander, 3, 4, 'player');
+  assert(drop.some(e => e.type === 'summon'), 'defense summon lands immediately');
+  assert(!drop.some(e => e.castKind === 'summonBurst'), 'landing does not burst');
+  assert(lander.state === 'onboard' && lander.row === 3 && lander.col === 4, 'wizard lands immediately');
+  assert(!lander.summoningSickness, 'no summoning sickness');
+  assert(canMove(lander) && canAttack(lander), 'they can act the turn they land');
+  assert(burstTarget.col === 5, 'neighbors are not shoved');
+  assert(burstTarget.hp === 5, 'summon does not deal damage');
   assert(!canSummonAt(state, 8, 0, 'player'), 'still cannot drop on a nexus');
   const crushPawn = createDefensePawn(state, 'melee', { state: 'emerging', row: 3, col: 4, hp: 2, maxHp: 2 });
   const crush = simDefenseEmerge(state);
   assert(crushPawn.state === 'dead', 'emerging pawn dies if a wizard stands on the hole');
   assert(crush.some(e => e.type === 'spawnBlocked'), 'blocked emerge emits spawnBlocked');
-  assert(dropper.hp === dropper.maxHp - 1, 'stander takes 1 from the crush');
+  assert(lander.hp === lander.maxHp - 1, 'stander takes 1 from the crush');
 
   state.nexuses.player.forEach(function (n) { n.hp = 0; });
   assert(checkWinLoss(state) === 'enemy', 'defense loses when the cluster falls');
@@ -1561,7 +1482,7 @@ async function runSimSelfTests() {
   state.fxEnabled = false;
   state.mountains = {};
   state.water = {};
-  assert(!canSummonAt(state, 3, 4, 'player'), 'vs still cannot summon mid-board');
+  assert(canSummonAt(state, 3, 4, 'player'), 'Defense can summon mid-board');
 
   resetMatch(state, 1, {
     gameMode: 'defense',
@@ -1585,72 +1506,73 @@ async function runSimSelfTests() {
       for (dc = -1; dc <= 1; dc++) enemyNear[(w.row + dr) + ',' + (w.col + dc)] = true;
     }
   });
-  const dropTiles = getPlayerSummonTiles(state).filter(function (t) {
+  const safeDropTiles = getPlayerSummonTiles(state).filter(function (t) {
     return !enemyNear[t.row + ',' + t.col];
   });
-  assert(dropTiles.length >= 2, 'defense has open drop tiles away from pawns');
+  assert(safeDropTiles.length >= 2, 'defense has open drop tiles away from pawns');
   const pyres = Object.values(state.wizards).filter(function (x) {
     return x.team === 'player' && x.element === 'fire' && x.state === 'summoned';
   });
   assert(pyres.length === 2, 'loadout has two Pyres in hand');
   assert(pyres[0].cost === 2 && state.mana === 2, 'round 1 mana is still 2, Pyre costs 2');
-  assert(canPaySummon(state, pyres[0], 'player'), 'defense round 1 can drop a Pyre regardless of cost');
-  assert(playerHasLegalAction(state), 'defense round 1 without Rime still has a drop');
-  const firstDrop = simSummon(state, pyres[0], dropTiles[0].row, dropTiles[0].col, 'player');
-  assert(firstDrop.some(function (e) { return e.type === 'summon'; }), 'first defense drop lands');
-  assert(state.playerSummonedThisTurn, 'defense marks the drop as spent');
-  assert(state.mana === 2, 'defense drop does not spend mana');
-  assert(!canPaySummon(state, pyres[1], 'player'), 'second drop is blocked the same turn');
-  const blockedDrop = simSummon(state, pyres[1], dropTiles[1].row, dropTiles[1].col, 'player');
-  assert(!blockedDrop.length, 'simSummon refuses a second defense drop');
-  assert(pyres[1].state === 'summoned', 'second wizard stays in hand');
+  assert(canPaySummon(state, pyres[0], 'player'), 'summon costs 1, not the kit weight');
+  assert(playerHasLegalAction(state), 'defense round 1 without Rime still has a summon');
+  const firstDrop = simSummon(state, pyres[0], safeDropTiles[0].row, safeDropTiles[0].col, 'player');
+  assert(firstDrop.some(function (e) { return e.type === 'summon'; }), 'first summon lands');
+  assert(state.mana === 1, 'summon spends 1 mana');
+  assert(canPaySummon(state, pyres[1], 'player'), 'a second summon is legal while mana remains');
+  const secondDrop = simSummon(state, pyres[1], safeDropTiles[1].row, safeDropTiles[1].col, 'player');
+  assert(secondDrop.some(function (e) { return e.type === 'summon'; }), 'second summon lands the same turn');
+  assert(state.mana === 0, 'two summons empty the round-1 pool');
+  assert(!canPaySummon(state, Object.values(state.wizards).find(function (w) { return w.team === 'player' && w.state === 'summoned'; }), 'player'), 'a third summon waits on mana');
   simEndPlayerTurn(state);
   simEndEnemyTurn(state);
-  assert(!state.playerSummonedThisTurn, 'a new player turn restores the drop');
-  assert(state.mana === 3 && state.maxMana === 3, 'defense mana grows each round to fuel specials');
-  assert(canPaySummon(state, pyres[1], 'player'), 'next round can drop the next body');
+  assert(state.mana === 3 && state.maxMana === 3, 'mana grows each round');
+  const leftoverHand = Object.values(state.wizards).find(function (w) { return w.team === 'player' && w.state === 'summoned'; });
+  assert(canPaySummon(state, leftoverHand, 'player'), 'next round can summon the next body');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   const vsRime = Object.values(state.wizards).find(x => x.team === 'player' && x.element === 'ice');
+  vsRime.state = 'onboard';
+  vsRime.row = 5;
+  vsRime.col = 4;
   vsRime.hasMoved = true;
   vsRime.hasAttacked = false;
+  vsRime.kills = 2;
   state.mountains = {};
   state.water = {};
-  const rimeFoe = Object.values(state.wizards).find(x => x.team === 'enemy');
-  rimeFoe.row = vsRime.row - 1;
-  rimeFoe.col = vsRime.col;
-  rimeFoe.state = 'onboard';
-  rimeFoe.hp = 8;
+  const rimeFoe = createDefensePawn(state, 'melee', { state: 'onboard', row: 4, col: 4, hp: 8, maxHp: 8 });
   assert(basicManaCost(vsRime) === 1 && specialManaCost(vsRime) === 2, 'Rime spell 1 is 1× cost, spell 2 is 2×');
   setActiveSpell(vsRime, 'basic');
   const vsBasic = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
-  assert(vsBasic.length > 0, 'Vs spell 1 resolves');
-  assert(state.mana === 1, 'Vs spell 1 spends 1× kit cost');
+  assert(vsBasic.length > 0, 'spell 1 resolves');
+  assert(state.mana === 1, 'spell 1 spends 1× kit cost');
   vsRime.hasAttacked = false;
   setActiveSpell(vsRime, 'special');
   const vsSpecialBroke = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
-  assert(vsSpecialBroke.length === 0, 'Vs spell 2 refuses when 1 mana cannot cover 2× cost');
+  assert(vsSpecialBroke.length === 0, 'spell 2 refuses when 1 mana cannot cover 2× cost');
   state.mana = 2;
   const vsSpecial = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'cast');
-  assert(vsSpecial.length > 0, 'Vs spell 2 resolves when paid');
-  assert(state.mana === 0, 'Vs spell 2 spends 2× kit cost');
+  assert(vsSpecial.length > 0, 'spell 2 resolves when paid');
+  assert(state.mana === 0, 'spell 2 spends 2× kit cost');
   vsRime.hasAttacked = false;
   rimeFoe.state = 'onboard';
+  rimeFoe.hp = 8;
   rimeFoe.row = vsRime.row - 1;
   rimeFoe.col = vsRime.col;
   setActiveSpell(vsRime, 'basic');
   const vsMelee = simAttack(state, vsRime, rimeFoe.row, rimeFoe.col, 'melee');
-  assert(vsMelee.length > 0, 'Vs melee still hits');
-  assert(state.mana === 0, 'Vs melee costs 0');
+  assert(vsMelee.length > 0, 'stock still hits');
+  assert(state.mana === 0, 'stock costs 0');
 
   resetMatch(state, 1);
   state.fxEnabled = false;
   const waitingVs = Object.values(state.wizards).filter(function (w) {
-    return w.state === 'summoned' || w.state === 'bench';
+    return w.team === 'player' && (w.state === 'summoned' || w.state === 'bench');
   });
-  assert(waitingVs.length === 0, 'Vs has no off-field wizards');
-  assert(getPlayerSummonTiles(state).length === 0, 'Vs has no drop tiles');
+  assert(waitingVs.length === TEAM_SIZE, 'four wizards start off the field');
+  assert(getPlayerSummonTiles(state).length > 0, 'Defense has summon tiles');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -2150,8 +2072,8 @@ async function runSimSelfTests() {
 
   resetMatch(state, 1);
   state.fxEnabled = false;
-  assert(state.gameMode === 'vs', 'resetMatch without a mode stays vs for tests');
-  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 4, 'vs still rolls four enemy wizards');
+  assert(state.gameMode === 'defense', 'resetMatch is Defense');
+  assert(Object.values(state.wizards).filter(w => w.team === 'enemy' && !w.pawnKind).length === 0, 'no enemy wizards');
 
   resetMatch(state, 1, { gameMode: 'defense' });
   state.fxEnabled = false;
@@ -2188,16 +2110,16 @@ async function runSimSelfTests() {
   assert(defenseSpawnCount(state) > 0, 'a living pawn still draws reinforcements');
 
   assert(MISSIONS.length === 4, 'four named missions');
-  assert(playlistIdDefault() === 'vs', 'Play defaults to Vs, not a named island');
-  assert(isVsPlaylist(playlistIdDefault()), 'the default playlist is the generic Vs fight');
+  assert(playlistIdDefault() === 'mission-1', 'Play defaults to The Pass');
+  assert(!isVsPlaylist(playlistIdDefault()), 'Vs is gone');
   MISSIONS.forEach(function (mission) {
     resetMatch(state, mission.seed, { missionId: mission.id });
     state.fxEnabled = false;
     assert(state.gameMode === 'defense', mission.id + ' is Defense');
     assert(state.missionId === mission.id, mission.id + ' stamps missionId');
     assert(state.mapId === mission.islandId, mission.id + ' pins ' + mission.islandId + ' (got ' + state.mapId + ')');
-    assert(state.playerLoadout.length === mission.loadout.length, mission.id + ' brings ' + mission.loadout.length + ' (got ' + state.playerLoadout.length + ')');
-    assert(Object.values(state.wizards).filter(function (w) { return w.team === 'player'; }).length === mission.loadout.length, mission.id + ' seeds that many bodies');
+    assert(state.playerLoadout.length === TEAM_SIZE, mission.id + ' pads to four (got ' + state.playerLoadout.length + ')');
+    assert(Object.values(state.wizards).filter(function (w) { return w.team === 'player'; }).length === TEAM_SIZE, mission.id + ' seeds four bodies');
     assert(state.playerLoadout[0].kit === mission.loadout[0].kit, mission.id + ' uses the scripted first kit');
     assert(defenseSpawnBudget(state) === mission.spawnBudget, mission.id + ' uses its spawn budget');
     assert(defenseLivingCap(state) === mission.pawnCap, mission.id + ' uses its living cap');
@@ -2211,7 +2133,8 @@ async function runSimSelfTests() {
     assert(kitById('fire').hp === 4 && kitById('ice').hp === 4 && kitById('wind').hp === 4, 'live kits sit at 4 HP, not a 12 HP sponge');
     if (mission.id === 'mission-1') {
       const only = Object.values(state.wizards).filter(function (w) { return w.team === 'player'; });
-      assert(only.length === 1 && only[0].name === 'Squall' && only[0].hp === 4, 'the pass teaches with one Squall');
+      assert(only.length === 4 && only[0].name === 'Squall' && only[0].hp === 4, 'the pass still leads with Squall and pads to four');
+      assert(only.every(function (w) { return w.state === 'summoned'; }), 'the pass keeps all four off the field');
     }
     const again = { row: openers[0].row, col: openers[0].col, id: openers[0].id };
     resetMatch(state, mission.seed, { missionId: mission.id });
@@ -2291,6 +2214,7 @@ async function runSimSelfTests() {
   );
 
   state.fxEnabled = prevFx;
+  wizardSpellTier = realSpellTier;
   if (fails.length) throw new Error(fails.join('\n'));
   return { ok: true, sample: { result: m1.result, rounds: m1.rounds, events: m1.log.length } };
 }

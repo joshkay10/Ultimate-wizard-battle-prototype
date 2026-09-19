@@ -18,7 +18,7 @@ function placeWizard(row, col) {
     state.placingWizardId = null;
     if (wizard.state === 'onboard') {
       state.selectedWizardId = wizard.id;
-      state.selectedAction = wizard.summoningSickness ? null : 'move';
+      state.selectedAction = 'move';
     }
   }
   present(events).then(afterPlayerAction);
@@ -33,7 +33,7 @@ function selectWizard(id) {
   } else {
     state.selectedWizardId = id;
     if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
-    state.selectedAction = wizard.team === 'player' && !wizard.summoningSickness ? 'move' : null;
+    state.selectedAction = wizard.team === 'player' ? 'move' : null;
   }
   render();
 }
@@ -48,11 +48,14 @@ function setAction(action) {
   if (!state.selectedWizardId || state.animating || !canAct()) return;
   const wizard = state.wizards[state.selectedWizardId];
   if (!wizard || wizard.team !== 'player') return;
-  if (typeof canUseWizard === 'function' && !canUseWizard(state, wizard)) return;
   if (action === 'special') {
-    if (!wizard.specialSpellId) return;
+    if (!wizard.specialSpellId || (typeof canUseSpecialSpell === 'function' && !canUseSpecialSpell(wizard))) return;
     if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'special');
     state.selectedAction = 'special';
+  } else if (action === 'cast') {
+    if (typeof canUseBasicSpell === 'function' && !canUseBasicSpell(wizard)) return;
+    if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
+    state.selectedAction = 'cast';
   } else {
     if (typeof setActiveSpell === 'function') setActiveSpell(wizard, 'basic');
     state.selectedAction = action;
@@ -62,10 +65,7 @@ function setAction(action) {
 
 function undoSelectedMove() {
   if (state.animating || !canAct()) return;
-  let wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-  if (!canUndoMove(wizard) && typeof actingWizardOnTurn === 'function') {
-    wizard = actingWizardOnTurn(state, 'player');
-  }
+  const wizard = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   if (!canUndoMove(wizard)) return;
   present(simUndoMove(state, wizard)).then(function () {
     state.selectedWizardId = wizard.id;
@@ -100,60 +100,6 @@ function handleTileClick(row, col) {
     return;
   }
 
-  if (state.gameMode === 'vs') {
-    if (typeof canUseWizard === 'function' && !canUseWizard(state, wizard)) {
-      reselectOrBail();
-      return;
-    }
-    if (state.selectedAction === 'melee' && canAttack(wizard)) {
-      const meleeTiles = getMeleeTiles(state, wizard);
-      if (meleeTiles.some(function (t) { return t.row === row && t.col === col; })) {
-        resolveMeleeAttack(wizard, row, col);
-        return;
-      }
-      reselectOrBail();
-      return;
-    }
-    if ((state.selectedAction === 'cast' || state.selectedAction === 'special') && canAttack(wizard)) {
-      if (typeof canPayCast === 'function' && !canPayCast(state, wizard, 'player', state.selectedAction === 'special' ? 'special' : 'basic')) {
-        reselectOrBail();
-        return;
-      }
-      const castTiles = getCastTiles(state, wizard);
-      if (castTiles.some(function (t) { return t.row === row && t.col === col; })) {
-        resolveCastAttack(wizard, row, col);
-        return;
-      }
-      reselectOrBail();
-      return;
-    }
-    if (canMove(wizard)) {
-      const moveTiles = getMoveTiles(state, wizard);
-      const isMove = moveTiles.some(function (t) { return t.row === row && t.col === col; });
-      if (isMove) {
-        const path = pathBFS(state, wizard, row, col);
-        if (path) present(simMove(state, wizard, path)).then(afterPlayerAction);
-        return;
-      }
-    }
-    if (canAttack(wizard)) {
-      const meleeTiles = getMeleeTiles(state, wizard);
-      if (meleeTiles.some(function (t) { return t.row === row && t.col === col; })) {
-        resolveMeleeAttack(wizard, row, col);
-        return;
-      }
-      if (typeof canPayCast !== 'function' || canPayCast(state, wizard, 'player')) {
-        const castTiles = getCastTiles(state, wizard);
-        if (castTiles.some(function (t) { return t.row === row && t.col === col; })) {
-          resolveCastAttack(wizard, row, col);
-          return;
-        }
-      }
-    }
-    reselectOrBail();
-    return;
-  }
-
   if (state.selectedAction === 'move') {
     if (!canMove(wizard)) { reselectOrBail(); return; }
     const moveTiles = getMoveTiles(state, wizard);
@@ -170,6 +116,7 @@ function handleTileClick(row, col) {
   } else if (state.selectedAction === 'cast' || state.selectedAction === 'special') {
     if (!canAttack(wizard)) { reselectOrBail(); return; }
     if (state.selectedAction === 'special' && !canCastSpecial(state, wizard, 'player')) { reselectOrBail(); return; }
+    if (state.selectedAction === 'cast' && typeof canPayCast === 'function' && !canPayCast(state, wizard, 'player', 'basic')) { reselectOrBail(); return; }
     const tiles = getCastTiles(state, wizard);
     const isValid = tiles.some(t => t.row === row && t.col === col);
     if (!isValid) { reselectOrBail(); return; }

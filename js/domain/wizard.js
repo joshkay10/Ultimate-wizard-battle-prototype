@@ -18,6 +18,7 @@ function createWizard(match, typeId, team, spellId, specialId) {
     hasMoved: false,
     hasAttacked: false,
     summoningSickness: false,
+    kills: 0,
     silenced: false,
     silenceSkip: false,
     moveUndo: null,
@@ -38,59 +39,6 @@ function seedRosters(match, playerLoadout, enemyLoadout) {
   if (!player.length) return;
   let i;
   for (i = 0; i < player.length; i++) createWizard(match, player[i].kit, 'player', player[i].spell, player[i].special);
-  if (match.gameMode === 'defense') return;
-  const enemy = normalizeLoadout(enemyLoadout, { pad: false });
-  for (i = 0; i < enemy.length; i++) createWizard(match, enemy[i].kit, 'enemy', enemy[i].spell, enemy[i].special);
-}
-
-function vsDeployTiles(match, team) {
-  const tiles = [];
-  const last = BOARD_SIZE - 1;
-  const cols = [0, 2, 4, 6, 3, 1, 5];
-  const rows = team === 'player' ? [last, last - 1, SUMMON_ROW_START] : [0, 1, ENEMY_ROW_END - 1];
-  let r;
-  let i;
-  for (r = 0; r < rows.length; r++) {
-    for (i = 0; i < cols.length; i++) {
-      const row = rows[r];
-      const col = cols[i];
-      if (!inBounds(row, col)) continue;
-      if (isBlocked(match, row, col) || hazardAt(match, row, col)) continue;
-      tiles.push({ row: row, col: col });
-    }
-  }
-  return tiles;
-}
-
-function placeVsOpener(wizard, row, col) {
-  wizard.state = 'onboard';
-  wizard.row = row;
-  wizard.col = col;
-  wizard.hasMoved = false;
-  wizard.hasAttacked = false;
-  wizard.summoningSickness = false;
-}
-
-function seedVsOpening(match) {
-  if (!match || match.gameMode !== 'vs') return;
-  const byId = function (a, b) {
-    return parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10);
-  };
-  const player = wizardsOnTeam(match, 'player').sort(byId);
-  const enemy = wizardsOnTeam(match, 'enemy').sort(byId);
-  const tiles = vsDeployTiles(match, 'player');
-  const last = BOARD_SIZE - 1;
-  const n = Math.min(player.length, tiles.length);
-  let i;
-  for (i = 0; i < n; i++) {
-    placeVsOpener(player[i], tiles[i].row, tiles[i].col);
-    if (!enemy[i]) continue;
-    const row = last - tiles[i].row;
-    const col = tiles[i].col;
-    if (inBounds(row, col) && !isBlocked(match, row, col) && !hazardAt(match, row, col)) {
-      placeVsOpener(enemy[i], row, col);
-    }
-  }
 }
 
 function canMove(wizard) {
@@ -101,23 +49,8 @@ function canAttack(wizard) {
   return !!(wizard && wizard.state === 'onboard' && !wizard.hasAttacked && !wizard.summoningSickness && !wizard.rooted);
 }
 
-// Vs is chess-paced: one wizard acts (move and/or strike), then the other side.
-function actingWizardOnTurn(match, team) {
-  if (!match || match.gameMode !== 'vs') return null;
-  team = team || match.currentTurn;
-  let found = null;
-  Object.values(match.wizards).forEach(function (wizard) {
-    if (wizard.team !== team || wizard.state !== 'onboard') return;
-    if (wizard.hasMoved || (wizard.hasAttacked && !wizard.silenceSkip)) found = wizard;
-  });
-  return found;
-}
-
 function canUseWizard(match, wizard) {
-  if (!wizard) return false;
-  if (!match || match.gameMode !== 'vs') return true;
-  const acting = actingWizardOnTurn(match, wizard.team);
-  return !acting || acting.id === wizard.id;
+  return !!wizard;
 }
 
 function clearMoveUndo(wizard) {

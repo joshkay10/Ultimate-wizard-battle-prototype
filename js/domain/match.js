@@ -46,7 +46,7 @@ function resetMatch(match, seed, opts) {
     }
   }
 
-  match.gameMode = opts.gameMode === 'defense' ? 'defense' : 'vs';
+  match.gameMode = 'defense';
   applyMatchLayout(match);
   match.mapId = '';
   match.mapName = '';
@@ -60,42 +60,16 @@ function resetMatch(match, seed, opts) {
   match.cityExtra = typeof opts.cityExtra === 'number' ? opts.cityExtra : null;
   match.missionOpening = opts.opening || null;
   match.nexuses = { player: [], enemy: [] };
-  if (match.gameMode === 'vs') {
-    match.nexuses = {
-      player: makeNexusCamp('player', NEXUS_HP),
-      enemy: makeNexusCamp('enemy', NEXUS_HP)
-    };
-  }
 
-  let loadoutOpts = {};
-  if (opts.missionId) loadoutOpts = { pad: false };
-  else if (match.gameMode === 'defense') loadoutOpts = { padTo: DEFENSE_TEAM_SIZE };
+  const loadoutOpts = { padTo: DEFENSE_TEAM_SIZE };
   let playerLoadout = normalizeLoadout(opts.playerLoadout || opts.playerTeam || DEFAULT_LOADOUT, loadoutOpts);
   if (!playerLoadout.length) playerLoadout = normalizeLoadout(DEFAULT_LOADOUT, loadoutOpts);
-  let enemyLoadout;
-  if (match.gameMode === 'defense') {
-    enemyLoadout = [];
-  } else if (opts.enemyLoadout) {
-    enemyLoadout = normalizeLoadout(opts.enemyLoadout);
-  } else if (opts.enemyTeam) {
-    enemyLoadout = normalizeLoadout(opts.enemyTeam);
-  } else if (opts.rollEnemy) {
-    enemyLoadout = pickEnemyLoadout(match.rng, playerLoadout);
-  } else {
-    enemyLoadout = normalizeLoadout(DEFAULT_LOADOUT);
-  }
   match.playerLoadout = playerLoadout;
   match.playerTeam = playerLoadout.map(function (slot) { return slot.kit; });
-  if (match.gameMode === 'defense') {
-    match.enemyLoadout = [];
-    match.enemyTeam = [];
-  } else {
-    match.enemyLoadout = enemyLoadout;
-    match.enemyTeam = loadoutKitIds(enemyLoadout);
-  }
+  match.enemyLoadout = [];
+  match.enemyTeam = [];
 
   generateTerrain(match);
-  seedRosters(match, playerLoadout, enemyLoadout);
-  if (match.gameMode === 'defense') seedDefenseOpening(match);
-  else seedVsOpening(match);
+  seedRosters(match, playerLoadout, []);
+  seedDefenseOpening(match);
 }

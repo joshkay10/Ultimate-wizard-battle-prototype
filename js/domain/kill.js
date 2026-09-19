@@ -1,3 +1,11 @@
+function creditKill(match, victim) {
+  if (!match || !victim) return;
+  if (victim.team === 'player') return;
+  const killer = match.killCreditId && match.wizards[match.killCreditId];
+  if (!killer || killer.team !== 'player' || killer.state === 'dead') return;
+  killer.kills = (killer.kills || 0) + 1;
+}
+
 function simKill(match, wizard) {
   if (!wizard || wizard.state === 'dead' || wizard.hp > 0) return null;
   const ev = {
@@ -14,6 +22,7 @@ function simKill(match, wizard) {
   wizard.col = null;
   wizard.moveUndo = null;
   if (match.selectedWizardId === wizard.id) match.selectedWizardId = null;
+  creditKill(match, wizard);
   return ev;
 }
 

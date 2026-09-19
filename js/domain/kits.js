@@ -1,15 +1,14 @@
 const DEFENSE_TEAM_SIZE = 4;
-const VS_TEAM_SIZE = 4;
-const TEAM_SIZE = VS_TEAM_SIZE;
+const TEAM_SIZE = DEFENSE_TEAM_SIZE;
 const PLAYABLE_KIT_IDS = ['fire', 'ice', 'wind'];
 
 const WIZARD_TYPES = [
-  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 2, hp: 4, cost: 2, meleeAttack: 2, meleeDisplacement: 1 },
-  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 2, hp: 4, cost: 1, meleeAttack: 1, meleeDisplacement: 1 },
-  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 3, hp: 4, cost: 2, meleeAttack: 1, meleeDisplacement: 2 },
-  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 5, cost: 3, meleeAttack: 2, meleeDisplacement: 1 },
-  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 2, hp: 4, cost: 2, meleeAttack: 1, meleeDisplacement: 1 },
-  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 2, hp: 4, cost: 3, meleeAttack: 1, meleeDisplacement: 1 }
+  { id: 'fire', name: 'Pyre', element: 'fire', defaultSpellId: 'stream', moveRange: 2, hp: 4, cost: 2, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH },
+  { id: 'ice', name: 'Rime', element: 'ice', defaultSpellId: 'pulse', moveRange: 2, hp: 4, cost: 1, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH },
+  { id: 'wind', name: 'Squall', element: 'wind', defaultSpellId: 'gust', moveRange: 3, hp: 4, cost: 2, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH },
+  { id: 'earth', name: 'Cairn', element: 'earth', defaultSpellId: 'raise', moveRange: 2, hp: 5, cost: 3, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH },
+  { id: 'lightning', name: 'Volt', element: 'lightning', defaultSpellId: 'bolt', moveRange: 2, hp: 4, cost: 2, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH },
+  { id: 'temporal', name: 'Chrono', element: 'temporal', defaultSpellId: 'swap', moveRange: 2, hp: 4, cost: 3, meleeAttack: STOCK_DAMAGE, meleeDisplacement: STOCK_PUSH }
 ];
 
 const DEFAULT_TEAM = ['fire', 'ice', 'wind', 'fire'];

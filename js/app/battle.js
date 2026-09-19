@@ -1,12 +1,5 @@
 function battleResetOpts() {
-  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'defense';
-  if (playlist === 'vs') {
-    return {
-      playerLoadout: loadPlayerLoadout(),
-      rollEnemy: true,
-      gameMode: 'vs'
-    };
-  }
+  const playlist = typeof loadPlaylistId === 'function' ? loadPlaylistId() : playlistIdDefault();
   const mission = typeof missionById === 'function' ? missionById(playlist) : null;
   if (mission) return missionResetOpts(mission);
   return {

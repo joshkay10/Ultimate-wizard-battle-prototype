@@ -17,7 +17,7 @@ const out = vm.runInContext(`
   }
   state.nexuses.player = state.nexuses.player.filter(function (n) { return !(n.row >= 3 && n.row <= 5 && n.col >= 3 && n.col <= 5); });
   var p = Object.values(state.wizards).find(function (w) { return w.team === 'player'; });
-  p.state = 'onboard'; p.row = 4; p.col = 4; p.summoningSickness = false; p.hasMoved = false; p.hasAttacked = false;
+  p.state = 'onboard'; p.row = 4; p.col = 4; p.summoningSickness = false; p.hasMoved = false; p.hasAttacked = false; p.kills = 2;
   p.castKind = 'pulse'; p.spellId = 'pulse'; p.spellName = 'Pulse'; p.castAttack = 2; p.castDisplacement = 1; p.element = 'ice';
   [[3, 4], [5, 4], [4, 5]].forEach(function (rc) { var e = createDefensePawn(state, 'melee', { state: 'onboard', row: rc[0], col: rc[1], intent: null }); e.hp = 1; e.maxHp = 1; });
   state.currentTurn = 'player'; state.gameOverResult = null;

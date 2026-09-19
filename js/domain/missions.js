@@ -1,5 +1,5 @@
-// Named Defense missions. Each one pins an island, a roster (1–4), and a spawn mix.
-// Vs stays free-play. Random Defense (no missionId) is still what the tests use.
+// Named Defense missions. Each one pins an island, a roster, and a spawn mix.
+// Play is Defense only. Random Defense (no missionId) is still what the tests use.
 const MISSIONS = [
   {
     id: 'mission-1',
@@ -11,9 +11,9 @@ const MISSIONS = [
     name: 'The Pass',
     mapLabel: 'the pass',
     goal: 'Pop every mite.',
-    hint: 'One wizard. Drop, then next turn Gust or melee. Red tiles fire after you end turn.',
+    hint: 'Four in hand. Summon costs 1 mana, then stock punch. A kill unlocks Gust.',
     fail: 'The mites got through.',
-    blurb: 'A tight mountain gate. One Squall. Drop, read the telegraph, pop the mite. Two mite hits and you are gone.',
+    blurb: 'A tight mountain gate. Four in hand. Summon, stock punch a mite, grow into Gust. Two mite hits and you are gone.',
     spawnBudget: 4,
     pawnCap: 2,
     cityExtra: 0,
@@ -33,7 +33,7 @@ const MISSIONS = [
     name: 'The Canal',
     mapLabel: 'the canal',
     goal: 'Drown them.',
-    hint: 'Two Squalls. Dunk the charger — Gust or Tug into the river. Do not trade blows.',
+    hint: 'Summon, then dunk the charger — Gust or Tug into the river. Stock is 1/1/1 until they earn a kill.',
     fail: 'The canal wasn’t enough.',
     blurb: 'A charger sits one tile from the river. Two Squalls — Tug and Gust. Put bodies in the water.',
     spawnBudget: 6,
@@ -56,7 +56,7 @@ const MISSIONS = [
     name: 'The Alley',
     mapLabel: 'the alley',
     goal: 'Pierce the line.',
-    hint: 'Lance hits a whole row. Do not stand in a SHOT. Three bodies this island.',
+    hint: 'Lance unlocks after two kills. Do not stand in a SHOT.',
     fail: 'The alley broke.',
     blurb: 'A bomber already has the corridor. Three wizards. Lance pays when bodies line up.',
     spawnBudget: 8,
@@ -125,11 +125,11 @@ function missionResetOpts(mission) {
 }
 
 function playlistIdDefault() {
-  return 'vs';
+  return 'mission-1';
 }
 
 function isVsPlaylist(id) {
-  return id === 'vs';
+  return false;
 }
 
 function nextMission(mission) {

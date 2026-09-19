@@ -61,7 +61,7 @@ function firstSpecialId(element) {
   return pool.length ? pool[0].id : null;
 }
 
-// Spell 1 is a basic. Cost is 1× kit cost (free in Defense).
+// Spell 1 is a basic. Cost is 1× kit cost. Locked until that wizard scores a kill.
 function normalizeBasicSpellId(kitId, spellId) {
   const kit = kitById(kitId);
   const element = kit ? kit.element : '';

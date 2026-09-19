@@ -207,12 +207,7 @@ function generateWaterInto(match, mountains, water) {
 }
 
 function generateTerrain(match) {
-  if (match.gameMode === 'defense') {
-    generateDefenseIsland(match);
-    return;
-  }
-  match.mountains = {};
-  match.water = {};
+  generateDefenseIsland(match);
 }
 
 function pruneSingletons(map) {

@@ -2,7 +2,7 @@
 
 What is still leftover. Shipped work is already off this list.
 
-Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands, one drop per round), Brand / Lock / Tug, smash leftover knockback, hex wizards and disc vek, ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4 (campaign track, dunk juice, flawless pips), chess-paced Vs.
+Shipped: Defense holdout (wipe the field to win, 10 invaders, 3 vek, city beeline, named islands), four off-field, summon spell (1 mana), 1 move + 1 attack per wizard, stock 1/1/1, kills unlock spell 1 then spell 2, mana cap 6, Brand / Lock / Tug, smash leftover knockback, hex wizards and disc vek, ItB telegraphs, crash chains, move undo, four-wizard loadouts, named missions 1–4 (campaign track, dunk juice, flawless pips).
 
 ## Need from you
 
@@ -17,7 +17,7 @@ Element icons are in (`img/elements.png`, 6×256 white-on-transparent). Wizard p
 - [ ] **Badges and bosses** — stamp a badge when you clear. A boss at the end of a track.
 - [ ] **Power spikes** — unlock a spell, a kit, or a big stat bump between badges. Not a relic shop, not a roguelike run.
 - [ ] **Seeded daily / share seed** — one board + enemy roll to race and send to a friend.
-- [ ] **First-fight tutorial** — one scripted board that teaches drop, crash chain, ice slide, and undo.
+- [ ] **First-fight tutorial** — one scripted board that teaches summon, stock, a kill unlock, crash chain, ice slide, and undo.
 
 ## Combat
 

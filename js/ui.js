@@ -59,7 +59,7 @@ function defenseCityFlawless() {
 function maybeRecordResult() {
   if (!state.gameOverResult || state.resultRecorded) return;
   state.resultRecorded = true;
-  const mode = state.gameMode === 'vs' ? 'vs' : 'defense';
+  const mode = 'defense';
   const flawless = mode === 'defense' && state.gameOverResult === 'player' && defenseCityFlawless();
   const rec = typeof recordMatchStats === 'function'
     ? recordMatchStats(mode, state.gameOverResult, flawless)
@@ -92,16 +92,6 @@ function maybeRecordResult() {
 }
 
 function renderPanel() {
-  if (state.gameMode === 'vs') {
-    const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-    return (
-      '<div class="panel is-vs-hud">' +
-        renderSelectedCard(selected) +
-        renderVsPassRow() +
-      '</div>'
-    );
-  }
-
   const wizardCards = Object.values(state.wizards)
     .filter(w => w.team === 'player' && w.state === 'summoned')
     .sort((a, b) => parseInt(a.id.slice(1), 10) - parseInt(b.id.slice(1), 10))
@@ -133,7 +123,7 @@ function renderPanel() {
 
   const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
   const placingHint = (state.placingWizardId && state.wizards[state.placingWizardId])
-    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + ' lands with a burst, then is spent this turn.</div>'
+    ? '<div class="no-selection-hint">tap a highlighted tile. ' + state.wizards[state.placingWizardId].name + ' lands ready to move and strike.</div>'
     : '';
 
   const logLines = recentLogLines(3);
@@ -144,9 +134,15 @@ function renderPanel() {
     }).join('') + '</ul>';
 
   const brief = renderMissionBrief();
-  const handNote = state.playerSummonedThisTurn ? 'already dropped' : '1 drop this turn';
+  const summonCost = typeof summonManaCost === 'function' ? summonManaCost() : 1;
+  const canSummon = Object.values(state.wizards).some(function (w) {
+    return typeof canPaySummon === 'function' && canPaySummon(state, w, 'player');
+  });
+  const handNote = canSummon
+    ? 'summon spell · ' + summonCost + ' mana'
+    : (wizardCards ? 'need ' + summonCost + ' mana' : '');
   const handLabel = wizardCards
-    ? '<p class="panel-section-label">in hand · ' + handNote + '</p><div class="wizard-grid">' + wizardCards + '</div>'
+    ? '<p class="panel-section-label">off field' + (handNote ? ' · ' + handNote : '') + '</p><div class="wizard-grid">' + wizardCards + '</div>'
     : '';
 
   return (
@@ -184,42 +180,19 @@ function wizardStatusBits(wiz) {
   }
   if (wiz.rooted) bits.push('locked');
   if (wiz.burn) bits.push('burn ' + wiz.burn);
-  if (wiz.summoningSickness) {
-    bits.push('summoning sickness');
-    bits.push('burst spent');
-    return bits;
-  }
-  else if (wiz.silenced) bits.push('silenced');
-  if (typeof canUseWizard === 'function' && state && wiz.team === 'player' && !canUseWizard(state, wiz)) {
-    bits.push('wait');
-    return bits;
-  }
+  if (wiz.silenced) bits.push('silenced');
   if (wiz.hasMoved) bits.push('moved');
   else bits.push('can move');
   if (wiz.hasAttacked && !wiz.silenceSkip) bits.push('attacked');
   else if (!wiz.hasAttacked) bits.push('can attack');
+  const tier = typeof wizardSpellTier === 'function' ? wizardSpellTier(wiz) : 2;
+  if (tier < 1) bits.push('stock only');
+  else if (tier < 2) bits.push('spell 1 open');
   return bits;
 }
 
 function manaCostBadge(amount) {
   return '<span class="special-cost">' + ICONS.mana + amount + '</span>';
-}
-
-function vsUndoWizard() {
-  const selected = state.selectedWizardId ? state.wizards[state.selectedWizardId] : null;
-  if (canUndoMove(selected)) return selected;
-  const actor = typeof actingWizardOnTurn === 'function' ? actingWizardOnTurn(state, 'player') : null;
-  return canUndoMove(actor) ? actor : null;
-}
-
-function renderVsPassRow() {
-  const undoOk = !state.animating && canAct() && !!vsUndoWizard();
-  return (
-    '<div class="action-row is-pass">' +
-      '<button class="action-btn undo" id="undo-move-btn" ' + (undoOk ? '' : 'disabled') + '>undo</button>' +
-      '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
-    '</div>'
-  );
 }
 
 function renderSelectedCard(wiz) {
@@ -232,35 +205,39 @@ function renderSelectedCard(wiz) {
   const basicCost = typeof basicManaCost === 'function' ? basicManaCost(wiz) : (wiz.cost || 0);
   const specialCost = typeof specialManaCost === 'function' ? specialManaCost(wiz) : (wiz.specialCost || 0);
   const mine = wiz.team === 'player';
-  const usable = mine && !state.animating && canAct() && !wiz.summoningSickness && (typeof canUseWizard !== 'function' || canUseWizard(state, wiz));
+  const usable = mine && !state.animating && canAct();
   const atkOk = usable && canAttack(wiz);
-  const affordBasic = atkOk && (typeof canPayCast !== 'function' || canPayCast(state, wiz, 'player', 'basic'));
-  const affordSpecial = atkOk && !!special && (typeof canCastSpecial !== 'function' || canCastSpecial(state, wiz, 'player'));
+  const basicOpen = typeof canUseBasicSpell !== 'function' || canUseBasicSpell(wiz);
+  const specialOpen = typeof canUseSpecialSpell !== 'function' || canUseSpecialSpell(wiz);
+  const affordBasic = atkOk && basicOpen && (typeof canPayCast !== 'function' || canPayCast(state, wiz, 'player', 'basic'));
+  const affordSpecial = atkOk && specialOpen && !!special && (typeof canCastSpecial !== 'function' || canCastSpecial(state, wiz, 'player'));
   const enemyTag = mine ? '' : ' <span class="arriving-tag">enemy</span>';
   const basicName = basic ? basic.name : 'spell 1';
   const specialName = special ? special.name : 'spell 2';
   const meleeOn = usable && atkOk && state.selectedAction === 'melee';
   const basicOn = usable && atkOk && state.selectedAction === 'cast';
   const specialOn = usable && atkOk && state.selectedAction === 'special';
+  const basicLabel = basicOpen ? basicName.toLowerCase() : basicName.toLowerCase() + ' · 1 kill';
+  const specialLabel = specialOpen ? specialName.toLowerCase() : specialName.toLowerCase() + ' · 2 kills';
   const attacks = mine
     ? (
       '<div class="profile-actions">' +
         '<button class="action-btn melee' + (meleeOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="melee" ' + (atkOk ? '' : 'disabled') + '>' +
-          ICONS.melee + ' melee' + manaCostBadge(0) +
+          ICONS.melee + ' stock' + manaCostBadge(0) +
         '</button>' +
         '<button class="action-btn cast' + (basicOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="cast" ' + (affordBasic ? '' : 'disabled') + '>' +
-          ICONS.cast + ' ' + basicName.toLowerCase() + manaCostBadge(basicCost) +
+          ICONS.cast + ' ' + basicLabel + manaCostBadge(basicCost) +
         '</button>' +
         (special
           ? '<button class="action-btn special' + (specialOn ? ' active' : '') + (wiz.hasAttacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' +
-              ICONS.cast + ' ' + specialName.toLowerCase() + manaCostBadge(specialCost) +
+              ICONS.cast + ' ' + specialLabel + manaCostBadge(specialCost) +
             '</button>'
           : '') +
       '</div>'
     )
     : (
       '<div class="profile-costs">' +
-        '<span>melee ' + manaCostBadge(0) + '</span>' +
+        '<span>stock ' + manaCostBadge(0) + '</span>' +
         '<span>' + basicName.toLowerCase() + ' ' + manaCostBadge(basicCost) + '</span>' +
         (special ? '<span>' + specialName.toLowerCase() + ' ' + manaCostBadge(specialCost) + '</span>' : '') +
       '</div>'
@@ -328,39 +305,35 @@ function renderActionRow(selected) {
     !state.animating &&
     canAct()
   );
-  const sick = !!(selected && selected.summoningSickness);
-  const moved = !!(selected && (selected.hasMoved || sick));
-  const attacked = !!(selected && (selected.hasAttacked || sick));
+  const sick = false;
+  const moved = !!(selected && selected.hasMoved);
+  const attacked = !!(selected && selected.hasAttacked);
   const moveDisabled = !usable || !selected || !canMove(selected);
   const atkDisabled = !usable || !selected || !canAttack(selected);
   const undoOk = usable && canUndoMove(selected);
   const basicSpell = selected ? spellById(selected.basicSpellId || selected.spellId) : null;
+  const basicOpen = !!(selected && (typeof canUseBasicSpell !== 'function' || canUseBasicSpell(selected)));
+  const specialOpen = !!(selected && (typeof canUseSpecialSpell !== 'function' || canUseSpecialSpell(selected)));
   const basicLabel = basicSpell ? basicSpell.name.toLowerCase() : 'cast';
   const specialSpell = selected && selected.specialSpellId ? spellById(selected.specialSpellId) : null;
   const specialCost = selected ? (typeof specialManaCost === 'function' ? specialManaCost(selected) : (selected.specialCost || 0)) : 0;
-  const affordSpecial = !!(usable && specialSpell && !atkDisabled && typeof canCastSpecial === 'function' && canCastSpecial(state, selected, 'player'));
-  const moveLabel = sick ? 'sick' : (moved ? 'moved' : 'move');
-  const meleeLabel = sick ? 'sick' : (attacked ? 'spent' : 'melee');
-  const spentCast = sick ? 'sick' : (attacked ? 'spent' : basicLabel);
+  const basicCost = selected ? (typeof basicManaCost === 'function' ? basicManaCost(selected) : (selected.cost || 0)) : 0;
+  const affordBasic = !!(usable && basicOpen && !atkDisabled && typeof canPayCast === 'function' && canPayCast(state, selected, 'player', 'basic'));
+  const affordSpecial = !!(usable && specialOpen && specialSpell && !atkDisabled && typeof canCastSpecial === 'function' && canCastSpecial(state, selected, 'player'));
+  const moveLabel = moved ? 'moved' : 'move';
+  const meleeLabel = attacked ? 'spent' : 'stock';
+  const spentCast = attacked ? 'spent' : (basicOpen ? basicLabel : basicLabel + ' · 1 kill');
   const specialLabel = specialSpell ? specialSpell.name.toLowerCase() : 'special';
-  const specialSpent = sick ? 'sick' : (attacked ? 'spent' : specialLabel);
+  const specialSpent = attacked ? 'spent' : (specialOpen ? specialLabel : specialLabel + ' · 2 kills');
   const specialBtn = specialSpell
     ? '<button class="action-btn special' + (usable && !atkDisabled && state.selectedAction === 'special' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="special" ' + (affordSpecial ? '' : 'disabled') + '>' + ICONS.cast + ' ' + specialSpent + '<span class="special-cost">' + ICONS.mana + specialCost + '</span></button>'
     : '';
 
-  if (state.gameMode === 'vs' && !usable) {
-    return (
-      '<div class="action-row is-pass">' +
-        '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
-      '</div>'
-    );
-  }
-
   return (
     '<div class="action-row">' +
       '<button class="action-btn move' + (usable && !moveDisabled && state.selectedAction === 'move' ? ' active' : '') + (moved ? ' spent' : '') + '" data-action="move" ' + (moveDisabled ? 'disabled' : '') + '>' + ICONS.move + ' ' + moveLabel + '</button>' +
-      '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' ' + meleeLabel + '</button>' +
-      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="cast" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.cast + ' ' + spentCast + '</button>' +
+      '<button class="action-btn melee' + (usable && !atkDisabled && state.selectedAction === 'melee' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="melee" ' + (atkDisabled ? 'disabled' : '') + '>' + ICONS.melee + ' ' + meleeLabel + manaCostBadge(0) + '</button>' +
+      '<button class="action-btn cast' + (usable && !atkDisabled && state.selectedAction === 'cast' ? ' active' : '') + (attacked ? ' spent' : '') + '" data-action="cast" ' + (affordBasic ? '' : 'disabled') + '>' + ICONS.cast + ' ' + spentCast + manaCostBadge(basicCost) + '</button>' +
       specialBtn +
       '<button class="action-btn undo" id="undo-move-btn" ' + (undoOk ? '' : 'disabled') + '>undo</button>' +
       '<button class="end-turn-btn" id="end-turn-btn" ' + (canAct() ? '' : 'disabled') + '>end turn</button>' +
@@ -419,14 +392,12 @@ function renderGameOverOverlay() {
     if (mission && next && state.justUnlocked) sub = next.name + ' is open.';
     else if (mission && next) sub = 'Island ' + mission.number + ' of ' + MISSIONS.length + ' is clear.';
     else if (mission) sub = 'The four islands are yours.';
-    else sub = 'their crystals fell, or their wizards are gone';
+    else sub = 'the field is clear';
   } else {
-    heading = mission ? 'the city fell' : 'you lose';
+    heading = 'you lose';
     sub = mission
       ? (mission.fail || 'the cluster is gone')
-      : (state.gameMode === 'defense'
-        ? 'your nexuses fell, or your wizards were wiped out'
-        : 'your crystals fell, or your wizards are gone');
+      : 'your nexuses fell, or your wizards were wiped out';
   }
 
   let actions = '';
@@ -436,8 +407,7 @@ function renderGameOverOverlay() {
       '<button class="game-over-ghost" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
   } else if (mission && win) {
     actions =
-      '<button class="end-turn-btn rematch-btn" id="next-island-btn" type="button" data-playlist="vs">Play Vs</button>' +
-      '<button class="game-over-ghost" id="rematch-btn" type="button">Replay ' + mission.name + '</button>';
+      '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">Replay ' + mission.name + '</button>';
   } else if (mission) {
     actions =
       '<button class="end-turn-btn rematch-btn" id="rematch-btn" type="button">Retry ' + mission.name + '</button>';
@@ -522,10 +492,14 @@ function defenseDropHud() {
     return w.team === 'player' && w.state === 'summoned';
   });
   if (!inHand) return '<div class="topbar-mana topbar-drop is-empty" aria-hidden="true"></div>';
-  if (state.playerSummonedThisTurn) {
-    return '<div class="topbar-mana topbar-drop is-spent">dropped</div>';
+  const cost = typeof summonManaCost === 'function' ? summonManaCost() : 1;
+  const canDrop = Object.values(state.wizards).some(function (w) {
+    return typeof canPaySummon === 'function' && canPaySummon(state, w, 'player');
+  });
+  if (!canDrop) {
+    return '<div class="topbar-mana topbar-drop is-spent">summon ' + cost + '</div>';
   }
-  return '<div class="topbar-mana topbar-drop">1 drop</div>';
+  return '<div class="topbar-mana topbar-drop">summon ' + cost + '</div>';
 }
 
 function renderMissionBrief() {
@@ -541,7 +515,6 @@ function renderMissionBrief() {
 }
 
 function playlistSelectValue() {
-  if (state.gameMode === 'vs') return 'vs';
   if (state.missionId) return state.missionId;
   return typeof loadPlaylistId === 'function' ? loadPlaylistId() : 'mission-1';
 }
@@ -558,7 +531,6 @@ function renderCampaignTrack() {
     const star = !!(cleared && campaign.cleared[m.id].flawless);
     html += '<button type="button" class="track-pip' + (on ? ' is-now' : '') + (cleared ? ' is-clear' : '') + (star ? ' is-star' : '') + (open ? '' : ' is-locked') + '" data-playlist="' + m.id + '"' + (open ? '' : ' disabled') + ' title="' + (m.name || m.title) + (star ? ' · flawless' : (cleared ? ' · clear' : '')) + (open ? '' : ' (locked)') + '">' + m.number + '</button>';
   });
-  html += '<button type="button" class="track-pip track-vs' + (selected === 'vs' ? ' is-now' : '') + '" data-playlist="vs">Vs</button>';
   html += '</div>';
   return html;
 }
@@ -573,7 +545,7 @@ function render() {
 
   if (route !== 'play') {
     app.classList.add('is-doc');
-    app.classList.remove('is-play', 'is-vs', 'is-animating', 'is-enemy-turn');
+    app.classList.remove('is-play', 'is-animating', 'is-enemy-turn');
     if (extra) extra.innerHTML = '';
     document.getElementById('view-root').innerHTML = renderDocPage(route);
     if (route === 'team') bindTeamPage();
@@ -588,19 +560,16 @@ function render() {
   ensureMatch();
   maybeRecordResult();
   ensurePlayShell();
-  app.classList.toggle('is-vs', state.gameMode === 'vs');
   app.classList.toggle('is-animating', state.animating);
   app.classList.toggle('is-enemy-turn', state.currentTurn === 'enemy' && !state.gameOverResult);
   const turnLabel = state.gameOverResult ? 'game over' : (state.currentTurn === 'player' ? 'your turn' : 'enemy turn');
   const mission = (typeof missionById === 'function' && state.missionId) ? missionById(state.missionId) : null;
   const islandName = mission ? (mission.name || mission.title) : (state.mapName || '');
-  const island = state.gameMode === 'defense' && islandName
+  const island = islandName
     ? '<span class="topbar-map">' + islandName + '</span>'
     : '';
   const manaHud = '<div class="topbar-mana">' + ICONS.mana + state.mana + '<span class="mana-max">/' + state.maxMana + '</span></div>';
-  const leftHud = state.gameMode === 'defense'
-    ? '<div class="topbar-left">' + defenseDropHud() + manaHud + '</div>'
-    : manaHud;
+  const leftHud = '<div class="topbar-left">' + defenseDropHud() + manaHud + '</div>';
   const retryLabel = mission ? 'retry' : 'new match';
   if (mission) document.title = mission.name + ' — Wizard Battle';
   document.getElementById('topbar').innerHTML =
